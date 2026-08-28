@@ -57,6 +57,15 @@
     var ms = new Date(ends).getTime() - Date.now();
     return { active: ms > 0, daysLeft: Math.max(0, Math.ceil(ms / 86400000)), endsAt: new Date(ends).toISOString() };
   }
+  // Grant a fresh trial to any account missing a valid one (self-heals
+  // accounts created by older versions that never stored a trial date).
+  function ensureTrial(u) {
+    if (!u.trialEnds || isNaN(new Date(u.trialEnds).getTime())) {
+      u.trialEnds = new Date(Date.now() + TRIAL_DAYS * 86400000).toISOString();
+      return true;
+    }
+    return false;
+  }
 
   var Local = {
     signup: function (d) {
@@ -92,13 +101,15 @@
       var users = lsGet(LS_USERS, {}); var u = users[d.email];
       if (!u || u.pass !== hash(d.password)) return R(401, { error: 'invalid_credentials' });
       if (!u.verified) return R(200, { ok: false, needsVerification: true, email: d.email });
+      if (ensureTrial(u)) lsSet(LS_USERS, users);
       lsSet(LS_SESSION, { email: d.email, name: u.name, at: Date.now() });
       return R(200, { ok: true, user: { email: d.email, name: u.name }, trial: trialInfo(u.trialEnds) });
     },
     me: function () {
       var s = lsGet(LS_SESSION, null); if (!s) return { authed: false };
-      var u = lsGet(LS_USERS, {})[s.email];
+      var users = lsGet(LS_USERS, {}); var u = users[s.email];
       if (!u || !u.verified) return { authed: false };
+      if (ensureTrial(u)) lsSet(LS_USERS, users);
       return { authed: true, user: { email: s.email, name: u.name }, trial: trialInfo(u.trialEnds) };
     },
     logout: function () { try { localStorage.removeItem(LS_SESSION); } catch (e) {} }

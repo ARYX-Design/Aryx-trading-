@@ -5,7 +5,7 @@
 const { sql } = require('../_lib/db');
 const {
   readBody, json, normalizeEmail, verifyPassword,
-  signSession, setSessionCookie, trialInfo, SESSION_DAYS
+  signSession, setSessionCookie, trialInfo, SESSION_DAYS, TRIAL_DAYS
 } = require('../_lib/util');
 
 module.exports = async function handler(req, res) {
@@ -27,6 +27,13 @@ module.exports = async function handler(req, res) {
 
     if (!u.email_verified) {
       return json(res, 200, { ok: false, needsVerification: true, email: u.email });
+    }
+
+    // self-heal: grant a trial to accounts missing one (older rows)
+    if (!u.trial_ends_at) {
+      const ends = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+      await sql`UPDATE users SET trial_ends_at = ${ends} WHERE id = ${u.id}`;
+      u.trial_ends_at = ends;
     }
 
     const token = signSession({
