@@ -21,13 +21,18 @@
   var LS_USERS = 'aryx.users';
   var LS_SESSION = 'aryx.session';
 
-  /* ---------- backend detection (cached) ---------- */
+  /* ---------- backend detection (cached) ----------
+     "Usable" means the API functions are deployed AND the database is
+     actually responding. If either is missing (no /api, or no DATABASE_URL,
+     or a bad connection string), we use the browser fallback so login works. */
   var backendPromise = null;
   function hasBackend() {
     if (!backendPromise) {
-      backendPromise = fetch(API.me, { credentials: 'same-origin' }).then(function (r) {
+      backendPromise = fetch('/api/health', { credentials: 'same-origin' }).then(function (r) {
+        if (!r.ok) return false;
         var ct = r.headers.get('content-type') || '';
-        return !(r.status === 404 || ct.indexOf('application/json') < 0);
+        if (ct.indexOf('application/json') < 0) return false;
+        return r.json().then(function (j) { return !!(j && j.db); }, function () { return false; });
       }).catch(function () { return false; });
     }
     return backendPromise;
@@ -116,11 +121,17 @@
   };
   function R(status, body) { return Promise.resolve({ status: status, body: body }); }
 
-  /* ---------- unified operations (backend or local) ---------- */
+  /* ---------- unified operations (backend or local) ----------
+     Uses the real backend when usable; if a backend call errors or reports
+     the DB isn't configured, it transparently falls back to local auth. */
   function op(name, data) {
     return hasBackend().then(function (has) {
-      if (has) return post(API[name], data);
-      return Local[name](data);
+      if (!has) return Local[name](data);
+      return post(API[name], data).then(function (r) {
+        var b = r.body || {};
+        if (r.status >= 500 || b.error === 'db_not_configured') return Local[name](data);
+        return r;
+      }).catch(function () { return Local[name](data); });
     });
   }
 
