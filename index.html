@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aryx — AI Trading Bot for Crypto, Stocks &amp; Metals</title>
+  <meta name="description" content="Aryx is a professional-grade automated trading bot for crypto, stocks, and precious metals. Institutional indicators, backtested strategies, and 24/7 execution — all in one platform." />
+  <meta name="theme-color" content="#0a0e1a" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Aryx — AI Trading Bot for Crypto, Stocks & Metals" />
+  <meta property="og:description" content="Institutional-grade indicators. Backtested strategies. 24/7 automated execution across crypto, equities, and metals." />
+  <meta property="og:type" content="website" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%2300e0a4' d='M16 2 3 9v14l13 7 13-7V9z'/%3E%3Cpath fill='%230a0e1a' d='m10 20 3-8 3 5 2-3 4 6z'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <!-- ===================== NAV ===================== -->
+  <header class="nav" id="nav">
+    <div class="container nav__inner">
+      <a href="#top" class="brand" aria-label="Aryx home">
+        <svg class="brand__mark" width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
+          <path fill="url(#g)" d="M16 2 3 9v14l13 7 13-7V9z"/>
+          <path fill="#0a0e1a" d="m9 21 4-10 3 6 2.4-3.6L23 21h-3l-1.6-3-1.7 2.6-2-4L11.6 21z"/>
+          <defs><linearGradient id="g" x1="0" y1="0" x2="32" y2="32">
+            <stop offset="0" stop-color="#00e0a4"/><stop offset="1" stop-color="#4d7cff"/>
+          </linearGradient></defs>
+        </svg>
+        <span class="brand__name">Aryx</span>
+      </a>
+
+      <nav class="nav__links" aria-label="Primary">
+        <a href="#markets">Markets</a>
+        <a href="#indicators">Indicators</a>
+        <a href="#how">How it works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+
+      <div class="nav__cta">
+        <a href="#" class="btn btn--ghost">Sign in</a>
+        <a href="#pricing" class="btn btn--primary">Start free trial</a>
+      </div>
+
+      <button class="nav__toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===================== HERO ===================== -->
+  <main id="top">
+    <section class="hero">
+      <div class="hero__glow" aria-hidden="true"></div>
+      <div class="container hero__grid">
+        <div class="hero__copy">
+          <span class="pill">
+            <span class="pill__dot"></span>
+            Live signals across 3 asset classes
+          </span>
+          <h1 class="hero__title">
+            The trading bot that <span class="grad">never sleeps</span>,
+            never panics, never guesses.
+          </h1>
+          <p class="hero__sub">
+            Aryx automates your strategy across <strong>crypto, stocks, and precious metals</strong>
+            using institutional-grade indicators and risk controls — backtested on 10+ years
+            of market data and executed in milliseconds, 24/7.
+          </p>
+
+          <div class="hero__actions">
+            <a href="#pricing" class="btn btn--primary btn--lg">
+              Start 14-day free trial
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <a href="#how" class="btn btn--ghost btn--lg">See how it works</a>
+          </div>
+
+          <div class="hero__trust">
+            <div class="trust__stars" aria-hidden="true">★★★★★</div>
+            <span>Trusted by <strong>38,000+</strong> traders · No credit card required</span>
+          </div>
+        </div>
+
+        <!-- Live chart card -->
+        <div class="hero__panel">
+          <div class="chart-card glass">
+            <div class="chart-card__head">
+              <div class="chart-card__pair">
+                <span class="pair__icon">₿</span>
+                <div>
+                  <div class="pair__name">BTC / USDT</div>
+                  <div class="pair__meta">Aryx Momentum Strategy</div>
+                </div>
+              </div>
+              <div class="chart-card__price">
+                <div class="price__val" id="priceVal">$—</div>
+                <div class="price__chg up" id="priceChg">+0.00%</div>
+              </div>
+            </div>
+
+            <canvas id="heroChart" class="chart-card__canvas" height="220"></canvas>
+
+            <div class="chart-card__foot">
+              <div class="signal signal--buy" id="signalBadge">
+                <span class="signal__pulse"></span>
+                <span id="signalText">BUY signal · RSI + MACD crossover</span>
+              </div>
+              <div class="chart-card__stats">
+                <div><span>Win rate</span><strong>72.4%</strong></div>
+                <div><span>Sharpe</span><strong>2.1</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="floating floating--1 glass">
+            <span class="floating__label">Auto stop-loss</span>
+            <span class="floating__val up">Protected</span>
+          </div>
+          <div class="floating floating--2 glass">
+            <span class="floating__label">30-day P&amp;L</span>
+            <span class="floating__val up">+18.6%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logo / exchange strip -->
+      <div class="container">
+        <div class="marquee">
+          <span class="marquee__label">Connects to</span>
+          <div class="marquee__row">
+            <span>Binance</span><span>Coinbase</span><span>Kraken</span><span>Bybit</span>
+            <span>Interactive Brokers</span><span>Alpaca</span><span>OANDA</span><span>MetaTrader 5</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== STATS ===================== -->
+    <section class="stats">
+      <div class="container stats__grid">
+        <div class="stat" data-count="4200000000" data-prefix="$" data-compact="1">
+          <div class="stat__num">$0</div><div class="stat__label">Volume executed</div>
+        </div>
+        <div class="stat" data-count="38000" data-suffix="+">
+          <div class="stat__num">0</div><div class="stat__label">Active traders</div>
+        </div>
+        <div class="stat" data-count="120" data-suffix="+">
+          <div class="stat__num">0</div><div class="stat__label">Built-in indicators</div>
+        </div>
+        <div class="stat" data-count="99.98" data-suffix="%" data-decimals="2">
+          <div class="stat__num">0</div><div class="stat__label">Uptime SLA</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== MARKETS ===================== -->
+    <section class="section" id="markets">
+      <div class="container">
+        <div class="section__head">
+          <span class="eyebrow">One platform, every market</span>
+          <h2 class="section__title">Trade crypto, stocks &amp; metals from a single strategy engine</h2>
+          <p class="section__lead">Aryx normalizes data across asset classes so the same battle-tested logic works everywhere — with market-aware risk tuning under the hood.</p>
+        </div>
+
+        <div class="markets">
+          <article class="market glass">
+            <div class="market__icon market__icon--crypto">₿</div>
+            <h3>Crypto</h3>
+            <p>Spot &amp; perpetuals across 300+ pairs. Funding-rate aware, 24/7 execution, MEV-safe routing.</p>
+            <ul class="ticklist">
+              <li>BTC · ETH · SOL &amp; majors</li>
+              <li>Perp funding optimization</li>
+              <li>DEX &amp; CEX liquidity</li>
+            </ul>
+          </article>
+
+          <article class="market glass">
+            <div class="market__icon market__icon--stock">📈</div>
+            <h3>Stocks &amp; ETFs</h3>
+            <p>US equities and ETFs with earnings-gap protection, fractional sizing, and market-hours logic.</p>
+            <ul class="ticklist">
+              <li>NYSE &amp; NASDAQ coverage</li>
+              <li>Pre / post-market rules</li>
+              <li>Dividend &amp; split adjusted</li>
+            </ul>
+          </article>
+
+          <article class="market glass">
+            <div class="market__icon market__icon--metal">🥇</div>
+            <h3>Precious metals</h3>
+            <p>Gold, silver, platinum &amp; palladium via spot CFDs and futures with session-based volatility filters.</p>
+            <ul class="ticklist">
+              <li>XAU · XAG · XPT · XPD</li>
+              <li>Session volatility filter</li>
+              <li>Safe-haven correlation model</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== INDICATORS ===================== -->
+    <section class="section section--alt" id="indicators">
+      <div class="container">
+        <div class="section__head">
+          <span class="eyebrow">The edge</span>
+          <h2 class="section__title">The best indicators, combined intelligently</h2>
+          <p class="section__lead">Aryx doesn't rely on a single signal. It fuses trend, momentum, volatility, and volume indicators into a confidence-weighted decision — filtering out the noise that traps manual traders.</p>
+        </div>
+
+        <div class="indicators">
+          <div class="indicator glass">
+            <div class="indicator__tag trend">Trend</div>
+            <h4>EMA / SMA Ribbons</h4>
+            <p>Multi-timeframe moving-average stacks confirm direction before any entry fires.</p>
+          </div>
+          <div class="indicator glass">
+            <div class="indicator__tag momentum">Momentum</div>
+            <h4>RSI &amp; Stochastic</h4>
+            <p>Adaptive overbought/oversold thresholds tuned per asset volatility regime.</p>
+          </div>
+          <div class="indicator glass">
+            <div class="indicator__tag momentum">Momentum</div>
+            <h4>MACD Crossovers</h4>
+            <p>Histogram divergence detection catches reversals early, exits late.</p>
+          </div>
+          <div class="indicator glass">
+            <div class="indicator__tag volatility">Volatility</div>
+            <h4>Bollinger Bands</h4>
+            <p>Squeeze &amp; breakout logic sizes positions to current volatility.</p>
+          </div>
+          <div class="indicator glass">
+            <div class="indicator__tag volatility">Volatility</div>
+            <h4>ATR Risk Sizing</h4>
+            <p>Average True Range sets dynamic stops so every trade risks the same %.</p>
+          </div>
+          <div class="indicator glass">
+            <div class="indicator__tag volume">Volume</div>
+            <h4>VWAP &amp; Volume Profile</h4>
+            <p>Institutional price levels anchor entries where real liquidity sits.</p>
+          </div>
+          <div class="indicator glass">
+            <div class="indicator__tag trend">Trend</div>
+            <h4>Ichimoku Cloud</h4>
+            <p>Full cloud, lagging span &amp; conversion lines for regime confirmation.</p>
+          </div>
+          <div class="indicator glass indicator--more">
+            <h4>+ 113 more</h4>
+            <p>Supertrend, Fibonacci, ADX, OBV, Keltner, Donchian, Parabolic SAR &amp; a full custom-formula builder.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== HOW IT WORKS ===================== -->
+    <section class="section" id="how">
+      <div class="container">
+        <div class="section__head">
+          <span class="eyebrow">How it works</span>
+          <h2 class="section__title">From idea to automated in four steps</h2>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step__num">01</div>
+            <h4>Connect your broker</h4>
+            <p>Link any supported exchange or broker with read-and-trade API keys. Your funds never leave your account.</p>
+          </div>
+          <div class="step">
+            <div class="step__num">02</div>
+            <h4>Pick or build a strategy</h4>
+            <p>Start from a proven template or compose your own with the visual indicator builder — no code required.</p>
+          </div>
+          <div class="step">
+            <div class="step__num">03</div>
+            <h4>Backtest &amp; paper trade</h4>
+            <p>Validate on 10+ years of data, then run live in paper mode until you trust the numbers.</p>
+          </div>
+          <div class="step">
+            <div class="step__num">04</div>
+            <h4>Go live, stay in control</h4>
+            <p>Deploy with hard risk limits, kill-switches, and real-time alerts on every device.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== FEATURES ===================== -->
+    <section class="section section--alt" id="features">
+      <div class="container">
+        <div class="section__head">
+          <span class="eyebrow">Built for serious traders</span>
+          <h2 class="section__title">Institutional power, retail simplicity</h2>
+        </div>
+
+        <div class="features">
+          <div class="feature glass">
+            <div class="feature__ic">🛡️</div>
+            <h4>Risk-first engine</h4>
+            <p>Per-trade, daily, and portfolio-level limits with automatic drawdown circuit breakers.</p>
+          </div>
+          <div class="feature glass">
+            <div class="feature__ic">⚡</div>
+            <h4>Millisecond execution</h4>
+            <p>Co-located servers and smart order routing minimize slippage on every fill.</p>
+          </div>
+          <div class="feature glass">
+            <div class="feature__ic">🔬</div>
+            <h4>Backtesting lab</h4>
+            <p>Walk-forward analysis, Monte Carlo simulation, and out-of-sample validation built in.</p>
+          </div>
+          <div class="feature glass">
+            <div class="feature__ic">🔔</div>
+            <h4>Smart alerts</h4>
+            <p>Signals, fills, and risk events pushed to mobile, Telegram, Discord, and email.</p>
+          </div>
+          <div class="feature glass">
+            <div class="feature__ic">🔐</div>
+            <h4>Non-custodial &amp; secure</h4>
+            <p>Encrypted, IP-whitelisted API keys with withdrawal permissions always disabled.</p>
+          </div>
+          <div class="feature glass">
+            <div class="feature__ic">📊</div>
+            <h4>Live analytics</h4>
+            <p>Real-time equity curve, exposure heatmap, and per-strategy attribution reporting.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PRICING ===================== -->
+    <section class="section" id="pricing">
+      <div class="container">
+        <div class="section__head">
+          <span class="eyebrow">Pricing</span>
+          <h2 class="section__title">Start free. Scale when you're winning.</h2>
+          <p class="section__lead">Every plan includes a 14-day free trial. Cancel anytime — no lock-in.</p>
+        </div>
+
+        <div class="pricing">
+          <article class="plan glass">
+            <div class="plan__name">Starter</div>
+            <div class="plan__price"><span class="plan__amt">$0</span><span class="plan__per">/mo</span></div>
+            <p class="plan__desc">For learning the ropes with paper trading.</p>
+            <ul class="plan__list">
+              <li>Paper trading only</li>
+              <li>1 active strategy</li>
+              <li>20 core indicators</li>
+              <li>Community support</li>
+            </ul>
+            <a href="#" class="btn btn--ghost btn--block">Get started</a>
+          </article>
+
+          <article class="plan plan--featured glass">
+            <div class="plan__badge">Most popular</div>
+            <div class="plan__name">Pro</div>
+            <div class="plan__price"><span class="plan__amt">$49</span><span class="plan__per">/mo</span></div>
+            <p class="plan__desc">For active traders running live capital.</p>
+            <ul class="plan__list">
+              <li>Live trading, all markets</li>
+              <li>10 active strategies</li>
+              <li>All 120+ indicators</li>
+              <li>Full backtesting lab</li>
+              <li>Priority alerts &amp; support</li>
+            </ul>
+            <a href="#" class="btn btn--primary btn--block">Start free trial</a>
+          </article>
+
+          <article class="plan glass">
+            <div class="plan__name">Institutional</div>
+            <div class="plan__price"><span class="plan__amt">$199</span><span class="plan__per">/mo</span></div>
+            <p class="plan__desc">For funds &amp; power users at scale.</p>
+            <ul class="plan__list">
+              <li>Unlimited strategies</li>
+              <li>Custom formula builder</li>
+              <li>API &amp; webhook access</li>
+              <li>Dedicated infrastructure</li>
+              <li>White-glove onboarding</li>
+            </ul>
+            <a href="#" class="btn btn--ghost btn--block">Contact sales</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== TESTIMONIALS ===================== -->
+    <section class="section section--alt">
+      <div class="container">
+        <div class="section__head">
+          <span class="eyebrow">Loved by traders</span>
+          <h2 class="section__title">Results that speak for themselves</h2>
+        </div>
+        <div class="quotes">
+          <figure class="quote glass">
+            <div class="quote__stars">★★★★★</div>
+            <blockquote>"I automated my swing strategy on gold and BTC in an afternoon. The backtester alone paid for the year."</blockquote>
+            <figcaption><span class="avatar">MK</span><div><strong>Marcus K.</strong><span>Full-time trader</span></div></figcaption>
+          </figure>
+          <figure class="quote glass">
+            <div class="quote__stars">★★★★★</div>
+            <blockquote>"The risk engine is the real hero — it cut my max drawdown in half while keeping most of the upside."</blockquote>
+            <figcaption><span class="avatar">LP</span><div><strong>Lena P.</strong><span>Quant hobbyist</span></div></figcaption>
+          </figure>
+          <figure class="quote glass">
+            <div class="quote__stars">★★★★★</div>
+            <blockquote>"Running the same strategy across stocks and crypto from one dashboard changed how I think about markets."</blockquote>
+            <figcaption><span class="avatar">DA</span><div><strong>David A.</strong><span>Portfolio manager</span></div></figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== FAQ ===================== -->
+    <section class="section" id="faq">
+      <div class="container container--narrow">
+        <div class="section__head">
+          <span class="eyebrow">FAQ</span>
+          <h2 class="section__title">Questions, answered</h2>
+        </div>
+        <div class="faq" id="faqList">
+          <details class="faq__item">
+            <summary>Does Aryx hold my funds?</summary>
+            <p>Never. Aryx connects through API keys with trading permissions only — withdrawal access is always disabled. Your capital stays in your own exchange or brokerage account at all times.</p>
+          </details>
+          <details class="faq__item">
+            <summary>Do I need to know how to code?</summary>
+            <p>No. You can run proven strategy templates out of the box or build your own with the visual, no-code indicator builder. Advanced users can still access the custom formula engine and API.</p>
+          </details>
+          <details class="faq__item">
+            <summary>Which markets and brokers are supported?</summary>
+            <p>Crypto (Binance, Coinbase, Kraken, Bybit and more), US stocks &amp; ETFs (Alpaca, Interactive Brokers), and precious metals via OANDA and MetaTrader 5. New integrations ship regularly.</p>
+          </details>
+          <details class="faq__item">
+            <summary>Is automated trading risky?</summary>
+            <p>All trading carries risk, and past performance never guarantees future results. Aryx is built to <em>manage</em> risk with hard limits, stop-losses, and circuit breakers — but you should only trade capital you can afford to lose.</p>
+          </details>
+          <details class="faq__item">
+            <summary>Can I test before risking real money?</summary>
+            <p>Yes. Every plan includes paper trading and a full backtesting lab, so you can validate a strategy on historical and live data before deploying a single dollar.</p>
+          </details>
+          <details class="faq__item">
+            <summary>What does the free trial include?</summary>
+            <p>14 days of full Pro access — all markets, all indicators, and the complete backtesting suite. No credit card required to start.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CTA ===================== -->
+    <section class="cta">
+      <div class="container cta__inner glass">
+        <div class="cta__glow" aria-hidden="true"></div>
+        <h2>Put your strategy on autopilot.</h2>
+        <p>Join 38,000+ traders automating crypto, stocks, and metals with Aryx.</p>
+        <div class="cta__actions">
+          <a href="#pricing" class="btn btn--primary btn--lg">Start your free trial</a>
+          <a href="#how" class="btn btn--ghost btn--lg">Book a demo</a>
+        </div>
+        <div class="cta__note">14-day free trial · No credit card · Cancel anytime</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="footer">
+    <div class="container footer__grid">
+      <div class="footer__brand">
+        <a href="#top" class="brand">
+          <svg class="brand__mark" width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
+            <path fill="url(#gf)" d="M16 2 3 9v14l13 7 13-7V9z"/>
+            <path fill="#0a0e1a" d="m9 21 4-10 3 6 2.4-3.6L23 21h-3l-1.6-3-1.7 2.6-2-4L11.6 21z"/>
+            <defs><linearGradient id="gf" x1="0" y1="0" x2="32" y2="32">
+              <stop offset="0" stop-color="#00e0a4"/><stop offset="1" stop-color="#4d7cff"/>
+            </linearGradient></defs>
+          </svg>
+          <span class="brand__name">Aryx</span>
+        </a>
+        <p>Automated trading across crypto, stocks &amp; metals — powered by institutional-grade indicators.</p>
+      </div>
+      <div class="footer__col">
+        <h5>Product</h5>
+        <a href="#markets">Markets</a>
+        <a href="#indicators">Indicators</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#how">How it works</a>
+      </div>
+      <div class="footer__col">
+        <h5>Company</h5>
+        <a href="#">About</a>
+        <a href="#">Careers</a>
+        <a href="#">Blog</a>
+        <a href="#">Contact</a>
+      </div>
+      <div class="footer__col">
+        <h5>Legal</h5>
+        <a href="#">Terms</a>
+        <a href="#">Privacy</a>
+        <a href="#">Risk disclosure</a>
+        <a href="#">Security</a>
+      </div>
+    </div>
+    <div class="container footer__bar">
+      <p>© 2026 Aryx Technologies. All rights reserved.</p>
+      <p class="footer__disclaimer">Trading involves substantial risk of loss and is not suitable for every investor. Past performance is not indicative of future results.</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js" defer></script>
+</body>
+</html>
