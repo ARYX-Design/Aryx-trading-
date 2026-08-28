@@ -482,11 +482,16 @@ img, svg { display: block; }
   .nav__toggle { display: flex; }
   .nav.is-open .nav__links {
     display: flex; position: absolute; top: 68px; left: 0; right: 0;
-    flex-direction: column; gap: 0; padding: 12px 24px 20px;
+    flex-direction: column; gap: 0; padding: 12px 24px 8px;
     background: rgba(7,10,18,.97); border-bottom: 1px solid var(--line);
   }
   .nav.is-open .nav__links a { padding: 14px 0; border-bottom: 1px solid var(--line); }
+  /* always-visible compact Log in / Sign up on mobile (no menu needed) */
+  .nav__inline-auth { display: flex; gap: 8px; margin-left: auto; }
+  .nav__inline-auth .btn { padding: 9px 14px; font-size: .88rem; }
+  .nav__toggle { margin-left: 4px; }
 }
+@media (min-width: 821px) { .nav__inline-auth { display: none; } }
 @media (max-width: 700px) {
   .markets, .features, .quotes, .pricing, .stats__grid { grid-template-columns: 1fr; }
   .indicators, .steps { grid-template-columns: 1fr; }

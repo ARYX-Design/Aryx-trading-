@@ -152,12 +152,15 @@
 
   /* ---------- reflect session in nav ---------- */
   var navCta = document.getElementById('navCta');
-  if (navCta) {
+  var navInline = document.querySelector('.nav__inline-auth');
+  if (navCta || navInline) {
     window.AryxAuth.me().then(function (d) {
       if (d && d.authed) {
-        navCta.innerHTML =
+        if (navCta) navCta.innerHTML =
           '<a href="app.html" class="btn btn--ghost">Dashboard</a>' +
           '<a href="app.html" class="btn btn--primary">Open trading view</a>';
+        if (navInline) navInline.innerHTML =
+          '<a href="app.html" class="btn btn--primary">Dashboard</a>';
       }
     });
   }

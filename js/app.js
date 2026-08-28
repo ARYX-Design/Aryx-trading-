@@ -14,6 +14,22 @@
   var helloEl = document.getElementById('userHello');
   var trialPill = document.getElementById('trialPill');
   var trialGate = document.getElementById('trialGate');
+  var logoutBtnEl = document.getElementById('logoutBtn');
+  var guestLoginEl = document.getElementById('guestLogin');
+  var guestSignupEl = document.getElementById('guestSignup');
+
+  function showAuthedUI(name) {
+    if (helloEl) { helloEl.hidden = false; helloEl.textContent = name || 'Trader'; }
+    if (logoutBtnEl) logoutBtnEl.hidden = false;
+    if (guestLoginEl) guestLoginEl.hidden = true;
+    if (guestSignupEl) guestSignupEl.hidden = true;
+  }
+  function showGuestUI() {
+    if (helloEl) helloEl.hidden = true;
+    if (logoutBtnEl) logoutBtnEl.hidden = true;
+    if (guestLoginEl) guestLoginEl.hidden = false;
+    if (guestSignupEl) guestSignupEl.hidden = false;
+  }
 
   function doLogout() {
     var done = function () { window.location.href = 'index.html'; };
@@ -43,16 +59,16 @@
   if (window.AryxAuth && window.AryxAuth.me) {
     window.AryxAuth.me().then(function (d) {
       if (d && d.authed) {
-        if (helloEl) helloEl.textContent = (d.user && d.user.name) || 'Trader';
+        showAuthedUI((d.user && d.user.name) || 'Trader');
         applyTrial(d.trial);
       } else if (isDemo) {
-        if (helloEl) helloEl.textContent = 'Guest';
+        showGuestUI(); // browsing as guest — offer Log in / Sign up
       } else {
         window.location.href = 'index.html#signin'; // require sign in
       }
     });
-  } else if (helloEl) {
-    helloEl.textContent = 'Guest';
+  } else {
+    showGuestUI();
   }
 
   /* ---------- symbol config ----------
