@@ -48,10 +48,11 @@
       trialPill.textContent = t.daysLeft + (t.daysLeft === 1 ? ' day left' : ' days left') + ' · Trial';
       trialPill.className = 'trialpill' + (t.daysLeft <= 2 ? ' trialpill--warn' : '');
     } else {
+      // Trial lapsed: show a subtle note but DO NOT lock the user out.
       trialPill.hidden = false;
-      trialPill.textContent = 'Trial ended';
+      trialPill.textContent = 'Trial ended · renew anytime';
       trialPill.className = 'trialpill trialpill--warn';
-      if (trialGate) trialGate.hidden = false; // block the dashboard
+      if (trialGate) trialGate.hidden = true; // never block access
     }
   }
 
