@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>aryx_trading // Signal Terminal</title>
 <!-- Auth-gated dashboard: landing + license gate hidden; unlocked by Aryx login session -->
-<style id="aryxAuthHide">#aryxLanding,#gate{display:none!important}#aryxLogout{position:fixed;top:10px;right:12px;z-index:10000;font:600 12px/1 Inter,system-ui,sans-serif;color:#eaf0fb;background:rgba(20,28,46,.85);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px 12px;cursor:pointer;backdrop-filter:blur(8px)}#aryxLogout:hover{background:rgba(255,92,115,.18);border-color:rgba(255,92,115,.4)}</style>
+<style id="aryxAuthHide">#aryxLanding{display:none!important}#aryxLogout{position:fixed;top:10px;right:12px;z-index:10000;font:600 12px/1 Inter,system-ui,sans-serif;color:#eaf0fb;background:rgba(20,28,46,.85);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px 12px;cursor:pointer;backdrop-filter:blur(8px)}#aryxLogout:hover{background:rgba(255,92,115,.18);border-color:rgba(255,92,115,.4)}#aryxEmailLoginLink{display:block;margin-top:16px;color:#00e0a4;font:600 13px Inter,system-ui,sans-serif;text-decoration:none}#aryxEmailLoginLink:hover{text-decoration:underline}</style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#07090d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -907,9 +907,9 @@
 
 </div>
 
-<div id="gate">
+<div id="gate" class="hidden">
   <div class="gate-box">
-    <button class="gate-back" onclick="aryxBackToLanding()">← Back</button>
+    <button class="gate-back" onclick="location.href='index.html'">← Back to site</button>
     <div class="gate-mark"></div>
     <div class="gate-logo">aryx_trading</div>
     <div class="gate-sub">Signal Terminal &mdash; licensed access.<br>Enter your license key to unlock.</div>
@@ -3693,16 +3693,34 @@ function aryxBackToLanding(){
     addLogout();
   }
 
-  function requireLogin() { location.href = 'index.html#signin'; }
+  // Not logged in: offer the license-key gate (second way in), with a
+  // link to log in with email instead. A valid key calls the file's own
+  // showApp() and boots the terminal.
+  function showGate() {
+    var l = document.getElementById('aryxLanding'); if (l) l.classList.add('hidden');
+    var g = document.getElementById('gate');
+    if (g) g.classList.remove('hidden');
+    try { document.body.style.overflow = 'auto'; } catch (e) {}
+    if (g && !document.getElementById('aryxEmailLoginLink')) {
+      var box = g.querySelector('.gate-foot') || g.querySelector('.gate-box');
+      if (box) {
+        var a = document.createElement('a');
+        a.id = 'aryxEmailLoginLink';
+        a.href = 'index.html#signin';
+        a.textContent = '→ Log in with email instead';
+        box.appendChild(a);
+      }
+    }
+  }
 
   if (window.AryxAuth && window.AryxAuth.me) {
     window.AryxAuth.me().then(function (d) {
       if (d && d.authed) start();
       else if (isDemo) start();
-      else requireLogin();
-    }).catch(function () { if (isDemo) start(); else requireLogin(); });
+      else showGate();
+    }).catch(function () { if (isDemo) start(); else showGate(); });
   } else {
-    start(); // no auth script present — just show the terminal
+    showGate();
   }
 })();
 </script>
