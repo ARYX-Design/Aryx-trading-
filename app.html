@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aryx — Trading Dashboard</title>
+  <meta name="theme-color" content="#0a0e1a" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%2300e0a4' d='M16 2 3 9v14l13 7 13-7V9z'/%3E%3Cpath fill='%230a0e1a' d='m10 20 3-8 3 5 2-3 4 6z'/%3E%3C/svg%3E" />
+</head>
+<body class="app">
+  <!-- ===================== APP BAR ===================== -->
+  <header class="appbar">
+    <a href="index.html" class="brand" aria-label="Aryx home">
+      <svg class="brand__mark" width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
+        <path fill="url(#ga)" d="M16 2 3 9v14l13 7 13-7V9z"/>
+        <path fill="#0a0e1a" d="m9 21 4-10 3 6 2.4-3.6L23 21h-3l-1.6-3-1.7 2.6-2-4L11.6 21z"/>
+        <defs><linearGradient id="ga" x1="0" y1="0" x2="32" y2="32">
+          <stop offset="0" stop-color="#00e0a4"/><stop offset="1" stop-color="#4d7cff"/>
+        </linearGradient></defs>
+      </svg>
+      <span class="brand__name">Aryx</span>
+      <span class="appbar__badge">Demo</span>
+    </a>
+
+    <div class="appbar__markets" id="marketTabs" role="tablist" aria-label="Markets">
+      <button class="mtab is-active" data-symbol="BTC">BTC/USDT</button>
+      <button class="mtab" data-symbol="ETH">ETH/USDT</button>
+      <button class="mtab" data-symbol="AAPL">AAPL</button>
+      <button class="mtab" data-symbol="NVDA">NVDA</button>
+      <button class="mtab" data-symbol="XAU">Gold (XAU)</button>
+      <button class="mtab" data-symbol="XAG">Silver (XAG)</button>
+    </div>
+
+    <div class="appbar__user">
+      <span class="appbar__hello" id="userHello">Trader</span>
+      <button class="btn btn--ghost btn--sm" id="logoutBtn">Log out</button>
+    </div>
+  </header>
+
+  <!-- ===================== WORKSPACE ===================== -->
+  <div class="workspace">
+    <!-- chart column -->
+    <section class="chartcol">
+      <div class="chartcol__head">
+        <div class="quote">
+          <div class="quote__pair">
+            <span class="quote__sym" id="qSym">BTC/USDT</span>
+            <span class="quote__strat">Aryx Momentum · 1H</span>
+          </div>
+          <div class="quote__price">
+            <span id="qPrice" class="mono">$—</span>
+            <span id="qChange" class="quote__chg up mono">+0.00%</span>
+          </div>
+        </div>
+
+        <div class="tf" role="tablist" aria-label="Timeframe">
+          <button class="tf__btn" data-tf="15m">15m</button>
+          <button class="tf__btn is-active" data-tf="1H">1H</button>
+          <button class="tf__btn" data-tf="4H">4H</button>
+          <button class="tf__btn" data-tf="1D">1D</button>
+        </div>
+      </div>
+
+      <div class="panel main-panel">
+        <canvas id="mainChart"></canvas>
+        <div class="panel__tag">Price · candlesticks</div>
+      </div>
+
+      <div class="panel sub-panel">
+        <canvas id="rsiChart"></canvas>
+        <div class="panel__tag" id="rsiTag">RSI (14)</div>
+      </div>
+
+      <div class="panel sub-panel">
+        <canvas id="macdChart"></canvas>
+        <div class="panel__tag">MACD (12, 26, 9)</div>
+      </div>
+    </section>
+
+    <!-- sidebar -->
+    <aside class="sidebar">
+      <div class="card">
+        <div class="card__head">
+          <h3>Indicators</h3>
+          <span class="card__hint">Toggle overlays</span>
+        </div>
+        <div class="toggles" id="toggles">
+          <label class="toggle"><input type="checkbox" data-ind="ema" checked><span class="toggle__box"></span><span class="toggle__label"><i class="dot" style="--c:#4d7cff"></i>EMA ribbon (9 / 21 / 50)</span></label>
+          <label class="toggle"><input type="checkbox" data-ind="boll" checked><span class="toggle__box"></span><span class="toggle__label"><i class="dot" style="--c:#ffc65c"></i>Bollinger Bands (20, 2)</span></label>
+          <label class="toggle"><input type="checkbox" data-ind="vwap"><span class="toggle__box"></span><span class="toggle__label"><i class="dot" style="--c:#c77dff"></i>VWAP</span></label>
+          <label class="toggle"><input type="checkbox" data-ind="rsi" checked><span class="toggle__box"></span><span class="toggle__label"><i class="dot" style="--c:#00e0a4"></i>RSI panel</span></label>
+          <label class="toggle"><input type="checkbox" data-ind="macd" checked><span class="toggle__box"></span><span class="toggle__label"><i class="dot" style="--c:#26d982"></i>MACD panel</span></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__head"><h3>Aryx signal</h3></div>
+        <div class="signalbox" id="signalBox">
+          <div class="signalbox__badge signal signal--buy" id="sigBadge">
+            <span class="signal__pulse"></span><span id="sigLabel">BUY</span>
+          </div>
+          <p class="signalbox__reason" id="sigReason">Momentum aligned · RSI rising from oversold</p>
+          <div class="signalbox__conf">
+            <span>Confidence</span>
+            <div class="bar"><span id="confBar" style="width:72%"></span></div>
+            <strong id="confVal">72%</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__head"><h3>Live metrics</h3></div>
+        <ul class="metrics">
+          <li><span>Last price</span><strong class="mono" id="mLast">$—</strong></li>
+          <li><span>24h change</span><strong class="mono" id="mChg">—</strong></li>
+          <li><span>RSI (14)</span><strong class="mono" id="mRsi">—</strong></li>
+          <li><span>MACD hist</span><strong class="mono" id="mMacd">—</strong></li>
+          <li><span>Position</span><strong class="mono up" id="mPos">Flat</strong></li>
+          <li><span>Strategy P&amp;L</span><strong class="mono up" id="mPnl">+0.0%</strong></li>
+        </ul>
+      </div>
+
+      <p class="sidebar__note">Simulated market data for demonstration. Not investment advice.</p>
+    </aside>
+  </div>
+
+  <script src="js/auth.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>
