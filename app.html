@@ -27,6 +27,16 @@
       <span class="appbar__badge">Demo</span>
     </a>
 
+    <div class="search">
+      <svg class="search__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+        <path d="m20 20-3.2-3.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input id="marketSearch" type="text" autocomplete="off" spellcheck="false"
+             placeholder="Search markets — BTC, ETH, SOL, DOGE…" aria-label="Search markets" />
+      <div class="search__results" id="searchResults" role="listbox" hidden></div>
+    </div>
+
     <div class="appbar__markets" id="marketTabs" role="tablist" aria-label="Markets">
       <button class="mtab is-active" data-symbol="BTC">BTC/USDT</button>
       <button class="mtab" data-symbol="ETH">ETH/USDT</button>

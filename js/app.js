@@ -76,6 +76,7 @@
 
   var state = {
     symbol: 'BTC',
+    cfg: SYMBOLS.BTC,   // active market config (preset or one built from search)
     tf: '1H',
     candles: [],
     show: { ema: true, boll: true, vwap: false, rsi: true, macd: true },
@@ -93,11 +94,10 @@
     };
   }
 
-  function genSeries(symKey, tf) {
-    var cfg = SYMBOLS[symKey];
-    var rnd = mulberry32(cfg.seed * 100 + (tf.charCodeAt(0)));
-    var vol = cfg.vol * TF_DRIFT[tf];
-    var price = cfg.base;
+  function genSeries(cfg, tf) {
+    var rnd = mulberry32((cfg.seed || 7) * 100 + (tf.charCodeAt(0)));
+    var vol = (cfg.vol || 0.012) * TF_DRIFT[tf];
+    var price = cfg.base || 100;
     var out = [];
     for (var i = 0; i < N; i++) {
       var trend = Math.sin(i / 18) * price * vol * 0.4;
@@ -428,7 +428,8 @@
   }
 
   function fmtPrice(v) {
-    var d = SYMBOLS[state.symbol].dec;
+    var d = state.cfg.dec;
+    if (d == null) d = v >= 100 ? 2 : v >= 1 ? 3 : v >= 0.01 ? 5 : 7;
     return '$' + v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
   }
 
@@ -515,10 +516,10 @@
     return fetch('/api/market?symbol=' + sym + '&interval=' + tf, { credentials: 'same-origin' })
       .then(function (r) { return r.json(); });
   }
-  function startPoll(sym, tf, token) {
+  function startPoll(proxySym, tf, token) {
     var period = tf === '15m' ? 20000 : 30000;
     pollTimer = setInterval(function () {
-      fetchProxy(SYMBOLS[sym].proxy, tf).then(function (d) {
+      fetchProxy(proxySym, tf).then(function (d) {
         if (token !== loadToken) return;
         if (d && d.candles && d.candles.length) { state.candles = d.candles; throttledRender(); }
       }).catch(function () {});
@@ -529,8 +530,8 @@
     setFeed('sim');
     if (reduce) return;
     simTimer = setInterval(function () {
-      var c = state.candles, prev = c[c.length - 1], cfg = SYMBOLS[state.symbol];
-      var v = cfg.vol * TF_DRIFT[state.tf];
+      var c = state.candles, prev = c[c.length - 1];
+      var v = (state.cfg.vol || 0.012) * TF_DRIFT[state.tf];
       var open = prev.c;
       var close = Math.max(open + (Math.random() - 0.49) * prev.c * v * 2, open * 0.85);
       var hi = Math.max(open, close) + Math.random() * prev.c * v * 0.9;
@@ -542,10 +543,15 @@
     }, 1600);
   }
 
-  function loadSymbol(sym, tf) {
+  // Accepts a preset key (e.g. 'BTC') or a config object built from search
+  // (e.g. { label:'DOGE/USDT', binance:'DOGEUSDT' }).
+  function loadSymbol(symOrCfg, tf) {
     teardown();
-    state.symbol = sym; state.tf = tf; state.pnl = 0;
-    var cfg = SYMBOLS[sym];
+    var cfg = typeof symOrCfg === 'string' ? SYMBOLS[symOrCfg] : symOrCfg;
+    if (!cfg) return;
+    state.cfg = cfg;
+    state.symbol = cfg.key || (typeof symOrCfg === 'string' ? symOrCfg : cfg.binance || cfg.label);
+    state.tf = tf; state.pnl = 0;
     document.getElementById('qSym').textContent = cfg.label;
     document.getElementById('tfLabel').textContent = tf;
     setFeed('connecting');
@@ -562,7 +568,7 @@
         if (!reduce) openStream(cfg.binance, interval);
       }).catch(function () {
         if (token !== loadToken) return;
-        state.candles = genSeries(sym, tf);         // graceful fallback
+        state.candles = genSeries(cfg, tf);         // graceful fallback
         renderAll();
         startSim();
       });
@@ -573,20 +579,20 @@
           state.candles = d.candles;
           setFeed('live');
           renderAll();
-          if (!reduce) startPoll(sym, tf, token);
+          if (!reduce) startPoll(cfg.proxy, tf, token);
         } else {                                     // no API key / rate-limited
-          state.candles = genSeries(sym, tf);
+          state.candles = genSeries(cfg, tf);
           renderAll();
           startSim();
         }
       }).catch(function () {
         if (token !== loadToken) return;
-        state.candles = genSeries(sym, tf);
+        state.candles = genSeries(cfg, tf);
         renderAll();
         startSim();
       });
     } else {
-      state.candles = genSeries(sym, tf);
+      state.candles = genSeries(cfg, tf);
       renderAll();
       startSim();
     }
@@ -603,8 +609,84 @@
     var b = e.target.closest('.tf__btn'); if (!b) return;
     document.querySelectorAll('.tf__btn').forEach(function (x) { x.classList.remove('is-active'); });
     b.classList.add('is-active');
-    loadSymbol(state.symbol, b.dataset.tf);
+    loadSymbol(state.cfg, b.dataset.tf); // reload current market at new timeframe
   });
+
+  /* ============================================================
+     Market search — find & chart any Binance crypto pair
+     ============================================================ */
+  var searchInput = document.getElementById('marketSearch');
+  var searchResults = document.getElementById('searchResults');
+  if (searchInput && searchResults) {
+    var universe = null;      // [{ pair, base, quote }]
+    var universePromise = null;
+
+    function loadUniverse() {
+      if (universePromise) return universePromise;
+      universePromise = fetch('https://api.binance.com/api/v3/exchangeInfo')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          universe = (d.symbols || [])
+            .filter(function (s) { return s.status === 'TRADING' && (s.quoteAsset === 'USDT' || s.quoteAsset === 'FDUSD'); })
+            .map(function (s) { return { pair: s.symbol, base: s.baseAsset, quote: s.quoteAsset }; });
+          return universe;
+        }).catch(function () { universe = []; return universe; });
+      return universePromise;
+    }
+
+    function renderResults(list) {
+      if (!list.length) { searchResults.innerHTML = '<div class="sr__empty">No markets found</div>'; searchResults.hidden = false; return; }
+      searchResults.innerHTML = list.map(function (m) {
+        return '<button class="sr__item" data-pair="' + m.pair + '" data-base="' + m.base + '" data-quote="' + m.quote + '">' +
+          '<span class="sr__sym">' + m.base + '<span class="sr__q">/' + m.quote + '</span></span>' +
+          '<span class="sr__go">Chart →</span></button>';
+      }).join('');
+      searchResults.hidden = false;
+    }
+
+    function doSearch(q) {
+      q = q.trim().toUpperCase();
+      if (!q) { searchResults.hidden = true; return; }
+      loadUniverse().then(function (all) {
+        var starts = [], contains = [];
+        for (var i = 0; i < all.length && starts.length + contains.length < 60; i++) {
+          var m = all[i];
+          if (m.base.indexOf(q) === 0 || m.pair.indexOf(q) === 0) starts.push(m);
+          else if (m.base.indexOf(q) > -1) contains.push(m);
+        }
+        renderResults(starts.concat(contains).slice(0, 12));
+      });
+    }
+
+    var searchDebounce;
+    searchInput.addEventListener('input', function () {
+      clearTimeout(searchDebounce);
+      var v = searchInput.value;
+      searchDebounce = setTimeout(function () { doSearch(v); }, 160);
+    });
+    searchInput.addEventListener('focus', function () { if (searchInput.value.trim()) doSearch(searchInput.value); });
+
+    searchResults.addEventListener('click', function (e) {
+      var b = e.target.closest('.sr__item'); if (!b) return;
+      var base = b.dataset.base, quote = b.dataset.quote, pair = b.dataset.pair;
+      document.querySelectorAll('.mtab').forEach(function (x) { x.classList.remove('is-active'); });
+      loadSymbol({ key: pair, label: base + '/' + quote, binance: pair }, state.tf);
+      searchResults.hidden = true;
+      searchInput.value = '';
+      searchInput.blur();
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.search')) searchResults.hidden = true;
+    });
+    searchInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { searchResults.hidden = true; searchInput.blur(); }
+      if (e.key === 'Enter') {
+        var first = searchResults.querySelector('.sr__item');
+        if (first && !searchResults.hidden) first.click();
+      }
+    });
+  }
   document.getElementById('toggles').addEventListener('change', function (e) {
     var ind = e.target.dataset.ind; if (!ind) return;
     state.show[ind] = e.target.checked;

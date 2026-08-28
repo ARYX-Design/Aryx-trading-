@@ -100,5 +100,9 @@ and VWAP on live candles:
 Any symbol falls back to simulation if its feed is unavailable — shown by a **LIVE / SIM**
 badge next to the pair.
 
+**Search any market:** the dashboard has a search box that queries Binance's live symbol
+list, so you can find and chart **any** crypto pair (BTC, ETH, SOL, DOGE, SHIB, and hundreds
+more) with the full indicator suite — not just the preset tabs.
+
 > **Disclaimer:** Figures, testimonials, and performance stats on the landing page are
 > illustrative. This is not investment advice; trading involves substantial risk of loss.
