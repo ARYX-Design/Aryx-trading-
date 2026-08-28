@@ -83,6 +83,12 @@
   var switchText = document.getElementById('switchText');
   var switchLink = document.getElementById('switchLink');
 
+  // explicit input refs — `form.name` collides with HTMLFormElement.name,
+  // so never access the name field via form.name
+  var nameInput = form.querySelector('[name=name]');
+  var emailInput = form.querySelector('[name=email]');
+  var passInput = form.querySelector('[name=password]');
+
   var verifyForm = document.getElementById('verifyForm');
   var verifyEmailEl = document.getElementById('verifyEmail');
   var codeInput = document.getElementById('codeInput');
@@ -125,10 +131,10 @@
     switchText.textContent = signup ? 'Already have an account?' : "Don't have an account?";
     switchLink.textContent = signup ? 'Sign in' : 'Create one — 7 days free';
     errorEl.textContent = '';
-    form.querySelector('[name=password]').setAttribute('autocomplete', signup ? 'new-password' : 'current-password');
+    passInput.setAttribute('autocomplete', signup ? 'new-password' : 'current-password');
   }
 
-  function open(next) { setMode(next || 'signin'); showAuth(); modal.classList.add('is-open'); modal.setAttribute('aria-hidden', 'false'); document.body.style.overflow = 'hidden'; setTimeout(function () { (mode === 'signup' ? form.name : form.email).focus(); }, 60); }
+  function open(next) { setMode(next || 'signin'); showAuth(); modal.classList.add('is-open'); modal.setAttribute('aria-hidden', 'false'); document.body.style.overflow = 'hidden'; setTimeout(function () { (mode === 'signup' ? nameInput : emailInput).focus(); }, 60); }
   function close() { modal.classList.remove('is-open'); modal.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; }
 
   document.querySelectorAll('[data-auth]').forEach(function (el) {
@@ -143,9 +149,9 @@
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     errorEl.textContent = '';
-    var email = (form.email.value || '').trim().toLowerCase();
-    var pass = form.password.value || '';
-    var name = (form.name.value || '').trim();
+    var email = (emailInput.value || '').trim().toLowerCase();
+    var pass = passInput.value || '';
+    var name = (nameInput.value || '').trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { errorEl.textContent = 'Please enter a valid email address.'; return; }
     if (pass.length < 6) { errorEl.textContent = 'Password must be at least 6 characters.'; return; }
 
