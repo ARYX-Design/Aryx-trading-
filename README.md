@@ -33,8 +33,12 @@ Real auth runs on **Vercel serverless functions + Neon Postgres**:
   trial ends it's gated behind an upgrade overlay.
 - Passwords are hashed with scrypt; codes are stored hashed and expire in 15 minutes.
 
-> **Works without a backend too:** on a plain static host (no `/api`), the dashboard
-> runs as a public **demo** and the charts still stream live data — auth is simply skipped.
+> **Login works with or without a backend.** If the `/api` backend is deployed, auth uses
+> Neon + email codes + a session cookie. If it isn't (plain static deploy, or opening the
+> files directly), the **same** signup → 6-digit code → verify → 7-day trial → login flow
+> runs fully in the browser (stored in `localStorage`). No configuration needed to try it.
+> The dashboard requires login; the **"Watch the live demo"** button opens it as a public
+> guest via `app.html?demo=1`.
 
 ## Structure
 

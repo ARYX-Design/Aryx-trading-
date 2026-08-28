@@ -39,12 +39,14 @@
     }
   }
 
+  var isDemo = /(?:[?&]demo\b|#demo)/.test(location.search + location.hash);
   if (window.AryxAuth && window.AryxAuth.me) {
     window.AryxAuth.me().then(function (d) {
-      if (!d.backend) { if (helloEl) helloEl.textContent = 'Guest'; return; } // static demo
-      if (d.authed) {
+      if (d && d.authed) {
         if (helloEl) helloEl.textContent = (d.user && d.user.name) || 'Trader';
         applyTrial(d.trial);
+      } else if (isDemo) {
+        if (helloEl) helloEl.textContent = 'Guest';
       } else {
         window.location.href = 'index.html#signin'; // require sign in
       }
