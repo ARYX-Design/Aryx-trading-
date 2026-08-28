@@ -86,10 +86,15 @@ npx vercel dev                # provide DATABASE_URL etc. via a .env file
 
 ## Live market data
 
-The dashboard streams **real** prices for crypto (BTC, ETH, SOL) and gold (PAXG) from
-Binance's public REST + WebSocket API, computing RSI, MACD, Bollinger Bands, EMA, and
-VWAP on live candles. Stocks are simulated, and any symbol falls back to simulation if
-the live feed is blocked — shown by a **LIVE / SIM** badge.
+The dashboard streams **real** market data and computes RSI, MACD, Bollinger Bands, EMA,
+and VWAP on live candles:
+
+- **Crypto** (BTC, ETH, SOL) — Binance public REST + WebSocket (live, no key needed).
+- **Metals** (gold XAU/USD, silver XAG/USD) and **stocks** (AAPL, NVDA) — Twelve Data via
+  the `/api/market` serverless proxy (set `TWELVEDATA_API_KEY`), polled every 20–30s.
+
+Any symbol falls back to simulation if its feed is unavailable — shown by a **LIVE / SIM**
+badge next to the pair.
 
 > **Disclaimer:** Figures, testimonials, and performance stats on the landing page are
 > illustrative. This is not investment advice; trading involves substantial risk of loss.

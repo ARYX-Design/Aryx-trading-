@@ -56,13 +56,17 @@
   /* ---------- symbol config ----------
      `binance` pairs stream real live data; others fall back to simulation.
      Sim params (base/vol/dec/seed) are also used if a live fetch fails. */
+  //  binance -> live Binance REST + WebSocket
+  //  proxy   -> live stocks/metals via /api/market (Twelve Data), polled
+  //  neither -> built-in simulation (also the fallback for any live failure)
   var SYMBOLS = {
     BTC:  { label: 'BTC/USDT', binance: 'BTCUSDT', base: 63500, vol: 0.011, dec: 2, seed: 11 },
     ETH:  { label: 'ETH/USDT', binance: 'ETHUSDT', base: 3120,  vol: 0.013, dec: 2, seed: 23 },
     SOL:  { label: 'SOL/USDT', binance: 'SOLUSDT', base: 168,   vol: 0.018, dec: 2, seed: 29 },
-    XAU:  { label: 'Gold · PAXG', binance: 'PAXGUSDT', base: 2380, vol: 0.005, dec: 2, seed: 53 },
-    AAPL: { label: 'AAPL',     binance: null, base: 224,  vol: 0.008, dec: 2, seed: 37 },
-    XAG:  { label: 'Silver (XAG)', binance: null, base: 29.4, vol: 0.009, dec: 2, seed: 67 }
+    XAU:  { label: 'Gold · XAU/USD',   proxy: 'XAU', base: 2380, vol: 0.005, dec: 2, seed: 53 },
+    XAG:  { label: 'Silver · XAG/USD', proxy: 'XAG', base: 29.4, vol: 0.009, dec: 2, seed: 67 },
+    AAPL: { label: 'AAPL',     proxy: 'AAPL', base: 224, vol: 0.008, dec: 2, seed: 37 },
+    NVDA: { label: 'NVDA',     proxy: 'NVDA', base: 128, vol: 0.015, dec: 2, seed: 41 }
   };
   var TF_DRIFT = { '15m': 0.6, '1H': 1, '4H': 1.7, '1D': 2.6 };
   var TF_INTERVAL = { '15m': '15m', '1H': '1h', '4H': '4h', '1D': '1d' };
@@ -443,8 +447,9 @@
      Live data layer — Binance public API with sim fallback
      ============================================================ */
   var feedBadge = document.getElementById('feedBadge');
-  var ws = null;            // active WebSocket
+  var ws = null;            // active WebSocket (crypto)
   var simTimer = null;      // simulation interval
+  var pollTimer = null;     // stocks/metals polling interval
   var loadToken = 0;        // guards against out-of-order async loads
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -457,6 +462,7 @@
   function teardown() {
     if (ws) { try { ws.onclose = null; ws.close(); } catch (e) {} ws = null; }
     if (simTimer) { clearInterval(simTimer); simTimer = null; }
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
   }
 
   function fetchKlines(pair, interval) {
@@ -502,6 +508,21 @@
     requestAnimationFrame(function () { rafPending = false; renderAll(); });
   }
 
+  /* ---- stocks & metals via /api/market proxy (Twelve Data), polled ---- */
+  function fetchProxy(sym, tf) {
+    return fetch('/api/market?symbol=' + sym + '&interval=' + tf, { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); });
+  }
+  function startPoll(sym, tf, token) {
+    var period = tf === '15m' ? 20000 : 30000;
+    pollTimer = setInterval(function () {
+      fetchProxy(SYMBOLS[sym].proxy, tf).then(function (d) {
+        if (token !== loadToken) return;
+        if (d && d.candles && d.candles.length) { state.candles = d.candles; throttledRender(); }
+      }).catch(function () {});
+    }, period);
+  }
+
   function startSim() {
     setFeed('sim');
     if (reduce) return;
@@ -540,6 +561,25 @@
       }).catch(function () {
         if (token !== loadToken) return;
         state.candles = genSeries(sym, tf);         // graceful fallback
+        renderAll();
+        startSim();
+      });
+    } else if (cfg.proxy) {
+      fetchProxy(cfg.proxy, tf).then(function (d) {
+        if (token !== loadToken) return;
+        if (d && d.candles && d.candles.length) {   // real stocks/metals data
+          state.candles = d.candles;
+          setFeed('live');
+          renderAll();
+          if (!reduce) startPoll(sym, tf, token);
+        } else {                                     // no API key / rate-limited
+          state.candles = genSeries(sym, tf);
+          renderAll();
+          startSim();
+        }
+      }).catch(function () {
+        if (token !== loadToken) return;
+        state.candles = genSeries(sym, tf);
         renderAll();
         startSim();
       });
