@@ -20,6 +20,7 @@
   var TRIAL_DAYS = 7;
   var LS_USERS = 'aryx.users';
   var LS_SESSION = 'aryx.session';
+  var LS_MIRROR = 'aryx.auth';   // cross-page session mirror (any login method)
 
   /* ---------- backend detection (cached) ----------
      "Usable" means the API functions are deployed AND the database is
@@ -121,32 +122,62 @@
   };
   function R(status, body) { return Promise.resolve({ status: status, body: body }); }
 
+  /* ---------- session mirror (makes login -> dashboard bulletproof) ---------- */
+  function saveMirror(user, trial) {
+    if (!user || !user.email) return;
+    lsSet(LS_MIRROR, { email: user.email, name: user.name || user.email.split('@')[0], trial: trial || null, at: Date.now() });
+  }
+  function readMirror() {
+    var m = lsGet(LS_MIRROR, null);
+    if (!m || !m.email) return { authed: false };
+    return { authed: true, user: { email: m.email, name: m.name }, trial: m.trial || { active: true, daysLeft: TRIAL_DAYS, endsAt: null } };
+  }
+  function clearMirror() { try { localStorage.removeItem(LS_MIRROR); } catch (e) {} }
+
   /* ---------- unified operations (backend or local) ----------
      Uses the real backend when usable; if a backend call errors or reports
-     the DB isn't configured, it transparently falls back to local auth. */
+     the DB isn't configured, it transparently falls back to local auth.
+     On any success carrying a user, mirrors the session locally. */
   function op(name, data) {
     return hasBackend().then(function (has) {
-      if (!has) return Local[name](data);
-      return post(API[name], data).then(function (r) {
-        var b = r.body || {};
-        if (r.status >= 500 || b.error === 'db_not_configured') return Local[name](data);
+      var run = has
+        ? post(API[name], data).then(function (r) {
+            var b = r.body || {};
+            if (r.status >= 500 || b.error === 'db_not_configured') return Local[name](data);
+            return r;
+          }).catch(function () { return Local[name](data); })
+        : Local[name](data);
+      return Promise.resolve(run).then(function (r) {
+        var b = (r && r.body) || {};
+        if (b.ok && b.user) saveMirror(b.user, b.trial);
         return r;
-      }).catch(function () { return Local[name](data); });
+      });
     });
   }
 
-  /* ---------- public API for app.js / nav ---------- */
+  /* ---------- public API for app.js / nav ----------
+     me() trusts the local mirror so a fresh login is always recognized on
+     the dashboard, and refreshes it from the backend when available. */
   window.AryxAuth = {
     me: function () {
+      var mirror = readMirror();
       return hasBackend().then(function (has) {
-        if (!has) return Local.me();
+        if (!has) {
+          var lm = Local.me();
+          return lm.authed ? lm : mirror;
+        }
         return fetch(API.me, { credentials: 'same-origin' })
           .then(function (r) { return r.json().catch(function () { return { authed: false }; }); })
-          .catch(function () { return { authed: false }; });
+          .then(function (j) {
+            if (j && j.authed) { saveMirror(j.user, j.trial); return j; }
+            return mirror; // backend says no, but trust a fresh local login
+          })
+          .catch(function () { return mirror; });
       });
     },
     logout: function () {
-      return hasBackend().then(function (has) { return has ? post(API.logout, {}) : (Local.logout(), R(200, { ok: true })); });
+      clearMirror(); Local.logout();
+      return hasBackend().then(function (has) { return has ? post(API.logout, {}).catch(function () {}) : R(200, { ok: true }); });
     }
   };
 
