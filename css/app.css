@@ -31,6 +31,22 @@
 .mtab.is-active { color: var(--text); background: rgba(0,224,164,.1); border-color: rgba(0,224,164,.3); }
 .appbar__user { display: flex; align-items: center; gap: 12px; }
 .appbar__hello { font-size: .88rem; color: var(--muted); }
+.trialpill {
+  font-size: .72rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; white-space: nowrap;
+  background: rgba(0,224,164,.12); color: var(--primary); border: 1px solid rgba(0,224,164,.28);
+}
+.trialpill--warn { background: rgba(255,198,92,.14); color: #ffc65c; border-color: rgba(255,198,92,.3); }
+
+/* trial gate overlay */
+.trialgate {
+  position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: rgba(3,6,12,.8); backdrop-filter: blur(8px);
+}
+.trialgate__card { max-width: 440px; text-align: center; padding: 40px 32px; border-radius: 20px; }
+.trialgate__icon { font-size: 2.6rem; margin-bottom: 12px; }
+.trialgate__card h2 { font-size: 1.5rem; letter-spacing: -.02em; margin-bottom: 10px; }
+.trialgate__card p { color: var(--muted); margin-bottom: 24px; }
+.trialgate__actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .btn--sm { padding: 7px 14px; font-size: .84rem; }
 
 /* workspace */

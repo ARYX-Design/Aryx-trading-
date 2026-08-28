@@ -445,6 +445,14 @@ img, svg { display: block; }
 .field input::placeholder { color: var(--muted-2); }
 .field input:focus { outline: none; border-color: var(--primary); background: rgba(0,224,164,.05); }
 .authform__error { color: var(--down); font-size: .85rem; min-height: 1em; margin: -4px 0 2px; }
+.authform__note {
+  font-size: .82rem; color: var(--primary); background: rgba(0,224,164,.08);
+  border: 1px solid rgba(0,224,164,.2); border-radius: 8px; padding: 8px 12px; margin: 2px 0;
+}
+.code-input {
+  font-family: var(--mono) !important; font-size: 1.6rem !important; text-align: center;
+  letter-spacing: 12px; padding-left: 12px !important;
+}
 .authform .btn { margin-top: 4px; }
 
 .modal__switch { text-align: center; font-size: .9rem; color: var(--muted); margin-top: 18px; }

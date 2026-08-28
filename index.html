@@ -527,32 +527,58 @@
         <span class="brand__name">Aryx</span>
       </div>
 
-      <h3 class="modal__title" id="authTitle">Welcome back</h3>
-      <p class="modal__sub" id="authSub">Sign in to your trading dashboard.</p>
+      <!-- ---- sign in / sign up view ---- -->
+      <div id="authView">
+        <h3 class="modal__title" id="authTitle">Welcome back</h3>
+        <p class="modal__sub" id="authSub">Sign in to your trading dashboard.</p>
 
-      <form class="authform" id="authForm" novalidate>
-        <label class="field" id="nameField" hidden>
-          <span>Full name</span>
-          <input type="text" name="name" autocomplete="name" placeholder="Jane Trader" />
-        </label>
-        <label class="field">
-          <span>Email</span>
-          <input type="email" name="email" autocomplete="email" placeholder="you@email.com" required />
-        </label>
-        <label class="field">
-          <span>Password</span>
-          <input type="password" name="password" autocomplete="current-password" placeholder="••••••••" minlength="6" required />
-        </label>
+        <form class="authform" id="authForm" novalidate>
+          <label class="field" id="nameField" hidden>
+            <span>Full name</span>
+            <input type="text" name="name" autocomplete="name" placeholder="Jane Trader" />
+          </label>
+          <label class="field">
+            <span>Email</span>
+            <input type="email" name="email" autocomplete="email" placeholder="you@email.com" required />
+          </label>
+          <label class="field">
+            <span>Password</span>
+            <input type="password" name="password" autocomplete="current-password" placeholder="••••••••" minlength="6" required />
+          </label>
 
-        <p class="authform__error" id="authError" role="alert"></p>
-        <button type="submit" class="btn btn--primary btn--block btn--lg" id="authSubmit">Sign in</button>
-      </form>
+          <p class="authform__error" id="authError" role="alert"></p>
+          <button type="submit" class="btn btn--primary btn--block btn--lg" id="authSubmit">Sign in</button>
+        </form>
 
-      <p class="modal__switch">
-        <span id="switchText">Don't have an account?</span>
-        <a href="#" id="switchLink">Create one</a>
-      </p>
-      <p class="modal__demo">Demo only — accounts are stored locally in your browser. No real trading.</p>
+        <p class="modal__switch">
+          <span id="switchText">Don't have an account?</span>
+          <a href="#" id="switchLink">Create one — 7 days free</a>
+        </p>
+      </div>
+
+      <!-- ---- email verification view ---- -->
+      <div id="verifyView" hidden>
+        <h3 class="modal__title">Verify your email</h3>
+        <p class="modal__sub">We sent a 6-digit code to <strong id="verifyEmail">your inbox</strong>. Enter it to activate your <strong>7-day free trial</strong>.</p>
+
+        <form class="authform" id="verifyForm" novalidate>
+          <label class="field">
+            <span>Verification code</span>
+            <input type="text" id="codeInput" inputmode="numeric" autocomplete="one-time-code"
+                   maxlength="6" pattern="\d{6}" placeholder="000000" class="code-input" required />
+          </label>
+          <p class="authform__note" id="devHint" hidden></p>
+          <p class="authform__error" id="verifyError" role="alert"></p>
+          <button type="submit" class="btn btn--primary btn--block btn--lg" id="verifySubmit">Verify &amp; start trial</button>
+        </form>
+
+        <p class="modal__switch">
+          <a href="#" id="resendLink">Resend code</a> ·
+          <a href="#" id="backLink">Use a different email</a>
+        </p>
+      </div>
+
+      <p class="modal__demo" id="modalNote">Your 7-day free trial starts the moment your email is verified.</p>
     </div>
   </div>
 

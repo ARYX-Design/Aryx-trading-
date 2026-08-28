@@ -7,15 +7,51 @@
 (function () {
   'use strict';
 
-  /* ---------- greet / session ---------- */
-  var session = (window.AryxAuth && window.AryxAuth.session()) || null;
+  /* ---------- auth gate + trial ----------
+     - Backend present + signed in  -> show name, trial pill; block if expired
+     - Backend present + not signed  -> redirect to sign in
+     - Backend absent (static demo)  -> run as public "Guest" demo         */
   var helloEl = document.getElementById('userHello');
-  if (helloEl) helloEl.textContent = session ? (session.name || 'Trader') : 'Guest';
+  var trialPill = document.getElementById('trialPill');
+  var trialGate = document.getElementById('trialGate');
+
+  function doLogout() {
+    var done = function () { window.location.href = 'index.html'; };
+    if (window.AryxAuth && window.AryxAuth.logout) window.AryxAuth.logout().then(done, done);
+    else done();
+  }
   var logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) logoutBtn.addEventListener('click', function () {
-    if (window.AryxAuth) window.AryxAuth.logout();
-    window.location.href = 'index.html';
-  });
+  if (logoutBtn) logoutBtn.addEventListener('click', doLogout);
+  var gateLogout = document.getElementById('gateLogout');
+  if (gateLogout) gateLogout.addEventListener('click', doLogout);
+
+  function applyTrial(t) {
+    if (!t || !trialPill) return;
+    if (t.active) {
+      trialPill.hidden = false;
+      trialPill.textContent = t.daysLeft + (t.daysLeft === 1 ? ' day left' : ' days left') + ' · Trial';
+      trialPill.className = 'trialpill' + (t.daysLeft <= 2 ? ' trialpill--warn' : '');
+    } else {
+      trialPill.hidden = false;
+      trialPill.textContent = 'Trial ended';
+      trialPill.className = 'trialpill trialpill--warn';
+      if (trialGate) trialGate.hidden = false; // block the dashboard
+    }
+  }
+
+  if (window.AryxAuth && window.AryxAuth.me) {
+    window.AryxAuth.me().then(function (d) {
+      if (!d.backend) { if (helloEl) helloEl.textContent = 'Guest'; return; } // static demo
+      if (d.authed) {
+        if (helloEl) helloEl.textContent = (d.user && d.user.name) || 'Trader';
+        applyTrial(d.trial);
+      } else {
+        window.location.href = 'index.html#signin'; // require sign in
+      }
+    });
+  } else if (helloEl) {
+    helloEl.textContent = 'Guest';
+  }
 
   /* ---------- symbol config ----------
      `binance` pairs stream real live data; others fall back to simulation.

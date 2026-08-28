@@ -37,6 +37,7 @@
     </div>
 
     <div class="appbar__user">
+      <span class="trialpill" id="trialPill" hidden></span>
       <span class="appbar__hello" id="userHello">Trader</span>
       <button class="btn btn--ghost btn--sm" id="logoutBtn">Log out</button>
     </div>
@@ -130,6 +131,19 @@
 
       <p class="sidebar__note">Live crypto &amp; gold data via Binance public API · stocks simulated · falls back to simulation if blocked. Not investment advice.</p>
     </aside>
+  </div>
+
+  <!-- trial-expired overlay -->
+  <div class="trialgate" id="trialGate" hidden>
+    <div class="trialgate__card glass">
+      <div class="trialgate__icon">⏳</div>
+      <h2>Your 7-day free trial has ended</h2>
+      <p>Upgrade to keep automating crypto, stocks &amp; metals with live indicators, signals, and risk controls.</p>
+      <div class="trialgate__actions">
+        <a href="index.html#pricing" class="btn btn--primary btn--lg">View plans</a>
+        <button class="btn btn--ghost btn--lg" id="gateLogout">Log out</button>
+      </div>
+    </div>
   </div>
 
   <script src="js/auth.js" defer></script>

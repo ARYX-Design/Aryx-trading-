@@ -1,0 +1,13 @@
+{
+  "name": "aryx-trading",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Aryx — AI trading bot landing page + live dashboard with real auth, email verification, and a 7-day free trial.",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0"
+  }
+}
