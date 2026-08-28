@@ -30,9 +30,9 @@
     <div class="appbar__markets" id="marketTabs" role="tablist" aria-label="Markets">
       <button class="mtab is-active" data-symbol="BTC">BTC/USDT</button>
       <button class="mtab" data-symbol="ETH">ETH/USDT</button>
+      <button class="mtab" data-symbol="SOL">SOL/USDT</button>
+      <button class="mtab" data-symbol="XAU">Gold · PAXG</button>
       <button class="mtab" data-symbol="AAPL">AAPL</button>
-      <button class="mtab" data-symbol="NVDA">NVDA</button>
-      <button class="mtab" data-symbol="XAU">Gold (XAU)</button>
       <button class="mtab" data-symbol="XAG">Silver (XAG)</button>
     </div>
 
@@ -50,7 +50,10 @@
         <div class="quote">
           <div class="quote__pair">
             <span class="quote__sym" id="qSym">BTC/USDT</span>
-            <span class="quote__strat">Aryx Momentum · 1H</span>
+            <span class="quote__strat">
+              <span id="feedBadge" class="feed feed--sim">CONNECTING…</span>
+              Aryx Momentum · <span id="tfLabel">1H</span>
+            </span>
           </div>
           <div class="quote__price">
             <span id="qPrice" class="mono">$—</span>
@@ -125,7 +128,7 @@
         </ul>
       </div>
 
-      <p class="sidebar__note">Simulated market data for demonstration. Not investment advice.</p>
+      <p class="sidebar__note">Live crypto &amp; gold data via Binance public API · stocks simulated · falls back to simulation if blocked. Not investment advice.</p>
     </aside>
   </div>
 

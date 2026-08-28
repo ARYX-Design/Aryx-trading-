@@ -43,6 +43,14 @@
 .quote { display: flex; align-items: center; gap: 18px; }
 .quote__sym { font-size: 1.2rem; font-weight: 800; letter-spacing: -.01em; }
 .quote__strat { font-size: .76rem; color: var(--muted-2); display: block; }
+.feed {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 5px; margin-right: 4px; vertical-align: middle;
+}
+.feed::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 1.6s infinite; }
+.feed--live { color: var(--up); background: rgba(38,217,130,.14); }
+.feed--sim  { color: #ffc65c; background: rgba(255,198,92,.14); }
 .quote__price { display: flex; align-items: baseline; gap: 10px; }
 #qPrice { font-size: 1.2rem; font-weight: 700; }
 .quote__chg { font-size: .9rem; font-weight: 600; }

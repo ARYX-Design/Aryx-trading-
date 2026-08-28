@@ -3,6 +3,12 @@
 A professional, responsive landing page for **Aryx**, an automated trading bot for
 **crypto, stocks, and precious metals** with institutional-grade indicators.
 
+> **Live dashboard:** `app.html` streams **real market data** for crypto (BTC, ETH, SOL)
+> and gold (PAXG) from Binance's free public REST + WebSocket API, computing RSI, MACD,
+> Bollinger Bands, EMA, and VWAP on live candles. Stocks are simulated, and any symbol
+> falls back to simulation automatically if the live feed is blocked — shown by a
+> **LIVE / SIM** badge.
+
 ## Highlights
 
 - **Animated live-chart hero** — a canvas candlestick chart with a rotating buy/sell

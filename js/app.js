@@ -17,16 +17,19 @@
     window.location.href = 'index.html';
   });
 
-  /* ---------- symbol config ---------- */
+  /* ---------- symbol config ----------
+     `binance` pairs stream real live data; others fall back to simulation.
+     Sim params (base/vol/dec/seed) are also used if a live fetch fails. */
   var SYMBOLS = {
-    BTC:  { label: 'BTC/USDT', base: 63500, vol: 0.011, dec: 0, seed: 11 },
-    ETH:  { label: 'ETH/USDT', base: 3120,  vol: 0.013, dec: 1, seed: 23 },
-    AAPL: { label: 'AAPL',     base: 224,   vol: 0.008, dec: 2, seed: 37 },
-    NVDA: { label: 'NVDA',     base: 128,   vol: 0.015, dec: 2, seed: 41 },
-    XAU:  { label: 'Gold (XAU)', base: 2380, vol: 0.005, dec: 1, seed: 53 },
-    XAG:  { label: 'Silver (XAG)', base: 29.4, vol: 0.009, dec: 2, seed: 67 }
+    BTC:  { label: 'BTC/USDT', binance: 'BTCUSDT', base: 63500, vol: 0.011, dec: 2, seed: 11 },
+    ETH:  { label: 'ETH/USDT', binance: 'ETHUSDT', base: 3120,  vol: 0.013, dec: 2, seed: 23 },
+    SOL:  { label: 'SOL/USDT', binance: 'SOLUSDT', base: 168,   vol: 0.018, dec: 2, seed: 29 },
+    XAU:  { label: 'Gold · PAXG', binance: 'PAXGUSDT', base: 2380, vol: 0.005, dec: 2, seed: 53 },
+    AAPL: { label: 'AAPL',     binance: null, base: 224,  vol: 0.008, dec: 2, seed: 37 },
+    XAG:  { label: 'Silver (XAG)', binance: null, base: 29.4, vol: 0.009, dec: 2, seed: 67 }
   };
   var TF_DRIFT = { '15m': 0.6, '1H': 1, '4H': 1.7, '1D': 2.6 };
+  var TF_INTERVAL = { '15m': '15m', '1H': '1h', '4H': '4h', '1D': '1d' };
   var N = 150;
 
   var state = {
@@ -400,31 +403,115 @@
     updateSignal(ind);
   }
 
-  function loadSymbol(sym, tf) {
-    state.symbol = sym; state.tf = tf;
-    state.candles = genSeries(sym, tf);
-    state.pnl = 0;
-    document.getElementById('qSym').textContent = SYMBOLS[sym].label;
-    document.querySelector('.quote__strat').textContent = 'Aryx Momentum · ' + tf;
-    renderAll();
+  /* ============================================================
+     Live data layer — Binance public API with sim fallback
+     ============================================================ */
+  var feedBadge = document.getElementById('feedBadge');
+  var ws = null;            // active WebSocket
+  var simTimer = null;      // simulation interval
+  var loadToken = 0;        // guards against out-of-order async loads
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function setFeed(kind) {
+    if (kind === 'live') { feedBadge.className = 'feed feed--live'; feedBadge.textContent = 'LIVE'; }
+    else if (kind === 'sim') { feedBadge.className = 'feed feed--sim'; feedBadge.textContent = 'SIM'; }
+    else { feedBadge.className = 'feed feed--sim'; feedBadge.textContent = 'CONNECTING…'; }
   }
 
-  function tick() {
-    var c = state.candles;
-    var prev = c[c.length - 1];
-    var cfg = SYMBOLS[state.symbol];
-    var v = cfg.vol * TF_DRIFT[state.tf];
-    var drift = (Math.random() - 0.49) * prev.c * v * 2;
-    var open = prev.c;
-    var close = Math.max(open + drift, open * 0.85);
-    var hi = Math.max(open, close) + Math.random() * prev.c * v * 0.9;
-    var lo = Math.min(open, close) - Math.random() * prev.c * v * 0.9;
-    c.push({ o: open, h: hi, l: lo, c: close, v: 1 + Math.random() * 3 });
-    c.shift();
-    // update simulated pnl by position direction
-    var ret = (close - open) / open * 100;
-    state.pnl += ret * state.posSign;
-    renderAll();
+  function teardown() {
+    if (ws) { try { ws.onclose = null; ws.close(); } catch (e) {} ws = null; }
+    if (simTimer) { clearInterval(simTimer); simTimer = null; }
+  }
+
+  function fetchKlines(pair, interval) {
+    var url = 'https://api.binance.com/api/v3/klines?symbol=' + pair +
+              '&interval=' + interval + '&limit=' + N;
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function (rows) {
+      return rows.map(function (k) {
+        return { t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5] };
+      });
+    });
+  }
+
+  function openStream(pair, interval) {
+    try {
+      ws = new WebSocket('wss://stream.binance.com:9443/ws/' +
+        pair.toLowerCase() + '@kline_' + interval);
+    } catch (e) { return; }
+    ws.onmessage = function (msg) {
+      var d; try { d = JSON.parse(msg.data); } catch (e) { return; }
+      var k = d.k; if (!k) return;
+      var c = state.candles;
+      var last = c[c.length - 1];
+      var bar = { t: k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c, v: +k.v };
+      if (last && k.t === last.t) {
+        c[c.length - 1] = bar;                  // update forming candle
+      } else if (!last || k.t > last.t) {
+        c.push(bar); if (c.length > N) c.shift(); // new candle rolled in
+      }
+      var ret = (bar.c - bar.o) / bar.o * 100;
+      state.pnl = state.pnl * 0.98 + ret * state.posSign * 0.15;
+      throttledRender();
+    };
+    ws.onclose = function () { /* keep last frame; badge stays LIVE */ };
+  }
+
+  var rafPending = false;
+  function throttledRender() {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(function () { rafPending = false; renderAll(); });
+  }
+
+  function startSim() {
+    setFeed('sim');
+    if (reduce) return;
+    simTimer = setInterval(function () {
+      var c = state.candles, prev = c[c.length - 1], cfg = SYMBOLS[state.symbol];
+      var v = cfg.vol * TF_DRIFT[state.tf];
+      var open = prev.c;
+      var close = Math.max(open + (Math.random() - 0.49) * prev.c * v * 2, open * 0.85);
+      var hi = Math.max(open, close) + Math.random() * prev.c * v * 0.9;
+      var lo = Math.min(open, close) - Math.random() * prev.c * v * 0.9;
+      c.push({ t: (prev.t || 0) + 1, o: open, h: hi, l: lo, c: close, v: 1 + Math.random() * 3 });
+      c.shift();
+      state.pnl += (close - open) / open * 100 * state.posSign;
+      renderAll();
+    }, 1600);
+  }
+
+  function loadSymbol(sym, tf) {
+    teardown();
+    state.symbol = sym; state.tf = tf; state.pnl = 0;
+    var cfg = SYMBOLS[sym];
+    document.getElementById('qSym').textContent = cfg.label;
+    document.getElementById('tfLabel').textContent = tf;
+    setFeed('connecting');
+
+    var token = ++loadToken;
+
+    if (cfg.binance) {
+      var interval = TF_INTERVAL[tf];
+      fetchKlines(cfg.binance, interval).then(function (candles) {
+        if (token !== loadToken) return;            // superseded by newer click
+        state.candles = candles;
+        setFeed('live');
+        renderAll();
+        if (!reduce) openStream(cfg.binance, interval);
+      }).catch(function () {
+        if (token !== loadToken) return;
+        state.candles = genSeries(sym, tf);         // graceful fallback
+        renderAll();
+        startSim();
+      });
+    } else {
+      state.candles = genSeries(sym, tf);
+      renderAll();
+      startSim();
+    }
   }
 
   /* ---------- controls ---------- */
@@ -451,6 +538,4 @@
 
   /* ---------- go ---------- */
   loadSymbol('BTC', '1H');
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!reduce) setInterval(tick, 1600);
 })();
