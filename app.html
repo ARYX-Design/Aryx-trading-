@@ -1035,6 +1035,51 @@
     <div id="moverList" class="mover-list"><div class="mover-empty">Tap “scan” to screen the market…</div></div>
   </div>
 
+  <div class="bot-card" id="botCard">
+    <div class="mover-h">
+      <div class="chart-title">🤖 Auto-Bot — paper trading</div>
+      <span class="bot-badge">Simulated · no real funds</span>
+    </div>
+    <div class="mover-note">A bot that <b>paper-trades</b> a strategy on live prices with a virtual <b>$10,000</b> wallet, so you can test strategies risk-free. <b>No real money, no exchange keys — nothing is actually bought or sold.</b> Paper results do not predict real trading.</div>
+
+    <div class="bot-wallet">
+      <div class="bw"><span>Equity</span><strong id="botEquity">$10,000</strong></div>
+      <div class="bw"><span>Total return</span><strong id="botReturn" class="up">+0.0%</strong></div>
+      <div class="bw"><span>Cash</span><strong id="botCash">$10,000</strong></div>
+      <div class="bw"><span>Position</span><strong id="botPos">Flat</strong></div>
+      <div class="bw"><span>Realized P&amp;L</span><strong id="botReal">$0</strong></div>
+      <div class="bw"><span>Win rate</span><strong id="botWin">—</strong></div>
+    </div>
+
+    <div class="bot-controls">
+      <select id="botStrat" class="mv-sel" title="Strategy">
+        <option value="trend">1 · Trend (EMA 9/21)</option>
+        <option value="meanrev">2 · Mean-Reversion (RSI)</option>
+        <option value="breakout">3 · Breakout (Donchian 20)</option>
+        <option value="macd">4 · MACD momentum</option>
+        <option value="multi">5 · Multi-factor vote</option>
+      </select>
+      <select id="botSym" class="mv-sel" title="Market">
+        <option value="bitcoin">BTC</option><option value="ethereum">ETH</option>
+        <option value="solana">SOL</option><option value="binancecoin">BNB</option>
+        <option value="ripple">XRP</option><option value="dogecoin">DOGE</option>
+        <option value="cardano">ADA</option><option value="avalanche-2">AVAX</option>
+        <option value="chainlink">LINK</option>
+      </select>
+      <select id="botTf" class="mv-sel" title="Candle timeframe">
+        <option value="1">30m</option><option value="7" selected>4h</option><option value="30">1D</option>
+      </select>
+      <select id="botSize" class="mv-sel" title="Position size">
+        <option value="25">Size 25%</option><option value="50">Size 50%</option><option value="100" selected>Size 100%</option>
+      </select>
+      <button id="botToggle" class="ctool on">▶ Start</button>
+      <button id="botReset" class="ctool">Reset</button>
+    </div>
+
+    <div class="bot-status" id="botStatus">Idle — pick a strategy and press Start.</div>
+    <div class="bot-log" id="botLog"></div>
+  </div>
+
   <div class="disc">
     Signals are generated algorithmically from live exchange data (Binance public API — real OHLCV candles, with CoinGecko as fallback; GeckoTerminal for pasted contract addresses / DEX tokens) using a curated set of technical indicators (Supertrend, Parabolic SAR, EMA 12/21/26/50, ADX + Choppiness regime filter, RSI, StochRSI, Bollinger ±2σ, Keltner/TTM volatility squeeze, Donchian 20-bar breakout, MACD, Stochastic, MFI, CMF, OBV, rolling VWAP, Hull MA Trend Speed, ROC, volume, candlestick patterns, floor-trader pivots and Fibonacci retracements) plus candlestick charts, RSI/OBV divergence detection, a watchlist with signal-flip alerts, structure-aware take-profit/stop-loss brackets (stops behind swing structure, targets snapped to pivot/Fibonacci/channel levels, regime-adaptive widths), and a backtest that replays the bracket at every historical signal on the loaded chart and reports its measured hit-rates. Redundant/low-value indicators have been intentionally removed to reduce false consensus. This is an analytical tool, not financial advice. Indicators describe past and present behavior — they do not predict the future. Backtested win-rates are in-sample and optimistic versus live results. Crypto is volatile; never trade more than you can afford to lose, and do your own research.
   </div>
@@ -4001,6 +4046,131 @@ function aryxBackToLanding(){
 })();
 </script>
 
+<!-- ============ Auto-Bot (paper trading) ============ -->
+<script>
+(function () {
+  'use strict';
+  // 100% SIMULATED. Virtual wallet in localStorage, live prices from
+  // CoinGecko (keyless). No exchange keys, no real orders, no real funds.
+  var KEY = 'aryx.bot', START = 10000;
+  var TFLBL = { '1':'30m', '7':'4h', '30':'daily' };
+  var STRATLBL = { trend:'Trend EMA', meanrev:'Mean-Reversion', breakout:'Breakout', macd:'MACD', multi:'Multi-factor' };
+  var timer = null;
+
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)); }catch(e){ return null; } }
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(st)); }catch(e){} }
+  var st = load() || { cash:START, pos:null, realized:0, trades:0, wins:0, running:false,
+    strat:'trend', sym:'bitcoin', symLabel:'BTC', tf:'7', size:100, log:[], lastPrice:0 };
+
+  function usd(v){ var n=+v||0; return (n<0?'-$':'$')+Math.abs(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
+  function equity(){ return st.cash + (st.pos ? st.pos.qty*(st.lastPrice||st.pos.entry) : 0); }
+
+  // ---- indicators ----
+  function ema(a,p){ var k=2/(p+1),e=a[0],o=[e]; for(var i=1;i<a.length;i++){ e=a[i]*k+e*(1-k); o.push(e); } return o; }
+  function rsi(a,p){ p=p||14; var o=[],g=0,l=0; for(var i=1;i<a.length;i++){ var d=a[i]-a[i-1];
+    if(i<=p){ if(d>=0)g+=d; else l-=d; if(i===p){ g/=p; l/=p; o[p]=100-100/(1+g/(l||1e-9)); } }
+    else { var gg=d>0?d:0, ll=d<0?-d:0; g=(g*(p-1)+gg)/p; l=(l*(p-1)+ll)/p; o[i]=100-100/(1+g/(l||1e-9)); } } return o; }
+  function macd(a){ var f=ema(a,12),s=ema(a,26),line=a.map(function(_,i){return f[i]-s[i];}); var sig=ema(line,9);
+    return { hist: line.map(function(v,i){ return v-sig[i]; }) }; }
+  function donchian(h,l,p){ p=p||20; var up=[],lo=[]; for(var i=0;i<h.length;i++){ if(i<p){ up[i]=null; lo[i]=null; }
+    else { var hh=-Infinity,ll=Infinity; for(var j=i-p;j<i;j++){ if(h[j]>hh)hh=h[j]; if(l[j]<ll)ll=l[j]; } up[i]=hh; lo[i]=ll; } } return {up:up,lo:lo}; }
+
+  // ---- strategy → target state ('long' | 'flat' | null=keep) ----
+  function signal(strat,o,h,l,c){
+    var i=c.length-1;
+    if(strat==='trend'){ var e9=ema(c,9),e21=ema(c,21); return e9[i]>e21[i]?'long':'flat'; }
+    if(strat==='meanrev'){ var r=rsi(c,14),rl=r[i]; if(rl<32)return 'long'; if(rl>55)return 'flat'; return null; }
+    if(strat==='breakout'){ var d=donchian(h,l,20); if(d.up[i]==null)return null; var mid=(d.up[i]+d.lo[i])/2;
+      if(d.up[i-1]!=null && c[i]>d.up[i-1])return 'long'; if(c[i]<mid)return 'flat'; return null; }
+    if(strat==='macd'){ var m=macd(c),hs=m.hist; if(hs[i]>0 && hs[i]>hs[i-1])return 'long'; if(hs[i]<0)return 'flat'; return null; }
+    if(strat==='multi'){ var e9b=ema(c,9),e21b=ema(c,21),rb=rsi(c,14),mb=macd(c),db=donchian(h,l,20),v=0;
+      if(e9b[i]>e21b[i])v++; if(rb[i]>50)v++; if(mb.hist[i]>0)v++; if(db.up[i-1]!=null&&c[i]>db.up[i-1])v++; return v>=2?'long':'flat'; }
+    return 'flat';
+  }
+
+  // ---- trades ----
+  function log(act,price,pnl){ st.log.unshift({ t:Date.now(), act:act, price:price, pnl:pnl, sym:st.symLabel }); st.log = st.log.slice(0,12); }
+  function buy(price){ var notional=equity()*st.size/100; if(notional<1)return; var qty=notional/price;
+    st.cash-=notional; st.pos={ qty:qty, entry:price }; st.trades++; log('buy',price,null); }
+  function sell(price){ if(!st.pos)return; var proceeds=st.pos.qty*price, pnl=proceeds-st.pos.qty*st.pos.entry;
+    st.cash+=proceeds; st.realized+=pnl; if(pnl>0)st.wins++; log('sell',price,pnl); st.pos=null; }
+
+  // ---- render ----
+  function $(id){ return document.getElementById(id); }
+  function setStatus(t){ var e=$('botStatus'); if(e)e.textContent=t; }
+  function render(){
+    var eq=equity(), ret=(eq/START-1)*100;
+    if($('botEquity')) $('botEquity').textContent=usd(eq);
+    var r=$('botReturn'); if(r){ r.textContent=(ret>=0?'+':'')+ret.toFixed(1)+'%'; r.className=ret>=0?'up':'down'; }
+    if($('botCash')) $('botCash').textContent=usd(st.cash);
+    var pe=$('botPos');
+    if(pe){ if(st.pos){ var up=(st.lastPrice/st.pos.entry-1)*100; pe.innerHTML='Long '+st.symLabel+' <span style="font-size:12px;opacity:.8">'+(up>=0?'+':'')+up.toFixed(1)+'%</span>'; pe.className=up>=0?'up':'down'; } else { pe.textContent='Flat'; pe.className=''; } }
+    var re=$('botReal'); if(re){ re.textContent=(st.realized>=0?'+':'')+usd(st.realized); re.className=st.realized>=0?'up':'down'; }
+    if($('botWin')) $('botWin').textContent = st.trades? Math.round(st.wins/st.trades*100)+'% ('+st.wins+'/'+st.trades+')' : '—';
+    var lg=$('botLog');
+    if(lg){ lg.innerHTML = st.log.map(function(x){
+      var pnl = x.pnl==null ? '' : '<span class="bt-pnl '+(x.pnl>=0?'up':'down')+'">'+(x.pnl>=0?'+':'')+usd(x.pnl)+'</span>';
+      return '<div class="bot-trade"><span class="act '+x.act+'">'+x.act.toUpperCase()+'</span>'+
+        '<span class="bt-t">'+new Date(x.t).toLocaleTimeString()+'</span>'+
+        '<span>'+x.sym+'</span><span class="bt-p">@ $'+(+x.price).toLocaleString('en-US',{maximumFractionDigits:4})+'</span>'+pnl+'</div>';
+    }).join('') || '<div class="bot-status">No trades yet.</div>'; }
+  }
+
+  function fetchOHLC(id,days){
+    return fetch('https://api.coingecko.com/api/v3/coins/'+id+'/ohlc?vs_currency=usd&days='+days)
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); });
+  }
+
+  function tick(){
+    if(!st.running) return;
+    fetchOHLC(st.sym, st.tf).then(function(rows){
+      if(!rows || rows.length < 25){ setStatus('waiting for price data…'); return; }
+      var h=rows.map(function(r){return r[2];}), l=rows.map(function(r){return r[3];}), c=rows.map(function(r){return r[4];});
+      var price=c[c.length-1]; st.lastPrice=price;
+      var cur = st.pos ? 'long' : 'flat';
+      var tgt = signal(st.strat, null, h, l, c); if(tgt===null) tgt=cur;
+      if(tgt==='long' && !st.pos) buy(price);
+      else if(tgt==='flat' && st.pos) sell(price);
+      save(); render();
+      setStatus('● running · '+st.symLabel+' '+TFLBL[st.tf]+' · '+STRATLBL[st.strat]+' · '+new Date().toLocaleTimeString());
+    }).catch(function(){ setStatus('price feed rate-limited — retrying…'); });
+  }
+
+  function start(){ if(timer) return; st.running=true; save(); syncToggle(); tick(); timer=setInterval(tick, 20000); }
+  function stop(){ if(timer){ clearInterval(timer); timer=null; } st.running=false; save(); syncToggle(); setStatus('Stopped.'); }
+  function syncToggle(){ var b=$('botToggle'); if(!b)return; b.textContent = st.running?'■ Stop':'▶ Start'; b.className='ctool '+(st.running?'stop':'on'); }
+
+  function init(){
+    if(!$('botToggle')) return;
+    // restore control values
+    if($('botStrat')) $('botStrat').value=st.strat;
+    if($('botSym')) $('botSym').value=st.sym;
+    if($('botTf')) $('botTf').value=st.tf;
+    if($('botSize')) $('botSize').value=String(st.size);
+
+    $('botToggle').addEventListener('click', function(){ st.running?stop():start(); });
+    $('botReset').addEventListener('click', function(){
+      if(!confirm('Reset the paper wallet to $10,000 and clear all trades?')) return;
+      stop(); st.cash=START; st.pos=null; st.realized=0; st.trades=0; st.wins=0; st.log=[]; st.lastPrice=0; save(); render(); setStatus('Wallet reset to $10,000.');
+    });
+    $('botStrat').addEventListener('change', function(e){ st.strat=e.target.value; save(); });
+    $('botSym').addEventListener('change', function(e){
+      if(st.pos) sell(st.lastPrice||st.pos.entry);            // close before switching asset
+      st.sym=e.target.value; st.symLabel=e.target.options[e.target.selectedIndex].text; save(); render();
+    });
+    $('botTf').addEventListener('change', function(e){ st.tf=e.target.value; save(); });
+    $('botSize').addEventListener('change', function(e){ st.size=+e.target.value; save(); });
+
+    // label for restored symbol
+    var sel=$('botSym'); if(sel) st.symLabel = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : st.symLabel;
+    render(); syncToggle();
+    if(st.running){ timer=null; start(); }                    // auto-resume
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+
 <!-- ============ Aryx full restyle (theme layer) ============ -->
 <style id="aryxRestyle">
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
@@ -4133,6 +4303,29 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .mv-link{font-size:10.5px;font-weight:700;color:var(--ax-muted);background:rgba(255,255,255,.05);
   border:1px solid var(--ax-line);border-radius:6px;padding:3px 8px;text-decoration:none;transition:.15s;}
 .mv-link:hover{color:var(--ax-text);border-color:var(--ax-line2);background:rgba(255,255,255,.09);}
+
+/* Auto-Bot paper trading */
+.bot-card{background:var(--ax-surface)!important;border:1px solid var(--ax-line)!important;border-radius:15px!important;
+  padding:16px 18px!important;margin-top:16px!important;box-shadow:0 12px 30px -18px rgba(0,0,0,.6)!important;}
+.bot-badge{font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;border-radius:6px;
+  background:rgba(255,198,92,.14);color:var(--ax-warn);}
+.bot-wallet{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px;}
+.bw{background:var(--ax-surface2);border:1px solid var(--ax-line);border-radius:11px;padding:11px 13px;}
+.bw span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ax-dim);}
+.bw strong{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:var(--ax-text);}
+.bw strong.up{color:var(--ax-up);} .bw strong.down{color:var(--ax-down);}
+.bot-controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center;}
+#botToggle.on{background:var(--ax-grad)!important;color:#04241b!important;border-color:transparent!important;}
+#botToggle.stop{background:rgba(255,92,115,.16)!important;color:var(--ax-down)!important;border-color:rgba(255,92,115,.4)!important;}
+.bot-status{font-size:12px;color:var(--ax-muted);margin-bottom:10px;font-family:'JetBrains Mono',monospace;}
+.bot-log{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;}
+.bot-trade{display:flex;align-items:center;gap:10px;font-size:12px;background:var(--ax-surface2);border:1px solid var(--ax-line);
+  border-radius:9px;padding:8px 12px;font-family:'JetBrains Mono',monospace;}
+.bot-trade .act{font-weight:700;padding:2px 7px;border-radius:5px;font-size:10px;}
+.bot-trade .act.buy{background:rgba(38,217,130,.14);color:var(--ax-up);}
+.bot-trade .act.sell{background:rgba(255,92,115,.14);color:var(--ax-down);}
+.bot-trade .bt-t{color:var(--ax-dim);} .bot-trade .bt-p{color:var(--ax-text);}
+.bot-trade .bt-pnl{margin-left:auto;font-weight:700;} .bt-pnl.up{color:var(--ax-up);} .bt-pnl.down{color:var(--ax-down);}
 </style>
 
 <!-- ============ Aryx login gate + boot ============ -->
