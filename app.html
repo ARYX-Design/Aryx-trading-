@@ -996,7 +996,7 @@
       <div class="chart-title">🚀 Early Movers — bullish setups forming</div>
       <button id="moverScan" class="ctool">↻ scan</button>
     </div>
-    <div class="mover-note">Scans <b>trending DEX tokens</b> (via DexScreener) for <b>early</b> momentum with real liquidity — rising 1h price, high turnover, fresh pairs — and <b>down-ranks anything that already ran</b>. Tap a token to chart it in the terminal (supported chains) or open it on DexScreener. These are <b>extremely high-risk, low-cap speculative tokens, not predictions</b> — most go to zero, many are scams/rugs. Verify the contract, liquidity, and holders yourself. Each token is auto-checked for honeypots/high tax/mint &amp; freeze authority via GoPlus (confirmed honeypots are dropped), with one-tap links to Honeypot.is, TokenSniffer &amp; Bubblemaps — but automated checks miss things, so always verify yourself. Never risk more than you can lose.</div>
+    <div class="mover-note">Scans <b>trending + established DEX tokens</b> (via DexScreener) across market caps for <b>early</b> momentum with real liquidity — rising 1h price, high turnover, fresh pairs — and <b>down-ranks anything that already ran</b>. Tap a token to chart it in the terminal (supported chains) or open it on DexScreener. These are <b>extremely high-risk, low-cap speculative tokens, not predictions</b> — most go to zero, many are scams/rugs. Verify the contract, liquidity, and holders yourself. Each token is auto-checked for honeypots/high tax/mint &amp; freeze authority via GoPlus (confirmed honeypots are dropped), with one-tap links to Honeypot.is, TokenSniffer &amp; Bubblemaps — but automated checks miss things, so always verify yourself. Never risk more than you can lose.</div>
     <div class="mover-filters">
       <select id="mvChain" class="mv-sel" title="Chain">
         <option value="">All chains</option>
@@ -1021,6 +1021,14 @@
         <option value="50000">≥ $50K</option>
         <option value="250000">≥ $250K</option>
         <option value="1000000">≥ $1M</option>
+      </select>
+      <select id="mvMcap" class="mv-sel" title="Market cap band">
+        <option value="0">Any cap</option>
+        <option value="0-1000000">Micro &lt; $1M</option>
+        <option value="1000000-10000000">Small $1M–$10M</option>
+        <option value="10000000-100000000">Mid $10M–$100M</option>
+        <option value="100000000-1000000000">Large $100M–$1B</option>
+        <option value="1000000000-">Mega &gt; $1B</option>
       </select>
       <label class="mv-toggle"><input type="checkbox" id="mvSafe" checked> Safe only</label>
     </div>
@@ -3748,6 +3756,11 @@ function aryxBackToLanding(){
   var BOOSTS = 'https://api.dexscreener.com/token-boosts/top/v1';
   var LATEST = 'https://api.dexscreener.com/token-boosts/latest/v1';
   var TOKENS = 'https://api.dexscreener.com/latest/dex/tokens/'; // + comma addresses
+  var SEARCH = 'https://api.dexscreener.com/latest/dex/search?q=';
+  // established mid/large-cap DEX tokens searched alongside trending ones,
+  // so the list isn't only micro-caps
+  var MAJORS = ['WIF','BONK','PEPE','JUP','ENA','ONDO','PENDLE','AERO','VIRTUAL','POPCAT','BRETT',
+    'DEGEN','MEW','PNUT','FARTCOIN','MOODENG','SPX','TURBO','AIXBT','HYPE','PENGU','MOG','SHIB','FLOKI'];
   var CHAINMAP = { solana:'solana', ethereum:'eth', bsc:'bsc', base:'base', polygon:'polygon_pos', arbitrum:'arbitrum', avalanche:'avax' };
 
   var listEl, scanBtn, scanning = false, allMovers = [];
@@ -3846,7 +3859,7 @@ function aryxBackToLanding(){
     var pct = Math.max(0, Math.min(100, Math.round(s / 8 * 100)));
     return {
       sym: (p.baseToken && p.baseToken.symbol) || '?', chain: p.chainId, addr: (p.baseToken && p.baseToken.address),
-      pair: p.pairAddress, url: p.url, price: +p.priceUsd, liq: liq, vol: vol,
+      pair: p.pairAddress, url: p.url, price: +p.priceUsd, liq: liq, vol: vol, mcap: (+p.marketCap || +p.fdv || 0),
       h1: h1, h6: h6, h24: h24, s: s, pct: pct, tags: tags
     };
   }
@@ -3865,7 +3878,7 @@ function aryxBackToLanding(){
         '<span class="mover-chg '+cls+'">'+(m.h1>=0?'+':'')+m.h1.toFixed(1)+'% <small style="opacity:.6">1h</small></span></div>'+
         '<div class="mover-score"><div class="mover-bar"><span style="width:'+m.pct+'%"></span></div><span class="mover-pct">'+m.pct+'</span></div>'+
         '<div class="mover-tags">'+pill+tags+'</div>'+
-        '<div class="mover-price">'+fmtPrice(m.price)+' · liq '+fmtUsd(m.liq)+' · vol '+fmtUsd(m.vol)+' · 24h '+(m.h24>=0?'+':'')+m.h24.toFixed(0)+'%</div>'+
+        '<div class="mover-price">'+fmtPrice(m.price)+' · '+(m.mcap?'mc '+fmtUsd(m.mcap)+' · ':'')+'liq '+fmtUsd(m.liq)+' · vol '+fmtUsd(m.vol)+' · 24h '+(m.h24>=0?'+':'')+m.h24.toFixed(0)+'%</div>'+
         '<div class="mv-links" onclick="event.stopPropagation()">'+safetyLinks(m)+'</div></div>';
     }).join('');
   }
@@ -3887,7 +3900,7 @@ function aryxBackToLanding(){
         boosted[it.chainId+':'+it.tokenAddress] = true;
         (byChain[it.chainId] = byChain[it.chainId] || []).push(it.tokenAddress);
       });
-      // 2) fetch pair data in chunks of 30 addresses
+      // 2) fetch pair data: trending token addresses (chunks) + major-cap searches
       var calls = [];
       Object.keys(byChain).forEach(function(chain){
         var addrs = byChain[chain].slice(0, 60);
@@ -3896,6 +3909,7 @@ function aryxBackToLanding(){
           calls.push(getJSON(TOKENS + chunk).catch(function(){ return {pairs:[]}; }));
         }
       });
+      MAJORS.forEach(function(t){ calls.push(getJSON(SEARCH + encodeURIComponent(t)).catch(function(){ return {pairs:[]}; })); });
       if(!calls.length){ render([]); scanning=false; if(scanBtn) scanBtn.textContent='↻ scan'; return; }
 
       Promise.all(calls).then(function(results){
@@ -3914,7 +3928,7 @@ function aryxBackToLanding(){
         var out = [];
         Object.keys(bestByToken).forEach(function(k){ var m = score(bestByToken[k]); if(m && m.s >= 3) out.push(m); });
         out.sort(function(a,b){ return b.s - a.s; });
-        var pool = out.slice(0, 18);
+        var pool = out.slice(0, 30);
         // 3) run rug/honeypot safety checks on the shortlist
         if(scanBtn) scanBtn.textContent = '… safety';
         Promise.all(pool.map(function(m){ return checkSafety(m).then(function(s){ m.safety = s; return m; }); }))
@@ -3938,19 +3952,23 @@ function aryxBackToLanding(){
     var minLiq = +(((document.getElementById('mvLiq')||{}).value) || 0);
     var minVol = +(((document.getElementById('mvVol')||{}).value) || 0);
     var safeOnly = !!((document.getElementById('mvSafe')||{}).checked);
+    var capBand = ((document.getElementById('mvMcap')||{}).value) || '0';
+    var capLo = 0, capHi = Infinity;
+    if(capBand !== '0'){ var pr = capBand.split('-'); capLo = +pr[0] || 0; capHi = pr[1] ? +pr[1] : Infinity; }
     var rows = allMovers.filter(function(m){
       if(chain && m.chain !== chain) return false;
       if(m.liq < minLiq) return false;
       if(m.vol < minVol) return false;
+      if(capBand !== '0'){ if(!m.mcap || m.mcap < capLo || m.mcap >= capHi) return false; }
       if(safeOnly && !(m.safety && m.safety.v === 'ok')) return false;
       return true;
     });
     if(!allMovers.length){ render([]); return; }
     if(!rows.length){
-      listEl.innerHTML = '<div class="mover-empty">No tokens match these filters. Loosen the chain, lower min liquidity, or turn off “Safe only”.</div>';
+      listEl.innerHTML = '<div class="mover-empty">No tokens match these filters. Loosen the chain / cap band, lower min liquidity, or turn off “Safe only”.</div>';
       return;
     }
-    render(rows.slice(0, 9));
+    render(rows.slice(0, 24));
   }
 
   function openMover(chain, addr, url){
@@ -3968,7 +3986,7 @@ function aryxBackToLanding(){
     scanBtn = document.getElementById('moverScan');
     if(!listEl) return;
     if(scanBtn) scanBtn.addEventListener('click', scan);
-    ['mvChain','mvLiq','mvVol','mvSafe'].forEach(function(id){
+    ['mvChain','mvLiq','mvVol','mvMcap','mvSafe'].forEach(function(id){
       var el = document.getElementById(id); if(el) el.addEventListener('change', applyFilters);
     });
     listEl.addEventListener('click', function(e){
