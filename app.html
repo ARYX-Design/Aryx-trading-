@@ -4231,6 +4231,43 @@ function aryxBackToLanding(){
 })();
 </script>
 
+<!-- ============ Section tabs (reorganize, nothing removed) ============ -->
+<script>
+(function () {
+  function init(){
+    var content = document.getElementById('content');
+    if(!content || document.getElementById('aryxTabs')) return;
+    var groups = {
+      terminal: [document.querySelector('.status'), document.querySelector('.picker-bar'),
+                 document.querySelector('.ca-bar'), document.getElementById('tfbar'),
+                 content, document.querySelector('.watch-card')].filter(Boolean),
+      movers:   [document.getElementById('moverCard')].filter(Boolean),
+      bot:      [document.getElementById('botCard')].filter(Boolean)
+    };
+    var bar = document.createElement('div');
+    bar.id = 'aryxTabs'; bar.className = 'aryx-tabs';
+    bar.innerHTML =
+      '<button data-t="terminal" class="atab is-active">📈 Terminal</button>' +
+      '<button data-t="movers" class="atab">🚀 Early Movers</button>' +
+      '<button data-t="bot" class="atab">🤖 Auto-Bot</button>';
+    content.parentNode.insertBefore(bar, groups.terminal[0] || content);
+    function show(t){
+      Object.keys(groups).forEach(function(k){
+        groups[k].forEach(function(el){ el.style.display = (k===t) ? '' : 'none'; });
+      });
+      bar.querySelectorAll('.atab').forEach(function(b){ b.classList.toggle('is-active', b.dataset.t===t); });
+      try{ localStorage.setItem('aryx.tab', t); }catch(e){}
+      try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(e){}
+    }
+    bar.addEventListener('click', function(e){ var b=e.target.closest('.atab'); if(b) show(b.dataset.t); });
+    var saved='terminal'; try{ saved=localStorage.getItem('aryx.tab')||'terminal'; }catch(e){}
+    if(!groups[saved] || !groups[saved].length) saved='terminal';
+    show(saved);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+
 <!-- ============ Aryx full restyle (theme layer) ============ -->
 <style id="aryxRestyle">
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
@@ -4321,6 +4358,17 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 /* colors for up/down where the file uses these hooks */
 .up,.pt.up,.chg.up{color:var(--ax-up)!important;}
 .down,.pt.down,.chg.down{color:var(--ax-down)!important;}
+
+/* Section tabs */
+.aryx-tabs{display:flex;gap:6px;margin:6px 0 18px;padding:5px;border-radius:13px;
+  background:var(--ax-surface);border:1px solid var(--ax-line);
+  position:sticky;top:0;z-index:30;box-shadow:0 8px 20px -14px rgba(0,0,0,.7);}
+.atab{flex:1;background:transparent;border:0;color:var(--ax-muted);font-family:inherit;font-weight:700;
+  font-size:13px;padding:11px 12px;border-radius:9px;cursor:pointer;transition:.15s;white-space:nowrap;}
+.atab:hover{color:var(--ax-text);}
+.atab.is-active{background:var(--ax-grad);color:#04241b;box-shadow:0 6px 18px -8px rgba(0,224,164,.5);}
+.aryx-tabs + #content,.mover-card,.bot-card{margin-top:0!important;}
+@media(max-width:520px){ .atab{font-size:12px;padding:10px 8px;} }
 
 /* Early Movers scanner */
 .mover-card{background:var(--ax-surface)!important;border:1px solid var(--ax-line)!important;border-radius:15px!important;
