@@ -997,6 +997,33 @@
       <button id="moverScan" class="ctool">↻ scan</button>
     </div>
     <div class="mover-note">Scans <b>trending DEX tokens</b> (via DexScreener) for <b>early</b> momentum with real liquidity — rising 1h price, high turnover, fresh pairs — and <b>down-ranks anything that already ran</b>. Tap a token to chart it in the terminal (supported chains) or open it on DexScreener. These are <b>extremely high-risk, low-cap speculative tokens, not predictions</b> — most go to zero, many are scams/rugs. Verify the contract, liquidity, and holders yourself. Each token is auto-checked for honeypots/high tax/mint &amp; freeze authority via GoPlus (confirmed honeypots are dropped), with one-tap links to Honeypot.is, TokenSniffer &amp; Bubblemaps — but automated checks miss things, so always verify yourself. Never risk more than you can lose.</div>
+    <div class="mover-filters">
+      <select id="mvChain" class="mv-sel" title="Chain">
+        <option value="">All chains</option>
+        <option value="solana">Solana</option>
+        <option value="ethereum">Ethereum</option>
+        <option value="bsc">BNB Chain</option>
+        <option value="base">Base</option>
+        <option value="polygon">Polygon</option>
+        <option value="arbitrum">Arbitrum</option>
+        <option value="avalanche">Avalanche</option>
+      </select>
+      <select id="mvLiq" class="mv-sel" title="Minimum liquidity">
+        <option value="0">Min liq: any</option>
+        <option value="25000">≥ $25K</option>
+        <option value="50000">≥ $50K</option>
+        <option value="100000" selected>≥ $100K</option>
+        <option value="250000">≥ $250K</option>
+        <option value="1000000">≥ $1M</option>
+      </select>
+      <select id="mvVol" class="mv-sel" title="Minimum 24h volume">
+        <option value="0">Min vol: any</option>
+        <option value="50000">≥ $50K</option>
+        <option value="250000">≥ $250K</option>
+        <option value="1000000">≥ $1M</option>
+      </select>
+      <label class="mv-toggle"><input type="checkbox" id="mvSafe" checked> Safe only</label>
+    </div>
     <div id="moverList" class="mover-list"><div class="mover-empty">Tap “scan” to screen the market…</div></div>
   </div>
 
@@ -3723,7 +3750,7 @@ function aryxBackToLanding(){
   var TOKENS = 'https://api.dexscreener.com/latest/dex/tokens/'; // + comma addresses
   var CHAINMAP = { solana:'solana', ethereum:'eth', bsc:'bsc', base:'base', polygon:'polygon_pos', arbitrum:'arbitrum', avalanche:'avax' };
 
-  var listEl, scanBtn, scanning = false;
+  var listEl, scanBtn, scanning = false, allMovers = [];
   function last(a){ return a[a.length-1]; }
   function fmtUsd(v){ if(v==null||isNaN(v)) return '—'; if(v>=1e9)return '$'+(v/1e9).toFixed(1)+'B'; if(v>=1e6)return '$'+(v/1e6).toFixed(1)+'M'; if(v>=1e3)return '$'+(v/1e3).toFixed(1)+'K'; return '$'+(+v).toFixed(0); }
   function fmtPrice(v){ v=+v; if(!isFinite(v))return '—'; var d=v>=1?4:v>=0.01?5:8; return '$'+v.toLocaleString('en-US',{maximumFractionDigits:d}); }
@@ -3887,14 +3914,14 @@ function aryxBackToLanding(){
         var out = [];
         Object.keys(bestByToken).forEach(function(k){ var m = score(bestByToken[k]); if(m && m.s >= 3) out.push(m); });
         out.sort(function(a,b){ return b.s - a.s; });
-        var top = out.slice(0, 9);
-        // 3) run rug/honeypot safety checks on the shortlist, then render
+        var pool = out.slice(0, 18);
+        // 3) run rug/honeypot safety checks on the shortlist
         if(scanBtn) scanBtn.textContent = '… safety';
-        Promise.all(top.map(function(m){ return checkSafety(m).then(function(s){ m.safety = s; return m; }); }))
+        Promise.all(pool.map(function(m){ return checkSafety(m).then(function(s){ m.safety = s; return m; }); }))
           .then(function(){
-            // drop confirmed honeypots entirely; keep caution/ok/unknown (flagged)
-            var safe = top.filter(function(m){ return !(m.safety && m.safety.v==='danger' && /honeypot|cannot sell|non-transferable|freeze/.test(m.safety.why)); });
-            render(safe.length ? safe : top);
+            // always drop confirmed honeypots; keep the rest for filtering
+            allMovers = pool.filter(function(m){ return !(m.safety && m.safety.v==='danger' && /honeypot|cannot sell|non-transferable|freeze/.test(m.safety.why)); });
+            applyFilters();
             scanning = false;
             if(scanBtn) scanBtn.textContent = '↻ scan';
           });
@@ -3903,6 +3930,27 @@ function aryxBackToLanding(){
       listEl.innerHTML = '<div class="mover-empty">Couldn’t reach the DEX scanner right now. Tap “scan” to retry.</div>';
       scanning = false; if(scanBtn) scanBtn.textContent = '↻ scan';
     });
+  }
+
+  function applyFilters(){
+    if(!listEl) return;
+    var chain = (document.getElementById('mvChain')||{}).value || '';
+    var minLiq = +(((document.getElementById('mvLiq')||{}).value) || 0);
+    var minVol = +(((document.getElementById('mvVol')||{}).value) || 0);
+    var safeOnly = !!((document.getElementById('mvSafe')||{}).checked);
+    var rows = allMovers.filter(function(m){
+      if(chain && m.chain !== chain) return false;
+      if(m.liq < minLiq) return false;
+      if(m.vol < minVol) return false;
+      if(safeOnly && !(m.safety && m.safety.v === 'ok')) return false;
+      return true;
+    });
+    if(!allMovers.length){ render([]); return; }
+    if(!rows.length){
+      listEl.innerHTML = '<div class="mover-empty">No tokens match these filters. Loosen the chain, lower min liquidity, or turn off “Safe only”.</div>';
+      return;
+    }
+    render(rows.slice(0, 9));
   }
 
   function openMover(chain, addr, url){
@@ -3920,6 +3968,9 @@ function aryxBackToLanding(){
     scanBtn = document.getElementById('moverScan');
     if(!listEl) return;
     if(scanBtn) scanBtn.addEventListener('click', scan);
+    ['mvChain','mvLiq','mvVol','mvSafe'].forEach(function(id){
+      var el = document.getElementById(id); if(el) el.addEventListener('change', applyFilters);
+    });
     listEl.addEventListener('click', function(e){
       var row = e.target.closest('.mover-row'); if(!row) return;
       openMover(row.dataset.chain, row.dataset.addr, row.dataset.url);
@@ -4028,6 +4079,13 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
   padding:16px 18px!important;margin-top:16px!important;box-shadow:0 12px 30px -18px rgba(0,0,0,.6)!important;}
 .mover-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
 .mover-note{font-size:12px;color:var(--ax-muted);line-height:1.6;margin-bottom:14px;}
+.mover-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center;}
+.mv-sel{background:var(--ax-surface2);border:1px solid var(--ax-line2);color:var(--ax-text);
+  font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:9px;cursor:pointer;outline:none;}
+.mv-sel:focus{border-color:var(--ax-mint);}
+.mv-toggle{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--ax-muted);cursor:pointer;
+  background:var(--ax-surface2);border:1px solid var(--ax-line2);padding:8px 12px;border-radius:9px;}
+.mv-toggle input{accent-color:var(--ax-mint);width:15px;height:15px;cursor:pointer;}
 .mover-note b{color:var(--ax-text);}
 .mover-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;}
 .mover-empty,.mover-loading{grid-column:1/-1;text-align:center;color:var(--ax-dim);font-size:13px;padding:18px;}
