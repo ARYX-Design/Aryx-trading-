@@ -996,7 +996,7 @@
       <div class="chart-title">🚀 Early Movers — bullish setups forming</div>
       <button id="moverScan" class="ctool">↻ scan</button>
     </div>
-    <div class="mover-note">Scans <b>trending DEX tokens</b> (via DexScreener) for <b>early</b> momentum with real liquidity — rising 1h price, high turnover, fresh pairs — and <b>down-ranks anything that already ran</b>. Tap a token to chart it in the terminal (supported chains) or open it on DexScreener. These are <b>extremely high-risk, low-cap speculative tokens, not predictions</b> — most go to zero, many are scams/rugs. Verify the contract, liquidity, and holders yourself. Never risk more than you can lose.</div>
+    <div class="mover-note">Scans <b>trending DEX tokens</b> (via DexScreener) for <b>early</b> momentum with real liquidity — rising 1h price, high turnover, fresh pairs — and <b>down-ranks anything that already ran</b>. Tap a token to chart it in the terminal (supported chains) or open it on DexScreener. These are <b>extremely high-risk, low-cap speculative tokens, not predictions</b> — most go to zero, many are scams/rugs. Verify the contract, liquidity, and holders yourself. Each token is auto-checked for honeypots/high tax/mint &amp; freeze authority via GoPlus (confirmed honeypots are dropped), with one-tap links to Honeypot.is, TokenSniffer &amp; Bubblemaps — but automated checks miss things, so always verify yourself. Never risk more than you can lose.</div>
     <div id="moverList" class="mover-list"><div class="mover-empty">Tap “scan” to screen the market…</div></div>
   </div>
 
@@ -3730,6 +3730,64 @@ function aryxBackToLanding(){
 
   function getJSON(u){ return fetch(u).then(function(r){ if(!r.ok) throw 0; return r.json(); }); }
 
+  // ---- Rug / honeypot safety via GoPlus (keyless, CORS) + deep-dive links ----
+  var GOPLUS_EVM = { ethereum:'1', bsc:'56', base:'8453', polygon:'137', arbitrum:'42161', avalanche:'43114' };
+  var TS_CHAIN   = { ethereum:'eth', bsc:'bsc', base:'base', polygon:'polygon', arbitrum:'arbitrum', avalanche:'avalanche' };
+  var BM_CHAIN   = { ethereum:'eth', bsc:'bsc', base:'base', polygon:'poly', arbitrum:'arbi', avalanche:'avax', solana:'sol' };
+
+  function parseEvmSafety(d){
+    if(!d) return { v:'?', why:'no data' };
+    var honey = d.is_honeypot==='1' || d.cannot_sell_all==='1';
+    var sellTax = (+d.sell_tax||0)*100, buyTax = (+d.buy_tax||0)*100;
+    var danger = [];
+    if(d.transfer_pausable==='1') danger.push('pausable');
+    if(d.hidden_owner==='1') danger.push('hidden owner');
+    if(d.can_take_back_ownership==='1') danger.push('owner can reclaim');
+    if(d.is_blacklisted==='1') danger.push('blacklist');
+    if(honey) return { v:'danger', why:'honeypot — buyers cannot sell' };
+    if(sellTax>=30) return { v:'danger', why:'sell tax '+sellTax.toFixed(0)+'%' };
+    if(danger.length) return { v:'danger', why:danger.join(', ') };
+    var caution = [];
+    if(sellTax>=10||buyTax>=10) caution.push('tax '+Math.max(buyTax,sellTax).toFixed(0)+'%');
+    if(d.is_open_source==='0') caution.push('closed source');
+    if(d.is_mintable==='1') caution.push('mintable');
+    if(d.owner_address && d.owner_address!=='0x0000000000000000000000000000000000000000' && d.is_open_source==='0') caution.push('owned');
+    if(caution.length) return { v:'caution', why:caution.join(', ') };
+    return { v:'ok', why:'no major flags' };
+  }
+  function parseSolSafety(d){
+    if(!d) return { v:'?', why:'no data' };
+    var fr = (d.freezable && d.freezable.status)==='1';
+    var nt = d.non_transferable==='1' || (d.transferable && d.transferable.status)==='0';
+    var mint = (d.mintable && d.mintable.status)==='1';
+    if(fr) return { v:'danger', why:'freeze authority — tokens can be frozen' };
+    if(nt) return { v:'danger', why:'non-transferable' };
+    if(mint) return { v:'caution', why:'mint authority active' };
+    return { v:'ok', why:'no freeze/mint flags' };
+  }
+  function checkSafety(m){
+    if(!m.addr) return Promise.resolve({ v:'?', why:'no address' });
+    if(m.chain==='solana'){
+      return getJSON('https://api.goplus.org/api/v1/solana/token_security?contract_addresses='+m.addr)
+        .then(function(r){ var res=r&&r.result; var d=res&&(res[m.addr]||res[Object.keys(res)[0]]); return parseSolSafety(d); })
+        .catch(function(){ return { v:'?', why:'unchecked' }; });
+    }
+    var cid = GOPLUS_EVM[m.chain];
+    if(!cid) return Promise.resolve({ v:'?', why:'chain unchecked' });
+    var a = m.addr.toLowerCase();
+    return getJSON('https://api.goplus.org/api/v1/token_security/'+cid+'?contract_addresses='+a)
+      .then(function(r){ var res=r&&r.result; var d=res&&(res[a]||res[Object.keys(res||{})[0]]); return parseEvmSafety(d); })
+      .catch(function(){ return { v:'?', why:'unchecked' }; });
+  }
+  function safetyLinks(m){
+    var out = [];
+    if(m.url) out.push('<a class="mv-link" href="'+m.url+'" target="_blank" rel="noopener" title="DexScreener">DEX</a>');
+    if(GOPLUS_EVM[m.chain] && m.addr) out.push('<a class="mv-link" href="https://honeypot.is/?address='+m.addr+'" target="_blank" rel="noopener" title="Honeypot.is">🍯</a>');
+    if(TS_CHAIN[m.chain] && m.addr) out.push('<a class="mv-link" href="https://tokensniffer.com/token/'+TS_CHAIN[m.chain]+'/'+m.addr+'" target="_blank" rel="noopener" title="TokenSniffer">🔍</a>');
+    if(BM_CHAIN[m.chain] && m.addr) out.push('<a class="mv-link" href="https://app.bubblemaps.io/'+BM_CHAIN[m.chain]+'/token/'+m.addr+'" target="_blank" rel="noopener" title="Bubblemaps holders">🫧</a>');
+    return out.join('');
+  }
+
   function score(p){
     // p is a DexScreener pair object
     var liq = (p.liquidity && p.liquidity.usd) || 0;
@@ -3768,15 +3826,20 @@ function aryxBackToLanding(){
 
   function render(rows){
     if(!rows.length){ listEl.innerHTML = '<div class="mover-empty">No clean early setups right now — trending tokens are either too illiquid or already ran. Try again shortly.</div>'; return; }
+    var SAFE = { ok:['✓ safe-ish','ok'], caution:['⚠ caution','caution'], danger:['⛔ danger','danger'], '?':['? unchecked','unk'] };
     listEl.innerHTML = rows.map(function(m){
       var cls = m.h1>=0?'up':'down';
-      var tags = m.tags.slice(0,4).map(function(t){ return '<span class="mover-tag'+(t[1]?' warn':'')+'">'+t[0]+'</span>'; }).join('');
+      var tags = m.tags.slice(0,3).map(function(t){ return '<span class="mover-tag'+(t[1]?' warn':'')+'">'+t[0]+'</span>'; }).join('');
+      var sv = (m.safety && m.safety.v) || '?';
+      var sl = SAFE[sv] || SAFE['?'];
+      var pill = '<span class="mv-safe '+sl[1]+'" title="'+((m.safety&&m.safety.why)||'')+'">'+sl[0]+'</span>';
       return '<div class="mover-row" data-chain="'+m.chain+'" data-addr="'+(m.addr||'')+'" data-url="'+(m.url||'')+'">'+
         '<div class="mover-top"><span class="mover-sym">'+m.sym+'<small> · '+m.chain+'</small></span>'+
         '<span class="mover-chg '+cls+'">'+(m.h1>=0?'+':'')+m.h1.toFixed(1)+'% <small style="opacity:.6">1h</small></span></div>'+
         '<div class="mover-score"><div class="mover-bar"><span style="width:'+m.pct+'%"></span></div><span class="mover-pct">'+m.pct+'</span></div>'+
-        '<div class="mover-tags">'+tags+'</div>'+
-        '<div class="mover-price">'+fmtPrice(m.price)+' · liq '+fmtUsd(m.liq)+' · vol '+fmtUsd(m.vol)+' · 24h '+(m.h24>=0?'+':'')+m.h24.toFixed(0)+'%</div></div>';
+        '<div class="mover-tags">'+pill+tags+'</div>'+
+        '<div class="mover-price">'+fmtPrice(m.price)+' · liq '+fmtUsd(m.liq)+' · vol '+fmtUsd(m.vol)+' · 24h '+(m.h24>=0?'+':'')+m.h24.toFixed(0)+'%</div>'+
+        '<div class="mv-links" onclick="event.stopPropagation()">'+safetyLinks(m)+'</div></div>';
     }).join('');
   }
 
@@ -3824,9 +3887,17 @@ function aryxBackToLanding(){
         var out = [];
         Object.keys(bestByToken).forEach(function(k){ var m = score(bestByToken[k]); if(m && m.s >= 3) out.push(m); });
         out.sort(function(a,b){ return b.s - a.s; });
-        render(out.slice(0, 9));
-        scanning = false;
-        if(scanBtn) scanBtn.textContent = '↻ scan';
+        var top = out.slice(0, 9);
+        // 3) run rug/honeypot safety checks on the shortlist, then render
+        if(scanBtn) scanBtn.textContent = '… safety';
+        Promise.all(top.map(function(m){ return checkSafety(m).then(function(s){ m.safety = s; return m; }); }))
+          .then(function(){
+            // drop confirmed honeypots entirely; keep caution/ok/unknown (flagged)
+            var safe = top.filter(function(m){ return !(m.safety && m.safety.v==='danger' && /honeypot|cannot sell|non-transferable|freeze/.test(m.safety.why)); });
+            render(safe.length ? safe : top);
+            scanning = false;
+            if(scanBtn) scanBtn.textContent = '↻ scan';
+          });
       });
     }).catch(function(){
       listEl.innerHTML = '<div class="mover-empty">Couldn’t reach the DEX scanner right now. Tap “scan” to retry.</div>';
@@ -3977,6 +4048,15 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
   background:rgba(0,224,164,.12);color:var(--ax-mint);}
 .mover-tag.warn{background:rgba(255,198,92,.14);color:var(--ax-warn);}
 .mover-price{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ax-dim);}
+.mv-safe{font-size:9.5px;font-weight:700;letter-spacing:.03em;padding:3px 7px;border-radius:5px;}
+.mv-safe.ok{background:rgba(38,217,130,.14);color:var(--ax-up);}
+.mv-safe.caution{background:rgba(255,198,92,.14);color:var(--ax-warn);}
+.mv-safe.danger{background:rgba(255,92,115,.16);color:var(--ax-down);}
+.mv-safe.unk{background:rgba(255,255,255,.06);color:var(--ax-dim);}
+.mv-links{display:flex;gap:6px;margin-top:2px;}
+.mv-link{font-size:10.5px;font-weight:700;color:var(--ax-muted);background:rgba(255,255,255,.05);
+  border:1px solid var(--ax-line);border-radius:6px;padding:3px 8px;text-decoration:none;transition:.15s;}
+.mv-link:hover{color:var(--ax-text);border-color:var(--ax-line2);background:rgba(255,255,255,.09);}
 </style>
 
 <!-- ============ Aryx login gate + boot ============ -->
