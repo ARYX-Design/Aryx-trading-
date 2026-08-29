@@ -1843,10 +1843,46 @@ function analyze(d){
     score*=1.12;   // amplify slightly — trend signals are more trustworthy
   }
 
-  // recompute verdict & conf with expanded score range
-  verdict='neutral';
-  if(score>=4)verdict='buy';else if(score<=-4)verdict='sell';
-  const conf2=Math.min(100,Math.round(Math.abs(score)/18*100));
+  // ===== COMPOSITE FORMULA (v2) — category-normalized, consensus-weighted =====
+  // The old model summed ad-hoc points, which over-weighted correlated momentum
+  // oscillators (RSI + StochRSI + Stochastic + MFI all say the same thing). Here
+  // each indicator casts a -1 / 0 / +1 vote; votes are averaged WITHIN four
+  // low-correlation categories; the categories are then blended with weights that
+  // ADAPT to the market regime. Output `composite` is normalized to [-1, +1], and
+  // conviction combines the composite's magnitude with how many indicators agree.
+  const _d = s => s === 'buy' ? 1 : s === 'sell' ? -1 : 0;
+  const _net = arr => { const v = arr.map(_d); return v.reduce((a, x) => a + x, 0) / (v.length || 1); };
+
+  const htfSig = htfPts > 0 ? 'buy' : htfPts < 0 ? 'sell' : 'neutral';
+  const patSig = patPts > 0 ? 'buy' : patPts < 0 ? 'sell' : 'neutral';
+
+  // four low-correlation buckets, each normalized to [-1, +1]
+  const catTrend = _net([superSig, emaSig, psarSig, donchSig, tsSig, adxSig, htfSig]);
+  const catMom   = _net([macdSig, rsiSig, stochSig, srsiSig, rocSig]);
+  const catFlow  = _net([mfiSig, cmfSig, obvSig, vwapSig, volSig]);
+  const catVol   = _net([bollSig, sqSig, patSig]);
+
+  // regime-adaptive category weights (each set sums to 1.0)
+  let wT, wM, wF, wV;
+  if (regime === 'strong')      { wT = .46; wM = .18; wF = .22; wV = .14; } // clean trend → trust trend
+  else if (regime === 'ranging'){ wT = .20; wM = .34; wF = .28; wV = .18; } // chop → mean-reversion & flow
+  else                          { wT = .36; wM = .24; wF = .24; wV = .16; } // normal
+
+  let composite = wT * catTrend + wM * catMom + wF * catFlow + wV * catVol;
+  composite = Math.max(-1, Math.min(1, composite));
+
+  // consensus: share of voting (non-neutral) indicators that agree with the sign
+  const _votes = [superSig, emaSig, psarSig, donchSig, tsSig, adxSig, htfSig,
+                  macdSig, rsiSig, stochSig, srsiSig, rocSig,
+                  mfiSig, cmfSig, obvSig, vwapSig, volSig, bollSig, sqSig, patSig].map(_d);
+  const _nz = _votes.filter(v => v !== 0);
+  const _sign = composite > 0 ? 1 : composite < 0 ? -1 : 0;
+  const agreement = _nz.length ? _nz.filter(v => v === _sign).length / _nz.length : 0;
+
+  // display score (~[-10, +10]), verdict, and consensus-weighted conviction
+  score = +(composite * 10).toFixed(2);
+  verdict = composite >= 0.15 ? 'buy' : composite <= -0.15 ? 'sell' : 'neutral';
+  const conf2 = Math.round(Math.min(100, 100 * (0.55 * Math.abs(composite) + 0.45 * agreement)));
 
   // ===== SMART TAKE-PROFIT / STOP-LOSS (structure-aware · volatility-adaptive) =====
   // Accuracy upgrades vs a plain ATR bracket:
