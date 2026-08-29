@@ -996,7 +996,7 @@
       <div class="chart-title">🚀 Early Movers — bullish setups forming</div>
       <button id="moverScan" class="ctool">↻ scan</button>
     </div>
-    <div class="mover-note">Screens liquid USDT pairs for <b>early</b> bullish structure — volatility squeeze, volume surge, momentum turning up, and fresh breakouts — and <b>down-ranks coins that already ran</b>. Ranked by a bull-setup score. These are <b>high-risk speculative setups, not predictions</b> — most never "blow up," and any can dump. Do your own research; never risk more than you can lose.</div>
+    <div class="mover-note">Scans <b>trending DEX tokens</b> (via DexScreener) for <b>early</b> momentum with real liquidity — rising 1h price, high turnover, fresh pairs — and <b>down-ranks anything that already ran</b>. Tap a token to chart it in the terminal (supported chains) or open it on DexScreener. These are <b>extremely high-risk, low-cap speculative tokens, not predictions</b> — most go to zero, many are scams/rugs. Verify the contract, liquidity, and holders yourself. Never risk more than you can lose.</div>
     <div id="moverList" class="mover-list"><div class="mover-empty">Tap “scan” to screen the market…</div></div>
   </div>
 
@@ -3711,111 +3711,137 @@ function aryxBackToLanding(){
     bar.classList.toggle('show', sc.scrollTop>600 && !nearPricing);
   },{passive:true});
 })();</script>
-<!-- ============ Early Movers scanner ============ -->
+<!-- ============ Early Movers scanner (DexScreener) ============ -->
 <script>
 (function () {
   'use strict';
-  var UNIVERSE = ['SOL','AVAX','LINK','DOGE','ADA','DOT','ATOM','NEAR','APT','ARB','OP','INJ',
-    'SUI','SEI','TIA','RUNE','FET','PEPE','WIF','FLOKI','LDO','AAVE','UNI','ALGO','HBAR','GALA',
-    'SAND','GRT','IMX','JUP','ORDI','PYTH','STX','BONK','ENA','RENDER'];
+  // DexScreener — free, no API key, CORS-friendly. We pull the "boosted"
+  // (trending / newly-promoted) tokens and screen them for EARLY momentum
+  // with real liquidity, while down-ranking anything that already ran.
+  var BOOSTS = 'https://api.dexscreener.com/token-boosts/top/v1';
+  var LATEST = 'https://api.dexscreener.com/token-boosts/latest/v1';
+  var TOKENS = 'https://api.dexscreener.com/latest/dex/tokens/'; // + comma addresses
+  var CHAINMAP = { solana:'solana', ethereum:'eth', bsc:'bsc', base:'base', polygon:'polygon_pos', arbitrum:'arbitrum', avalanche:'avax' };
 
   var listEl, scanBtn, scanning = false;
-  function mean(a){ return a.reduce(function(x,y){return x+y;},0)/(a.length||1); }
   function last(a){ return a[a.length-1]; }
-  function fmtPrice(v){ var d = v>=100?2:v>=1?3:v>=0.01?5:8; return '$'+v.toLocaleString('en-US',{maximumFractionDigits:d}); }
+  function fmtUsd(v){ if(v==null||isNaN(v)) return '—'; if(v>=1e9)return '$'+(v/1e9).toFixed(1)+'B'; if(v>=1e6)return '$'+(v/1e6).toFixed(1)+'M'; if(v>=1e3)return '$'+(v/1e3).toFixed(1)+'K'; return '$'+(+v).toFixed(0); }
+  function fmtPrice(v){ v=+v; if(!isFinite(v))return '—'; var d=v>=1?4:v>=0.01?5:8; return '$'+v.toLocaleString('en-US',{maximumFractionDigits:d}); }
 
-  function klines(pair){
-    return fetch('https://api.binance.com/api/v3/klines?symbol='+pair+'&interval=1h&limit=120')
-      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-      .then(function(rows){
-        return {
-          o:rows.map(function(k){return +k[1];}), h:rows.map(function(k){return +k[2];}),
-          l:rows.map(function(k){return +k[3];}), c:rows.map(function(k){return +k[4];}),
-          v:rows.map(function(k){return +k[5];})
-        };
-      });
-  }
+  function getJSON(u){ return fetch(u).then(function(r){ if(!r.ok) throw 0; return r.json(); }); }
 
-  // bull-setup score using the terminal's global indicator functions
-  function score(sym, d){
-    var c=d.c, h=d.h, l=d.l, v=d.v, n=c.length; if(n<40) return null;
-    var i=n-1, price=c[i], tags=[], s=0;
-    try{
-      if(typeof ema==='function'){ var e9=ema(c,9), e21=ema(c,21);
-        if(price>last(e9) && last(e9)>last(e21)){ s+=2; tags.push(['Above EMAs',0]); } }
-      if(typeof rsi==='function'){ var r=rsi(c,14), rl=r[i], rising=r[i]>r[i-3];
-        if(rl<40 && rising){ s+=1.8; tags.push(['RSI reversal',0]); }
-        else if(rl>=50 && rl<=68 && rising){ s+=1.5; tags.push(['Momentum ↑',0]); }
-        if(rl>75){ s-=2; tags.push(['Overbought',1]); } }
-      if(typeof macd==='function'){ var m=macd(c); if(m&&m.hist){ var hs=m.hist;
-        if(last(hs)>0 && hs[i]>hs[i-1]){ s+=1.5; tags.push(['MACD ↑',0]); } } }
-      var vAvg=mean(v.slice(-21,-1)); if(v[i] > 1.6*vAvg){ s+=1.6; tags.push(['Vol surge',0]); }
-      if(typeof donchian==='function'){ var dc=donchian(h,l,20);
-        if(dc && dc.up[i-1]!=null && price>dc.up[i-1]){ s+=2; tags.push(['Breakout',0]); } }
-      if(typeof boll==='function'){ var bb=boll(c,20,2);
-        if(bb && bb.up[i]!=null){
-          var bw=[]; for(var j=i-49;j<=i;j++){ if(j>=0 && bb.up[j]!=null) bw.push((bb.up[j]-bb.lo[j])/(bb.mid[j]||1)); }
-          bw.sort(function(a,b){return a-b;}); var med=bw[Math.floor(bw.length/2)]||1;
-          var cur=(bb.up[i]-bb.lo[i])/(bb.mid[i]||1);
-          if(cur < 0.7*med && price>bb.mid[i]){ s+=1.4; tags.push(['Coiled',0]); }
-          if(price > bb.up[i]*1.02){ s-=1.5; }
-        } }
-      if(typeof roc==='function'){ var rc=roc(c,9); if(rc[i]!=null && rc[i]>0 && rc[i]>rc[i-3]){ s+=1; tags.push(['Accelerating',0]); } }
-    }catch(e){ return null; }
+  function score(p){
+    // p is a DexScreener pair object
+    var liq = (p.liquidity && p.liquidity.usd) || 0;
+    var vol = (p.volume && p.volume.h24) || 0;
+    var ch = p.priceChange || {};
+    var h1 = +ch.h1 || 0, h6 = +ch.h6 || 0, h24 = +ch.h24 || 0, m5 = +ch.m5 || 0;
+    if (liq < 15000 || vol < 20000) return null;     // avoid illiquid / dead / rug-prone
 
-    var chg = c[i-24]!=null ? (price/c[i-24]-1)*100 : (price/c[0]-1)*100;
-    if(chg>25){ s-=2.5; tags.push(['Already ran',1]); }        // missed the move
-    var pct = Math.max(0, Math.min(100, Math.round(s/10*100)));
-    return { sym:sym, pair:sym+'USDT', price:price, chg:chg, s:s, pct:pct, tags:tags };
+    var s = 0, tags = [];
+    if (h1 > 0) { s += 2; tags.push(['H1 ↑ '+h1.toFixed(0)+'%', 0]); }
+    if (m5 > 0 && h1 > 0) { s += 0.8; }
+    if (h6 > 0) { s += 1; }
+    var vlr = vol / liq;                              // turnover — real activity
+    if (vlr > 3) { s += 2; tags.push(['High turnover', 0]); }
+    else if (vlr > 1) { s += 1; tags.push(['Active', 0]); }
+
+    var ageH = p.pairCreatedAt ? (Date.now() - p.pairCreatedAt) / 3600000 : 9999;
+    if (ageH < 24 * 45) { s += 1; }
+    if (ageH < 24 * 7) { s += 1.2; tags.push(['Fresh', 0]); }
+    if (ageH < 6) { tags.push(['Very new', 1]); }     // extra risky
+
+    if (p._boosted) { s += 0.8; tags.push(['Boosted', 0]); }
+
+    // down-rank coins that already blew up (we want them BEFORE)
+    if (h24 > 120) { s -= 3; tags.push(['Already ran', 1]); }
+    else if (h24 > 60) { s -= 1.2; tags.push(['Extended', 1]); }
+    if (h1 < -8) { s -= 1.5; }                         // dumping now
+
+    var pct = Math.max(0, Math.min(100, Math.round(s / 8 * 100)));
+    return {
+      sym: (p.baseToken && p.baseToken.symbol) || '?', chain: p.chainId, addr: (p.baseToken && p.baseToken.address),
+      pair: p.pairAddress, url: p.url, price: +p.priceUsd, liq: liq, vol: vol,
+      h1: h1, h6: h6, h24: h24, s: s, pct: pct, tags: tags
+    };
   }
 
   function render(rows){
-    if(!rows.length){ listEl.innerHTML = '<div class="mover-empty">No clean setups right now — the market is quiet or extended. Try again later.</div>'; return; }
+    if(!rows.length){ listEl.innerHTML = '<div class="mover-empty">No clean early setups right now — trending tokens are either too illiquid or already ran. Try again shortly.</div>'; return; }
     listEl.innerHTML = rows.map(function(m){
-      var chgCls = m.chg>=0?'up':'down';
+      var cls = m.h1>=0?'up':'down';
       var tags = m.tags.slice(0,4).map(function(t){ return '<span class="mover-tag'+(t[1]?' warn':'')+'">'+t[0]+'</span>'; }).join('');
-      return '<div class="mover-row" data-bin="'+m.pair+'" data-sym="'+m.sym+'">'+
-        '<div class="mover-top"><span class="mover-sym">'+m.sym+'<small>/USDT</small></span>'+
-        '<span class="mover-chg '+chgCls+'">'+(m.chg>=0?'+':'')+m.chg.toFixed(1)+'%</span></div>'+
+      return '<div class="mover-row" data-chain="'+m.chain+'" data-addr="'+(m.addr||'')+'" data-url="'+(m.url||'')+'">'+
+        '<div class="mover-top"><span class="mover-sym">'+m.sym+'<small> · '+m.chain+'</small></span>'+
+        '<span class="mover-chg '+cls+'">'+(m.h1>=0?'+':'')+m.h1.toFixed(1)+'% <small style="opacity:.6">1h</small></span></div>'+
         '<div class="mover-score"><div class="mover-bar"><span style="width:'+m.pct+'%"></span></div><span class="mover-pct">'+m.pct+'</span></div>'+
         '<div class="mover-tags">'+tags+'</div>'+
-        '<div class="mover-price">'+fmtPrice(m.price)+' · 24h</div></div>';
+        '<div class="mover-price">'+fmtPrice(m.price)+' · liq '+fmtUsd(m.liq)+' · vol '+fmtUsd(m.vol)+' · 24h '+(m.h24>=0?'+':'')+m.h24.toFixed(0)+'%</div></div>';
     }).join('');
   }
 
   function scan(){
     if(scanning || !listEl) return;
     scanning = true;
-    listEl.innerHTML = '<div class="mover-loading">scanning '+UNIVERSE.length+' markets…</div>';
+    listEl.innerHTML = '<div class="mover-loading">scanning DEX markets…</div>';
     if(scanBtn) scanBtn.textContent = '… scanning';
-    var out = [], queue = UNIVERSE.slice();
 
-    function worker(){
-      if(!queue.length) return Promise.resolve();
-      var sym = queue.shift();
-      return klines(sym).then(function(d){ var m = score(sym, d); if(m && m.s>=3) out.push(m); })
-        .catch(function(){})
-        .then(worker);
-    }
-    // 5 parallel workers to stay gentle on rate limits
-    var workers = []; for(var w=0; w<5; w++) workers.push(worker());
-    Promise.all(workers).then(function(){
-      out.sort(function(a,b){ return b.s - a.s; });
-      render(out.slice(0,9));
-      scanning = false;
-      if(scanBtn) scanBtn.textContent = '↻ scan';
+    // 1) collect trending / boosted token addresses (both endpoints), dedupe
+    Promise.all([ getJSON(BOOSTS).catch(function(){return [];}), getJSON(LATEST).catch(function(){return [];}) ])
+    .then(function(res){
+      var items = [].concat(res[0]||[], res[1]||[]);
+      var boosted = {};
+      var byChain = {};
+      items.forEach(function(it){
+        if(!it || !it.tokenAddress || !it.chainId) return;
+        boosted[it.chainId+':'+it.tokenAddress] = true;
+        (byChain[it.chainId] = byChain[it.chainId] || []).push(it.tokenAddress);
+      });
+      // 2) fetch pair data in chunks of 30 addresses
+      var calls = [];
+      Object.keys(byChain).forEach(function(chain){
+        var addrs = byChain[chain].slice(0, 60);
+        for(var i=0;i<addrs.length;i+=30){
+          var chunk = addrs.slice(i, i+30).join(',');
+          calls.push(getJSON(TOKENS + chunk).catch(function(){ return {pairs:[]}; }));
+        }
+      });
+      if(!calls.length){ render([]); scanning=false; if(scanBtn) scanBtn.textContent='↻ scan'; return; }
+
+      Promise.all(calls).then(function(results){
+        var bestByToken = {};
+        results.forEach(function(r){
+          (r && r.pairs || []).forEach(function(p){
+            if(!p || !p.baseToken) return;
+            var key = p.chainId+':'+p.baseToken.address;
+            p._boosted = !!boosted[key];
+            // keep the deepest-liquidity pair per token
+            var cur = bestByToken[key];
+            var liq = (p.liquidity && p.liquidity.usd) || 0;
+            if(!cur || liq > ((cur.liquidity && cur.liquidity.usd) || 0)) bestByToken[key] = p;
+          });
+        });
+        var out = [];
+        Object.keys(bestByToken).forEach(function(k){ var m = score(bestByToken[k]); if(m && m.s >= 3) out.push(m); });
+        out.sort(function(a,b){ return b.s - a.s; });
+        render(out.slice(0, 9));
+        scanning = false;
+        if(scanBtn) scanBtn.textContent = '↻ scan';
+      });
+    }).catch(function(){
+      listEl.innerHTML = '<div class="mover-empty">Couldn’t reach the DEX scanner right now. Tap “scan” to retry.</div>';
+      scanning = false; if(scanBtn) scanBtn.textContent = '↻ scan';
     });
   }
 
-  function chart(pair, sym){
-    try{
-      if(typeof current !== 'undefined'){
-        current = { mode:'cex', id:sym.toLowerCase(), symbol:sym, name:sym, binance:pair };
-        if(typeof setHeader==='function') setHeader();
-        if(typeof load==='function') load(typeof activeTf!=='undefined'?activeTf:'day');
-        window.scrollTo({top:0,behavior:'smooth'});
-      }
-    }catch(e){}
+  function openMover(chain, addr, url){
+    // chart in-terminal via contract-address loader when the chain is supported
+    var ch = CHAINMAP[chain];
+    var ca = document.getElementById('caInput'), sel = document.getElementById('chain');
+    if (ch && addr && ca && sel && typeof loadCA === 'function') {
+      try { sel.value = ch; ca.value = addr; loadCA(); window.scrollTo({top:0,behavior:'smooth'}); return; } catch(e){}
+    }
+    if (url) window.open(url, '_blank', 'noopener');       // fallback: open on DexScreener
   }
 
   function init(){
@@ -3825,10 +3851,10 @@ function aryxBackToLanding(){
     if(scanBtn) scanBtn.addEventListener('click', scan);
     listEl.addEventListener('click', function(e){
       var row = e.target.closest('.mover-row'); if(!row) return;
-      chart(row.dataset.bin, row.dataset.sym);
+      openMover(row.dataset.chain, row.dataset.addr, row.dataset.url);
     });
-    window.aryxScanMovers = scan;      // let boot trigger it
-    setTimeout(scan, 2200);            // auto-scan shortly after load
+    window.aryxScanMovers = scan;
+    setTimeout(scan, 2200);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);
   else init();
