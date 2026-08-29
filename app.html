@@ -1078,6 +1078,12 @@
 
     <div class="bot-status" id="botStatus">Idle — pick a strategy and press Start.</div>
     <div class="bot-log" id="botLog"></div>
+
+    <div class="bot-lb">
+      <button id="botRank" class="ctool">🏆 Rank all 5 strategies</button>
+      <div class="bot-lb-note">Backtests each strategy on ~90 days of the selected market (long-only, all-in, no fees) and ranks by return. Tap a row to load that strategy into the bot. Backtests are in-sample and optimistic vs live.</div>
+      <div id="botLbList" class="lb-list"></div>
+    </div>
   </div>
 
   <div class="disc">
@@ -4088,6 +4094,53 @@ function aryxBackToLanding(){
     return 'flat';
   }
 
+  // ---- backtest one strategy over the full candle series (long-only, all-in) ----
+  function backtest(strat,h,l,c){
+    var cash=1, pos=null, trades=0, wins=0, peak=1, maxDD=0, eq=[], warm=27;
+    for(var i=warm;i<c.length;i++){
+      var sc=c.slice(0,i+1), sh=h.slice(0,i+1), sl=l.slice(0,i+1);
+      var cur = pos ? 'long' : 'flat';
+      var tgt = signal(strat, null, sh, sl, sc); if(tgt===null) tgt=cur;
+      var price=c[i];
+      if(tgt==='long' && !pos){ pos={ entry:price }; }
+      else if(tgt==='flat' && pos){ var r=price/pos.entry; cash*=r; trades++; if(r>1)wins++; pos=null; }
+      var e = pos ? cash*(price/pos.entry) : cash;
+      eq.push(e); if(e>peak)peak=e; var dd=(peak-e)/peak; if(dd>maxDD)maxDD=dd;
+    }
+    if(pos){ var rr=c[c.length-1]/pos.entry; cash*=rr; trades++; if(rr>1)wins++; }
+    return { ret:(cash-1)*100, trades:trades, win:trades?wins/trades*100:0, maxDD:maxDD*100, eq:eq };
+  }
+  function spark(eq){
+    if(!eq || eq.length<2) return '';
+    var w=88,hh=22,mn=Math.min.apply(null,eq),mx=Math.max.apply(null,eq),rg=(mx-mn)||1;
+    var pts=eq.map(function(v,i){ return (i/(eq.length-1)*w).toFixed(1)+','+(hh-((v-mn)/rg)*hh).toFixed(1); }).join(' ');
+    var col = eq[eq.length-1]>=eq[0] ? '#26d982' : '#ff5c73';
+    return '<svg class="lb-spark" width="'+w+'" height="'+hh+'" viewBox="0 0 '+w+' '+hh+'"><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5"/></svg>';
+  }
+  function renderLb(rows){
+    var lb=$('botLbList'); if(!lb) return;
+    lb.innerHTML = rows.map(function(r,idx){
+      var cls = r.ret>=0?'up':'down';
+      return '<div class="lb-row'+(idx===0?' best':'')+'" data-strat="'+r.key+'" title="Use this strategy in the bot">'+
+        '<span class="lb-rank">'+(idx+1)+'</span>'+
+        '<span class="lb-name">'+STRATLBL[r.key]+(idx===0?' 👑':'')+'</span>'+
+        spark(r.eq)+
+        '<span class="lb-ret '+cls+'">'+(r.ret>=0?'+':'')+r.ret.toFixed(1)+'%</span>'+
+        '<span class="lb-meta">'+Math.round(r.win)+'% win · '+r.trades+'t · DD '+r.maxDD.toFixed(0)+'%</span></div>';
+    }).join('');
+  }
+  function rankStrategies(){
+    var btn=$('botRank'); if(btn){ btn.disabled=true; btn.textContent='… backtesting'; }
+    fetchOHLC(st.sym, '90').then(function(rows){
+      if(!rows || rows.length<40){ if($('botLbList')) $('botLbList').innerHTML='<div class="bot-status">Not enough history to backtest right now — try again.</div>'; if(btn){ btn.disabled=false; btn.textContent='🏆 Rank all 5 strategies'; } return; }
+      var h=rows.map(function(r){return r[2];}), l=rows.map(function(r){return r[3];}), c=rows.map(function(r){return r[4];});
+      var res=['trend','meanrev','breakout','macd','multi'].map(function(k){ var b=backtest(k,h,l,c); b.key=k; return b; });
+      res.sort(function(a,b){ return b.ret - a.ret; });
+      renderLb(res);
+      if(btn){ btn.disabled=false; btn.textContent='↻ Re-rank ('+st.symLabel+' · ~90d)'; }
+    }).catch(function(){ if($('botLbList')) $('botLbList').innerHTML='<div class="bot-status">Price feed rate-limited — try again in a moment.</div>'; if(btn){ btn.disabled=false; btn.textContent='🏆 Rank all 5 strategies'; } });
+  }
+
   // ---- trades ----
   function log(act,price,pnl){ st.log.unshift({ t:Date.now(), act:act, price:price, pnl:pnl, sym:st.symLabel }); st.log = st.log.slice(0,12); }
   function buy(price){ var notional=equity()*st.size/100; if(notional<1)return; var qty=notional/price;
@@ -4160,6 +4213,13 @@ function aryxBackToLanding(){
     });
     $('botTf').addEventListener('change', function(e){ st.tf=e.target.value; save(); });
     $('botSize').addEventListener('change', function(e){ st.size=+e.target.value; save(); });
+    if($('botRank')) $('botRank').addEventListener('click', rankStrategies);
+    if($('botLbList')) $('botLbList').addEventListener('click', function(e){
+      var row=e.target.closest('.lb-row'); if(!row) return;
+      var k=row.dataset.strat; if(!k) return;
+      st.strat=k; save(); if($('botStrat')) $('botStrat').value=k;
+      setStatus('Loaded '+STRATLBL[k]+' into the bot — press Start to run it live.');
+    });
 
     // label for restored symbol
     var sel=$('botSym'); if(sel) st.symLabel = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : st.symLabel;
@@ -4326,6 +4386,20 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .bot-trade .act.sell{background:rgba(255,92,115,.14);color:var(--ax-down);}
 .bot-trade .bt-t{color:var(--ax-dim);} .bot-trade .bt-p{color:var(--ax-text);}
 .bot-trade .bt-pnl{margin-left:auto;font-weight:700;} .bt-pnl.up{color:var(--ax-up);} .bt-pnl.down{color:var(--ax-down);}
+.bot-lb{margin-top:16px;border-top:1px solid var(--ax-line);padding-top:14px;}
+.bot-lb-note{font-size:11px;color:var(--ax-dim);line-height:1.6;margin:8px 0 10px;}
+.lb-list{display:flex;flex-direction:column;gap:7px;}
+.lb-row{display:grid;grid-template-columns:22px 1fr 88px auto auto;align-items:center;gap:10px;
+  background:var(--ax-surface2);border:1px solid var(--ax-line);border-radius:10px;padding:9px 12px;cursor:pointer;transition:.15s;}
+.lb-row:hover{border-color:rgba(0,224,164,.4);}
+.lb-row.best{border-color:rgba(0,224,164,.45);background:rgba(0,224,164,.06);}
+.lb-rank{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--ax-dim);text-align:center;}
+.lb-name{font-weight:700;font-size:13px;color:var(--ax-text);}
+.lb-spark{opacity:.9;}
+.lb-ret{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;text-align:right;}
+.lb-ret.up{color:var(--ax-up);} .lb-ret.down{color:var(--ax-down);}
+.lb-meta{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ax-dim);white-space:nowrap;}
+@media(max-width:640px){ .lb-row{grid-template-columns:20px 1fr auto;} .lb-spark,.lb-meta{display:none;} }
 </style>
 
 <!-- ============ Aryx login gate + boot ============ -->
