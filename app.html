@@ -991,6 +991,15 @@
     <div id="watchList" class="watch-list"></div>
   </div>
 
+  <div class="mover-card" id="moverCard">
+    <div class="mover-h">
+      <div class="chart-title">🚀 Early Movers — bullish setups forming</div>
+      <button id="moverScan" class="ctool">↻ scan</button>
+    </div>
+    <div class="mover-note">Screens liquid USDT pairs for <b>early</b> bullish structure — volatility squeeze, volume surge, momentum turning up, and fresh breakouts — and <b>down-ranks coins that already ran</b>. Ranked by a bull-setup score. These are <b>high-risk speculative setups, not predictions</b> — most never "blow up," and any can dump. Do your own research; never risk more than you can lose.</div>
+    <div id="moverList" class="mover-list"><div class="mover-empty">Tap “scan” to screen the market…</div></div>
+  </div>
+
   <div class="disc">
     Signals are generated algorithmically from live exchange data (Binance public API — real OHLCV candles, with CoinGecko as fallback; GeckoTerminal for pasted contract addresses / DEX tokens) using a curated set of technical indicators (Supertrend, Parabolic SAR, EMA 12/21/26/50, ADX + Choppiness regime filter, RSI, StochRSI, Bollinger ±2σ, Keltner/TTM volatility squeeze, Donchian 20-bar breakout, MACD, Stochastic, MFI, CMF, OBV, rolling VWAP, Hull MA Trend Speed, ROC, volume, candlestick patterns, floor-trader pivots and Fibonacci retracements) plus candlestick charts, RSI/OBV divergence detection, a watchlist with signal-flip alerts, structure-aware take-profit/stop-loss brackets (stops behind swing structure, targets snapped to pivot/Fibonacci/channel levels, regime-adaptive widths), and a backtest that replays the bracket at every historical signal on the loaded chart and reports its measured hit-rates. Redundant/low-value indicators have been intentionally removed to reduce false consensus. This is an analytical tool, not financial advice. Indicators describe past and present behavior — they do not predict the future. Backtested win-rates are in-sample and optimistic versus live results. Crypto is volatile; never trade more than you can afford to lose, and do your own research.
   </div>
@@ -3702,6 +3711,130 @@ function aryxBackToLanding(){
     bar.classList.toggle('show', sc.scrollTop>600 && !nearPricing);
   },{passive:true});
 })();</script>
+<!-- ============ Early Movers scanner ============ -->
+<script>
+(function () {
+  'use strict';
+  var UNIVERSE = ['SOL','AVAX','LINK','DOGE','ADA','DOT','ATOM','NEAR','APT','ARB','OP','INJ',
+    'SUI','SEI','TIA','RUNE','FET','PEPE','WIF','FLOKI','LDO','AAVE','UNI','ALGO','HBAR','GALA',
+    'SAND','GRT','IMX','JUP','ORDI','PYTH','STX','BONK','ENA','RENDER'];
+
+  var listEl, scanBtn, scanning = false;
+  function mean(a){ return a.reduce(function(x,y){return x+y;},0)/(a.length||1); }
+  function last(a){ return a[a.length-1]; }
+  function fmtPrice(v){ var d = v>=100?2:v>=1?3:v>=0.01?5:8; return '$'+v.toLocaleString('en-US',{maximumFractionDigits:d}); }
+
+  function klines(pair){
+    return fetch('https://api.binance.com/api/v3/klines?symbol='+pair+'&interval=1h&limit=120')
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(rows){
+        return {
+          o:rows.map(function(k){return +k[1];}), h:rows.map(function(k){return +k[2];}),
+          l:rows.map(function(k){return +k[3];}), c:rows.map(function(k){return +k[4];}),
+          v:rows.map(function(k){return +k[5];})
+        };
+      });
+  }
+
+  // bull-setup score using the terminal's global indicator functions
+  function score(sym, d){
+    var c=d.c, h=d.h, l=d.l, v=d.v, n=c.length; if(n<40) return null;
+    var i=n-1, price=c[i], tags=[], s=0;
+    try{
+      if(typeof ema==='function'){ var e9=ema(c,9), e21=ema(c,21);
+        if(price>last(e9) && last(e9)>last(e21)){ s+=2; tags.push(['Above EMAs',0]); } }
+      if(typeof rsi==='function'){ var r=rsi(c,14), rl=r[i], rising=r[i]>r[i-3];
+        if(rl<40 && rising){ s+=1.8; tags.push(['RSI reversal',0]); }
+        else if(rl>=50 && rl<=68 && rising){ s+=1.5; tags.push(['Momentum ↑',0]); }
+        if(rl>75){ s-=2; tags.push(['Overbought',1]); } }
+      if(typeof macd==='function'){ var m=macd(c); if(m&&m.hist){ var hs=m.hist;
+        if(last(hs)>0 && hs[i]>hs[i-1]){ s+=1.5; tags.push(['MACD ↑',0]); } } }
+      var vAvg=mean(v.slice(-21,-1)); if(v[i] > 1.6*vAvg){ s+=1.6; tags.push(['Vol surge',0]); }
+      if(typeof donchian==='function'){ var dc=donchian(h,l,20);
+        if(dc && dc.up[i-1]!=null && price>dc.up[i-1]){ s+=2; tags.push(['Breakout',0]); } }
+      if(typeof boll==='function'){ var bb=boll(c,20,2);
+        if(bb && bb.up[i]!=null){
+          var bw=[]; for(var j=i-49;j<=i;j++){ if(j>=0 && bb.up[j]!=null) bw.push((bb.up[j]-bb.lo[j])/(bb.mid[j]||1)); }
+          bw.sort(function(a,b){return a-b;}); var med=bw[Math.floor(bw.length/2)]||1;
+          var cur=(bb.up[i]-bb.lo[i])/(bb.mid[i]||1);
+          if(cur < 0.7*med && price>bb.mid[i]){ s+=1.4; tags.push(['Coiled',0]); }
+          if(price > bb.up[i]*1.02){ s-=1.5; }
+        } }
+      if(typeof roc==='function'){ var rc=roc(c,9); if(rc[i]!=null && rc[i]>0 && rc[i]>rc[i-3]){ s+=1; tags.push(['Accelerating',0]); } }
+    }catch(e){ return null; }
+
+    var chg = c[i-24]!=null ? (price/c[i-24]-1)*100 : (price/c[0]-1)*100;
+    if(chg>25){ s-=2.5; tags.push(['Already ran',1]); }        // missed the move
+    var pct = Math.max(0, Math.min(100, Math.round(s/10*100)));
+    return { sym:sym, pair:sym+'USDT', price:price, chg:chg, s:s, pct:pct, tags:tags };
+  }
+
+  function render(rows){
+    if(!rows.length){ listEl.innerHTML = '<div class="mover-empty">No clean setups right now — the market is quiet or extended. Try again later.</div>'; return; }
+    listEl.innerHTML = rows.map(function(m){
+      var chgCls = m.chg>=0?'up':'down';
+      var tags = m.tags.slice(0,4).map(function(t){ return '<span class="mover-tag'+(t[1]?' warn':'')+'">'+t[0]+'</span>'; }).join('');
+      return '<div class="mover-row" data-bin="'+m.pair+'" data-sym="'+m.sym+'">'+
+        '<div class="mover-top"><span class="mover-sym">'+m.sym+'<small>/USDT</small></span>'+
+        '<span class="mover-chg '+chgCls+'">'+(m.chg>=0?'+':'')+m.chg.toFixed(1)+'%</span></div>'+
+        '<div class="mover-score"><div class="mover-bar"><span style="width:'+m.pct+'%"></span></div><span class="mover-pct">'+m.pct+'</span></div>'+
+        '<div class="mover-tags">'+tags+'</div>'+
+        '<div class="mover-price">'+fmtPrice(m.price)+' · 24h</div></div>';
+    }).join('');
+  }
+
+  function scan(){
+    if(scanning || !listEl) return;
+    scanning = true;
+    listEl.innerHTML = '<div class="mover-loading">scanning '+UNIVERSE.length+' markets…</div>';
+    if(scanBtn) scanBtn.textContent = '… scanning';
+    var out = [], queue = UNIVERSE.slice();
+
+    function worker(){
+      if(!queue.length) return Promise.resolve();
+      var sym = queue.shift();
+      return klines(sym).then(function(d){ var m = score(sym, d); if(m && m.s>=3) out.push(m); })
+        .catch(function(){})
+        .then(worker);
+    }
+    // 5 parallel workers to stay gentle on rate limits
+    var workers = []; for(var w=0; w<5; w++) workers.push(worker());
+    Promise.all(workers).then(function(){
+      out.sort(function(a,b){ return b.s - a.s; });
+      render(out.slice(0,9));
+      scanning = false;
+      if(scanBtn) scanBtn.textContent = '↻ scan';
+    });
+  }
+
+  function chart(pair, sym){
+    try{
+      if(typeof current !== 'undefined'){
+        current = { mode:'cex', id:sym.toLowerCase(), symbol:sym, name:sym, binance:pair };
+        if(typeof setHeader==='function') setHeader();
+        if(typeof load==='function') load(typeof activeTf!=='undefined'?activeTf:'day');
+        window.scrollTo({top:0,behavior:'smooth'});
+      }
+    }catch(e){}
+  }
+
+  function init(){
+    listEl = document.getElementById('moverList');
+    scanBtn = document.getElementById('moverScan');
+    if(!listEl) return;
+    if(scanBtn) scanBtn.addEventListener('click', scan);
+    listEl.addEventListener('click', function(e){
+      var row = e.target.closest('.mover-row'); if(!row) return;
+      chart(row.dataset.bin, row.dataset.sym);
+    });
+    window.aryxScanMovers = scan;      // let boot trigger it
+    setTimeout(scan, 2200);            // auto-scan shortly after load
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+
 <!-- ============ Aryx full restyle (theme layer) ============ -->
 <style id="aryxRestyle">
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
@@ -3792,6 +3925,32 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 /* colors for up/down where the file uses these hooks */
 .up,.pt.up,.chg.up{color:var(--ax-up)!important;}
 .down,.pt.down,.chg.down{color:var(--ax-down)!important;}
+
+/* Early Movers scanner */
+.mover-card{background:var(--ax-surface)!important;border:1px solid var(--ax-line)!important;border-radius:15px!important;
+  padding:16px 18px!important;margin-top:16px!important;box-shadow:0 12px 30px -18px rgba(0,0,0,.6)!important;}
+.mover-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
+.mover-note{font-size:12px;color:var(--ax-muted);line-height:1.6;margin-bottom:14px;}
+.mover-note b{color:var(--ax-text);}
+.mover-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;}
+.mover-empty,.mover-loading{grid-column:1/-1;text-align:center;color:var(--ax-dim);font-size:13px;padding:18px;}
+.mover-row{display:flex;flex-direction:column;gap:8px;background:var(--ax-surface2);border:1px solid var(--ax-line);
+  border-radius:12px;padding:13px 14px;cursor:pointer;transition:transform .15s,border-color .15s;}
+.mover-row:hover{transform:translateY(-2px);border-color:rgba(0,224,164,.4);}
+.mover-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.mover-sym{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;color:var(--ax-text);}
+.mover-sym small{color:var(--ax-dim);font-weight:500;}
+.mover-chg{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12.5px;}
+.mover-chg.up{color:var(--ax-up);} .mover-chg.down{color:var(--ax-down);}
+.mover-score{display:flex;align-items:center;gap:8px;}
+.mover-bar{flex:1;height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;}
+.mover-bar>span{display:block;height:100%;background:var(--ax-grad);border-radius:999px;}
+.mover-pct{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ax-mint);font-weight:700;}
+.mover-tags{display:flex;flex-wrap:wrap;gap:5px;}
+.mover-tag{font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 7px;border-radius:5px;
+  background:rgba(0,224,164,.12);color:var(--ax-mint);}
+.mover-tag.warn{background:rgba(255,198,92,.14);color:var(--ax-warn);}
+.mover-price{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ax-dim);}
 </style>
 
 <!-- ============ Aryx login gate + boot ============ -->
