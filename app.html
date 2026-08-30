@@ -996,7 +996,7 @@
       <div class="chart-title">🚀 Early Movers — bullish setups forming</div>
       <button id="moverScan" class="ctool">↻ scan</button>
     </div>
-    <div class="mover-note">Scans <b>trending + established DEX tokens</b> (via DexScreener) across market caps for <b>early</b> momentum with real liquidity — rising 1h price, high turnover, fresh pairs — and <b>down-ranks anything that already ran</b>. Tap a token to chart it in the terminal (supported chains) or open it on DexScreener. These are <b>extremely high-risk, low-cap speculative tokens, not predictions</b> — most go to zero, many are scams/rugs. Verify the contract, liquidity, and holders yourself. Each token is auto-checked for honeypots/high tax/mint &amp; freeze authority via GoPlus (confirmed honeypots are dropped), with one-tap links to Honeypot.is, TokenSniffer &amp; Bubblemaps — but automated checks miss things, so always verify yourself. Never risk more than you can lose.</div>
+    <div class="mover-note">Scans <b>trending + established DEX tokens</b> (via DexScreener) across market caps for <b>early</b> momentum with real liquidity — rising 1h price, high turnover, fresh pairs — and <b>down-ranks anything that already ran</b>. Tap a token to chart it in the terminal (supported chains) or open it on DexScreener. These are <b>extremely high-risk, low-cap speculative tokens, not predictions</b> — most go to zero, many are scams/rugs. Verify the contract, liquidity, and holders yourself. Each token is auto-checked for honeypots/high tax/mint &amp; freeze authority via GoPlus (confirmed honeypots are dropped), with one-tap links to Honeypot.is, TokenSniffer &amp; Bubblemaps — but automated checks miss things, so always verify yourself. Turn on <b>🔔 Alerts</b> to get a notification (and a red flag) if a spotted token drops past your threshold since it appeared. Never risk more than you can lose.</div>
     <div class="mover-filters">
       <select id="mvChain" class="mv-sel" title="Chain">
         <option value="">All chains</option>
@@ -1031,7 +1031,15 @@
         <option value="1000000000-">Mega &gt; $1B</option>
       </select>
       <label class="mv-toggle"><input type="checkbox" id="mvSafe" checked> Safe only</label>
+      <select id="mvDrop" class="mv-sel" title="Alert if a spotted token drops this much">
+        <option value="5">Drop alert −5%</option>
+        <option value="8" selected>Drop alert −8%</option>
+        <option value="12">Drop alert −12%</option>
+        <option value="20">Drop alert −20%</option>
+      </select>
+      <label class="mv-toggle"><input type="checkbox" id="mvAlert"> 🔔 Alerts</label>
     </div>
+    <div id="moverAlerts" class="mover-alerts" hidden></div>
     <div id="moverList" class="mover-list"><div class="mover-empty">Tap “scan” to screen the market…</div></div>
   </div>
 
@@ -3811,7 +3819,9 @@ function aryxBackToLanding(){
   // established mid/large-cap DEX tokens searched alongside trending ones,
   // so the list isn't only micro-caps
   var MAJORS = ['WIF','BONK','PEPE','JUP','ENA','ONDO','PENDLE','AERO','VIRTUAL','POPCAT','BRETT',
-    'DEGEN','MEW','PNUT','FARTCOIN','MOODENG','SPX','TURBO','AIXBT','HYPE','PENGU','MOG','SHIB','FLOKI'];
+    'DEGEN','MEW','PNUT','FARTCOIN','MOODENG','SPX','TURBO','AIXBT','HYPE','PENGU','MOG','SHIB','FLOKI',
+    'DOGE','WLD','JASMY','ARB','OP','SEI','TIA','SUI','RENDER','INJ','FET','GRT','LINK','UNI','AAVE',
+    'CRV','LDO','GALA','SAND','APE','CHZ','BLUR','ETHFI','JTO','RAY','ORCA','GIGA','ZEREBRO','GOAT','ACT'];
   var CHAINMAP = { solana:'solana', ethereum:'eth', bsc:'bsc', base:'base', polygon:'polygon_pos', arbitrum:'arbitrum', avalanche:'avax' };
 
   var listEl, scanBtn, scanning = false, allMovers = [];
@@ -3979,7 +3989,7 @@ function aryxBackToLanding(){
         var out = [];
         Object.keys(bestByToken).forEach(function(k){ var m = score(bestByToken[k]); if(m && m.s >= 3) out.push(m); });
         out.sort(function(a,b){ return b.s - a.s; });
-        var pool = out.slice(0, 30);
+        var pool = out.slice(0, 40);
         // 3) run rug/honeypot safety checks on the shortlist
         if(scanBtn) scanBtn.textContent = '… safety';
         Promise.all(pool.map(function(m){ return checkSafety(m).then(function(s){ m.safety = s; return m; }); }))
@@ -3987,6 +3997,7 @@ function aryxBackToLanding(){
             // always drop confirmed honeypots; keep the rest for filtering
             allMovers = pool.filter(function(m){ return !(m.safety && m.safety.v==='danger' && /honeypot|cannot sell|non-transferable|freeze/.test(m.safety.why)); });
             applyFilters();
+            startWatch();   // begin drop-alert monitoring on the fresh list
             scanning = false;
             if(scanBtn) scanBtn.textContent = '↻ scan';
           });
@@ -4019,7 +4030,54 @@ function aryxBackToLanding(){
       listEl.innerHTML = '<div class="mover-empty">No tokens match these filters. Loosen the chain / cap band, lower min liquidity, or turn off “Safe only”.</div>';
       return;
     }
-    render(rows.slice(0, 24));
+    render(rows.slice(0, 40));
+  }
+
+  // ---- drop watcher (stop-loss style alerts) ----
+  var tracked = {}, watchTimer = null;
+  function dropPct(){ var s=document.getElementById('mvDrop'); return s ? +s.value : 8; }
+  function alertsOn(){ var c=document.getElementById('mvAlert'); return !!(c && c.checked); }
+
+  function startWatch(){
+    tracked = {};
+    allMovers.forEach(function(m){ if(m.addr) tracked[m.chain+':'+m.addr] = { addr:m.addr, chain:m.chain, sym:m.sym, base:m.price, alerted:false }; });
+    if(watchTimer) clearInterval(watchTimer);
+    if(Object.keys(tracked).length) watchTimer = setInterval(checkDrops, 60000);
+  }
+  function notifyDrop(sym,pct){
+    if(!alertsOn()) return;
+    try{ if(window.Notification && Notification.permission==='granted')
+      new Notification('⚠ '+sym+' dropping', { body: sym+' is down '+pct.toFixed(1)+'% since spotted — consider exiting.' }); }catch(e){}
+  }
+  function renderAlerts(dropped){
+    var box=document.getElementById('moverAlerts'); if(!box) return;
+    if(!dropped.length){ box.hidden=true; box.innerHTML=''; return; }
+    dropped.sort(function(a,b){ return a.pct-b.pct; });
+    box.hidden=false;
+    box.innerHTML='⚠ <b>Dropping fast:</b> '+dropped.slice(0,10).map(function(d){ return d.sym+' '+d.pct.toFixed(0)+'%'; }).join(' · ')+' — consider exiting / stop-loss.';
+  }
+  function checkDrops(){
+    var byChain={};
+    Object.keys(tracked).forEach(function(k){ var t=tracked[k]; (byChain[t.chain]=byChain[t.chain]||[]).push(t.addr); });
+    var calls=[];
+    Object.keys(byChain).forEach(function(chain){ var a=byChain[chain]; for(var i=0;i<a.length;i+=30) calls.push(getJSON(TOKENS + a.slice(i,i+30).join(',')).catch(function(){ return {pairs:[]}; })); });
+    if(!calls.length) return;
+    Promise.all(calls).then(function(results){
+      var pbt={};
+      results.forEach(function(r){ (r&&r.pairs||[]).forEach(function(p){ if(!p||!p.baseToken)return; var key=p.chainId+':'+p.baseToken.address; var liq=(p.liquidity&&p.liquidity.usd)||0; if(!pbt[key]||liq>pbt[key].liq) pbt[key]={ price:+p.priceUsd, liq:liq }; }); });
+      var thr=-Math.abs(dropPct()), dropped=[];
+      Object.keys(tracked).forEach(function(k){
+        var t=tracked[k], pd=pbt[k]; if(!pd||!t.base) return;
+        var pct=(pd.price/t.base-1)*100;
+        if(pct<=thr){
+          dropped.push({ sym:t.sym, pct:pct });
+          var row=document.querySelector('.mover-row[data-addr="'+t.addr+'"]');
+          if(row){ row.classList.add('dropping'); var chg=row.querySelector('.mover-chg'); if(chg){ chg.textContent=pct.toFixed(1)+'% ⚠'; chg.className='mover-chg down'; } }
+          if(!t.alerted){ t.alerted=true; notifyDrop(t.sym,pct); }
+        }
+      });
+      renderAlerts(dropped);
+    }).catch(function(){});
   }
 
   function openMover(chain, addr, url){
@@ -4040,6 +4098,12 @@ function aryxBackToLanding(){
     ['mvChain','mvLiq','mvVol','mvMcap','mvSafe'].forEach(function(id){
       var el = document.getElementById(id); if(el) el.addEventListener('change', applyFilters);
     });
+    var alertEl = document.getElementById('mvAlert');
+    if(alertEl) alertEl.addEventListener('change', function(){
+      if(alertEl.checked && window.Notification && Notification.permission==='default'){ try{ Notification.requestPermission(); }catch(e){} }
+    });
+    var dropEl = document.getElementById('mvDrop');
+    if(dropEl) dropEl.addEventListener('change', function(){ if(Object.keys(tracked).length) checkDrops(); });
     listEl.addEventListener('click', function(e){
       var row = e.target.closest('.mover-row'); if(!row) return;
       openMover(row.dataset.chain, row.dataset.addr, row.dataset.url);
@@ -4382,6 +4446,12 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .mv-toggle{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--ax-muted);cursor:pointer;
   background:var(--ax-surface2);border:1px solid var(--ax-line2);padding:8px 12px;border-radius:9px;}
 .mv-toggle input{accent-color:var(--ax-mint);width:15px;height:15px;cursor:pointer;}
+.mover-alerts{background:rgba(255,92,115,.12);border:1px solid rgba(255,92,115,.4);color:var(--ax-down);
+  border-radius:11px;padding:11px 14px;margin-bottom:12px;font-size:12.5px;font-weight:600;}
+.mover-alerts b{color:var(--ax-down);}
+.mover-row.dropping{border-color:rgba(255,92,115,.55)!important;background:rgba(255,92,115,.07)!important;
+  animation:dropPulse 1.4s ease-in-out infinite;}
+@keyframes dropPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,92,115,0);}50%{box-shadow:0 0 0 3px rgba(255,92,115,.18);}}
 .mover-note b{color:var(--ax-text);}
 .mover-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;}
 .mover-empty,.mover-loading{grid-column:1/-1;text-align:center;color:var(--ax-dim);font-size:13px;padding:18px;}
