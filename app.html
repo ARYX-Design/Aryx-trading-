@@ -1080,6 +1080,14 @@
       <select id="botSize" class="mv-sel" title="Position size">
         <option value="25">Size 25%</option><option value="50">Size 50%</option><option value="100" selected>Size 100%</option>
       </select>
+      <select id="botSL" class="mv-sel" title="Auto stop-loss">
+        <option value="0">Stop-loss: off</option><option value="3">SL −3%</option>
+        <option value="5" selected>SL −5%</option><option value="8">SL −8%</option><option value="12">SL −12%</option>
+      </select>
+      <select id="botTP" class="mv-sel" title="Auto take-profit">
+        <option value="0">Take-profit: off</option><option value="5">TP +5%</option>
+        <option value="10" selected>TP +10%</option><option value="20">TP +20%</option><option value="50">TP +50%</option>
+      </select>
       <button id="botToggle" class="ctool on">▶ Start</button>
       <button id="botReset" class="ctool">Reset</button>
     </div>
@@ -4131,6 +4139,8 @@ function aryxBackToLanding(){
   function save(){ try{ localStorage.setItem(KEY, JSON.stringify(st)); }catch(e){} }
   var st = load() || { cash:START, pos:null, realized:0, trades:0, wins:0, running:false,
     strat:'trend', sym:'bitcoin', symLabel:'BTC', tf:'7', size:100, log:[], lastPrice:0 };
+  if(st.sl==null) st.sl = 5;   // auto stop-loss %  (0 = off)
+  if(st.tp==null) st.tp = 10;  // auto take-profit % (0 = off)
 
   function usd(v){ var n=+v||0; return (n<0?'-$':'$')+Math.abs(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
   function equity(){ return st.cash + (st.pos ? st.pos.qty*(st.lastPrice||st.pos.entry) : 0); }
@@ -4206,11 +4216,11 @@ function aryxBackToLanding(){
   }
 
   // ---- trades ----
-  function log(act,price,pnl){ st.log.unshift({ t:Date.now(), act:act, price:price, pnl:pnl, sym:st.symLabel }); st.log = st.log.slice(0,12); }
+  function log(act,price,pnl,tag){ st.log.unshift({ t:Date.now(), act:act, price:price, pnl:pnl, sym:st.symLabel, tag:tag||null }); st.log = st.log.slice(0,12); }
   function buy(price){ var notional=equity()*st.size/100; if(notional<1)return; var qty=notional/price;
     st.cash-=notional; st.pos={ qty:qty, entry:price }; st.trades++; log('buy',price,null); }
-  function sell(price){ if(!st.pos)return; var proceeds=st.pos.qty*price, pnl=proceeds-st.pos.qty*st.pos.entry;
-    st.cash+=proceeds; st.realized+=pnl; if(pnl>0)st.wins++; log('sell',price,pnl); st.pos=null; }
+  function sell(price,tag){ if(!st.pos)return; var proceeds=st.pos.qty*price, pnl=proceeds-st.pos.qty*st.pos.entry;
+    st.cash+=proceeds; st.realized+=pnl; if(pnl>0)st.wins++; log('sell',price,pnl,tag); st.pos=null; }
 
   // ---- render ----
   function $(id){ return document.getElementById(id); }
@@ -4227,7 +4237,8 @@ function aryxBackToLanding(){
     var lg=$('botLog');
     if(lg){ lg.innerHTML = st.log.map(function(x){
       var pnl = x.pnl==null ? '' : '<span class="bt-pnl '+(x.pnl>=0?'up':'down')+'">'+(x.pnl>=0?'+':'')+usd(x.pnl)+'</span>';
-      return '<div class="bot-trade"><span class="act '+x.act+'">'+x.act.toUpperCase()+'</span>'+
+      var tag = x.tag ? '<span class="bt-tag '+(x.tag==='TP'?'tp':'sl')+'">'+x.tag+'</span>' : '';
+      return '<div class="bot-trade"><span class="act '+x.act+'">'+x.act.toUpperCase()+'</span>'+tag+
         '<span class="bt-t">'+new Date(x.t).toLocaleTimeString()+'</span>'+
         '<span>'+x.sym+'</span><span class="bt-p">@ $'+(+x.price).toLocaleString('en-US',{maximumFractionDigits:4})+'</span>'+pnl+'</div>';
     }).join('') || '<div class="bot-status">No trades yet.</div>'; }
@@ -4244,12 +4255,21 @@ function aryxBackToLanding(){
       if(!rows || rows.length < 25){ setStatus('waiting for price data…'); return; }
       var h=rows.map(function(r){return r[2];}), l=rows.map(function(r){return r[3];}), c=rows.map(function(r){return r[4];});
       var price=c[c.length-1]; st.lastPrice=price;
+      // ---- auto stop-loss / take-profit (checked before the strategy) ----
+      if(st.pos){
+        var chg=(price/st.pos.entry-1)*100;
+        if(st.sl && chg <= -st.sl){ sell(price,'SL'); save(); render();
+          setStatus('🛑 Stop-loss hit on '+st.symLabel+' ('+chg.toFixed(1)+'%) · '+new Date().toLocaleTimeString()); return; }
+        if(st.tp && chg >= st.tp){ sell(price,'TP'); save(); render();
+          setStatus('🎯 Take-profit hit on '+st.symLabel+' (+'+chg.toFixed(1)+'%) · '+new Date().toLocaleTimeString()); return; }
+      }
       var cur = st.pos ? 'long' : 'flat';
       var tgt = signal(st.strat, null, h, l, c); if(tgt===null) tgt=cur;
       if(tgt==='long' && !st.pos) buy(price);
       else if(tgt==='flat' && st.pos) sell(price);
       save(); render();
-      setStatus('● running · '+st.symLabel+' '+TFLBL[st.tf]+' · '+STRATLBL[st.strat]+' · '+new Date().toLocaleTimeString());
+      setStatus('● running · '+st.symLabel+' '+TFLBL[st.tf]+' · '+STRATLBL[st.strat]+
+        (st.sl?' · SL '+st.sl+'%':'')+(st.tp?' · TP '+st.tp+'%':'')+' · '+new Date().toLocaleTimeString());
     }).catch(function(){ setStatus('price feed rate-limited — retrying…'); });
   }
 
@@ -4264,6 +4284,8 @@ function aryxBackToLanding(){
     if($('botSym')) $('botSym').value=st.sym;
     if($('botTf')) $('botTf').value=st.tf;
     if($('botSize')) $('botSize').value=String(st.size);
+    if($('botSL')) $('botSL').value=String(st.sl);
+    if($('botTP')) $('botTP').value=String(st.tp);
 
     $('botToggle').addEventListener('click', function(){ st.running?stop():start(); });
     $('botReset').addEventListener('click', function(){
@@ -4277,6 +4299,8 @@ function aryxBackToLanding(){
     });
     $('botTf').addEventListener('change', function(e){ st.tf=e.target.value; save(); });
     $('botSize').addEventListener('change', function(e){ st.size=+e.target.value; save(); });
+    if($('botSL')) $('botSL').addEventListener('change', function(e){ st.sl=+e.target.value; save(); });
+    if($('botTP')) $('botTP').addEventListener('change', function(e){ st.tp=+e.target.value; save(); });
     if($('botRank')) $('botRank').addEventListener('click', rankStrategies);
     if($('botLbList')) $('botLbList').addEventListener('click', function(e){
       var row=e.target.closest('.lb-row'); if(!row) return;
@@ -4503,6 +4527,9 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .bot-trade .act.buy{background:rgba(38,217,130,.14);color:var(--ax-up);}
 .bot-trade .act.sell{background:rgba(255,92,115,.14);color:var(--ax-down);}
 .bot-trade .bt-t{color:var(--ax-dim);} .bot-trade .bt-p{color:var(--ax-text);}
+.bt-tag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;}
+.bt-tag.sl{background:rgba(255,92,115,.16);color:var(--ax-down);}
+.bt-tag.tp{background:rgba(38,217,130,.16);color:var(--ax-up);}
 .bot-trade .bt-pnl{margin-left:auto;font-weight:700;} .bt-pnl.up{color:var(--ax-up);} .bt-pnl.down{color:var(--ax-down);}
 .bot-lb{margin-top:16px;border-top:1px solid var(--ax-line);padding-top:14px;}
 .bot-lb-note{font-size:11px;color:var(--ax-dim);line-height:1.6;margin:8px 0 10px;}
