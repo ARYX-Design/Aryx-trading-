@@ -1102,6 +1102,42 @@
     </div>
   </div>
 
+  <div class="macro-card" id="macroCard">
+    <div class="mover-h">
+      <div class="chart-title">🌍 Global Macro &amp; Risk Radar</div>
+      <button id="macroRefresh" class="ctool">↻ refresh</button>
+    </div>
+    <div class="mover-note">A live global-risk read from market-wide data — Fear &amp; Greed, total crypto market cap, BTC &amp; stablecoin dominance, and BTC drawdown. <b>Educational context, not economic forecasting or investment advice.</b></div>
+
+    <div id="macroRegime" class="macro-regime">Loading global risk read…</div>
+
+    <div class="macro-grid">
+      <div class="macro-gauge">
+        <canvas id="fngGauge" width="190" height="120"></canvas>
+        <div class="fng-val" id="fngVal">—</div>
+        <div class="fng-lbl" id="fngLbl">Fear &amp; Greed</div>
+      </div>
+      <div class="macro-stats" id="macroStats"></div>
+    </div>
+
+    <div class="macro-panel">
+      <div class="chart-title" style="font-size:14px;margin-bottom:6px">Bitcoin · 90-day (crisis chart)</div>
+      <canvas id="macroChart" height="190"></canvas>
+      <div class="macro-dd" id="macroDD"></div>
+    </div>
+
+    <div class="macro-cols">
+      <div class="macro-col">
+        <div class="macro-h">⚠ Warnings</div>
+        <div id="macroWarn" class="macro-list"><div class="macro-empty">—</div></div>
+      </div>
+      <div class="macro-col">
+        <div class="macro-h">📡 Early indicators</div>
+        <div id="macroInd" class="macro-list"><div class="macro-empty">—</div></div>
+      </div>
+    </div>
+  </div>
+
   <div class="disc">
     Signals are generated algorithmically from live exchange data (Binance public API — real OHLCV candles, with CoinGecko as fallback; GeckoTerminal for pasted contract addresses / DEX tokens) using a curated set of technical indicators (Supertrend, Parabolic SAR, EMA 12/21/26/50, ADX + Choppiness regime filter, RSI, StochRSI, Bollinger ±2σ, Keltner/TTM volatility squeeze, Donchian 20-bar breakout, MACD, Stochastic, MFI, CMF, OBV, rolling VWAP, Hull MA Trend Speed, ROC, volume, candlestick patterns, floor-trader pivots and Fibonacci retracements) plus candlestick charts, RSI/OBV divergence detection, a watchlist with signal-flip alerts, structure-aware take-profit/stop-loss brackets (stops behind swing structure, targets snapped to pivot/Fibonacci/channel levels, regime-adaptive widths), and a backtest that replays the bracket at every historical signal on the loaded chart and reports its measured hit-rates. Redundant/low-value indicators have been intentionally removed to reduce false consensus. This is an analytical tool, not financial advice. Indicators describe past and present behavior — they do not predict the future. Backtested win-rates are in-sample and optimistic versus live results. Crypto is volatile; never trade more than you can afford to lose, and do your own research.
   </div>
@@ -4319,6 +4355,154 @@ function aryxBackToLanding(){
 })();
 </script>
 
+<!-- ============ Global Macro & Risk Radar ============ -->
+<script>
+(function () {
+  'use strict';
+  var FNG = 'https://api.alternative.me/fng/?limit=60&format=json';
+  var GLOBAL = 'https://api.coingecko.com/api/v3/global';
+  var BTCHART = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=90&interval=daily';
+  var $ = function(id){ return document.getElementById(id); };
+  function getJSON(u){ return fetch(u).then(function(r){ if(!r.ok) throw 0; return r.json(); }); }
+  function tUsd(v){ v=+v||0; if(v>=1e12)return '$'+(v/1e12).toFixed(2)+'T'; if(v>=1e9)return '$'+(v/1e9).toFixed(1)+'B'; return '$'+Math.round(v).toLocaleString(); }
+  function pc(v){ return (v>=0?'+':'')+(+v).toFixed(1)+'%'; }
+
+  function drawGauge(val){
+    var cv=$('fngGauge'); if(!cv) return; var ctx=cv.getContext('2d'); var w=190,h=120,cx=95,cy=104,r=78;
+    ctx.clearRect(0,0,w,h);
+    // colored arc segments red->green across the semicircle
+    var segs=[['#ff5c73',0],['#ff8c5a',0.25],['#ffc65c',0.5],['#9ed36a',0.7],['#26d982',0.85]];
+    for(var i=0;i<segs.length;i++){ var a0=Math.PI+(i/segs.length)*Math.PI, a1=Math.PI+((i+1)/segs.length)*Math.PI;
+      ctx.beginPath(); ctx.arc(cx,cy,r,a0,a1); ctx.lineWidth=13; ctx.strokeStyle=segs[i][0]; ctx.stroke(); }
+    // needle
+    var ang=Math.PI+(Math.max(0,Math.min(100,val))/100)*Math.PI;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(ang)*(r-6), cy+Math.sin(ang)*(r-6));
+    ctx.lineWidth=3; ctx.strokeStyle='#e9eefc'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx,cy,5,0,Math.PI*2); ctx.fillStyle='#e9eefc'; ctx.fill();
+  }
+  function drawChart(prices){
+    var cv=$('macroChart'); if(!cv||!prices||prices.length<2) return;
+    var dpr=window.devicePixelRatio||1, w=cv.clientWidth, h=190;
+    cv.width=w*dpr; cv.height=h*dpr; var ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+    var ys=prices.map(function(p){return p[1];}), mn=Math.min.apply(null,ys), mx=Math.max.apply(null,ys), rg=(mx-mn)||1;
+    var padR=56, plotW=w-padR, n=prices.length;
+    var x=function(i){ return i/(n-1)*plotW; }, y=function(v){ return 12+(1-(v-mn)/rg)*(h-24); };
+    // running-peak drawdown shading
+    var peak=-Infinity, area=[];
+    for(var i=0;i<n;i++){ if(ys[i]>peak)peak=ys[i]; area.push([x(i),y(ys[i])]); }
+    // grid + axis labels
+    ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.fillStyle='rgba(154,167,194,.7)'; ctx.font='10px JetBrains Mono, monospace'; ctx.textBaseline='middle';
+    for(var g=0;g<=3;g++){ var gy=12+g/3*(h-24); ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(plotW,gy); ctx.stroke();
+      ctx.fillText('$'+Math.round((mx-g/3*rg)/1000)+'k', plotW+6, gy); }
+    // area
+    var grad=ctx.createLinearGradient(0,0,0,h); var up=ys[n-1]>=ys[0];
+    grad.addColorStop(0, up?'rgba(38,217,130,.22)':'rgba(255,92,115,.22)'); grad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.moveTo(area[0][0],area[0][1]); for(i=1;i<area.length;i++)ctx.lineTo(area[i][0],area[i][1]);
+    ctx.lineTo(x(n-1),h); ctx.lineTo(0,h); ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+    // line
+    ctx.beginPath(); ctx.moveTo(area[0][0],area[0][1]); for(i=1;i<area.length;i++)ctx.lineTo(area[i][0],area[i][1]);
+    ctx.strokeStyle=up?'#26d982':'#ff5c73'; ctx.lineWidth=1.6; ctx.stroke();
+    // peak line
+    var py=y(mx); ctx.setLineDash([4,4]); ctx.strokeStyle='rgba(255,198,92,.5)'; ctx.beginPath(); ctx.moveTo(0,py); ctx.lineTo(plotW,py); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,198,92,.8)'; ctx.fillText('90d high', plotW+6, py);
+  }
+
+  function render(fng, glob, chart){
+    // --- Fear & Greed ---
+    var f=+((fng && fng.data && fng.data[0] && fng.data[0].value) || 50);
+    var fLbl=(fng && fng.data && fng.data[0] && fng.data[0].value_classification) || '—';
+    var f7 = (fng && fng.data && fng.data[7]) ? +fng.data[7].value : f;
+    drawGauge(f);
+    if($('fngVal')){ $('fngVal').textContent=Math.round(f); $('fngVal').style.color = f<25?'#ff5c73':f<45?'#ff8c5a':f<55?'#ffc65c':f<75?'#9ed36a':'#26d982'; }
+    if($('fngLbl')) $('fngLbl').textContent=fLbl;
+
+    // --- global ---
+    var d=(glob && glob.data)||{};
+    var mcap=(d.total_market_cap&&d.total_market_cap.usd)||0;
+    var mcap24=+d.market_cap_change_percentage_24h_usd||0;
+    var dom=d.market_cap_percentage||{};
+    var btcDom=+dom.btc||0, usdtDom=(+dom.usdt||0)+(+dom.usdc||0);
+
+    // --- BTC chart + drawdown ---
+    var prices=(chart&&chart.prices)||[];
+    drawChart(prices);
+    var cur=prices.length?prices[prices.length-1][1]:0;
+    var hi=0; prices.forEach(function(p){ if(p[1]>hi)hi=p[1]; });
+    var dd = hi? (cur/hi-1)*100 : 0;                    // drawdown from 90d high
+    var m7 = prices.length>8 ? (cur/prices[prices.length-8][1]-1)*100 : 0;
+    var m30 = prices.length>31 ? (cur/prices[prices.length-31][1]-1)*100 : 0;
+    if($('macroDD')) $('macroDD').innerHTML = 'BTC '+tUsd(cur)+' · '+pc(dd)+' from 90-day high · 7d '+pc(m7)+' · 30d '+pc(m30);
+
+    // --- stats ---
+    if($('macroStats')) $('macroStats').innerHTML =
+      stat('Total crypto cap', tUsd(mcap), mcap24, true) +
+      stat('BTC dominance', btcDom.toFixed(1)+'%', 0, false) +
+      stat('Stablecoin dom.', usdtDom.toFixed(1)+'%', 0, false) +
+      stat('BTC 7d', pc(m7), m7, true);
+
+    // --- risk regime (stress score 0-100) ---
+    var stress=0;
+    stress += Math.min(Math.max(-dd,0)*1.4, 46);        // drawdown is the biggest driver
+    if(f<25) stress+=14; else if(f>78) stress+=11;       // extremes both add risk
+    if(mcap24<=-4) stress+=10; if(mcap24<=-8) stress+=10;
+    if(usdtDom>6.5) stress+=8; if(usdtDom>8.5) stress+=9;
+    stress=Math.max(0,Math.min(100,Math.round(stress)));
+    var band = stress<20?['calm','🟢 Risk-ON — calm']:stress<40?['neutral','🔵 Neutral']:stress<60?['elevated','🟡 Elevated risk']:stress<80?['riskoff','🟠 Risk-OFF']:['crisis','🔴 Crisis conditions'];
+    if($('macroRegime')){ $('macroRegime').className='macro-regime '+band[0];
+      $('macroRegime').innerHTML=band[1]+' · stress '+stress+'/100 <span class="rg-sub">Composite of drawdown, sentiment extremes, market-cap momentum and safe-haven (stablecoin) flow.</span>'; }
+
+    // --- warnings ---
+    var warns=[];
+    if(dd<=-35) warns.push(['warn','<b>Deep drawdown:</b> BTC '+pc(dd)+' below its 90-day high — bear-market territory.']);
+    else if(dd<=-20) warns.push(['caution','<b>Correction:</b> BTC '+pc(dd)+' off the 90-day high.']);
+    if(f<25) warns.push(['warn','<b>Extreme Fear ('+Math.round(f)+'):</b> capitulation risk — historically volatile, sometimes a bottoming zone.']);
+    if(f>78) warns.push(['caution','<b>Extreme Greed ('+Math.round(f)+'):</b> euphoria — elevated top / pullback risk.']);
+    if(mcap24<=-6) warns.push(['warn','<b>Broad sell-off:</b> total crypto cap '+pc(mcap24)+' in 24h.']);
+    if(usdtDom>8.5) warns.push(['warn','<b>Flight to safety:</b> stablecoin dominance elevated ('+usdtDom.toFixed(1)+'%) — capital sitting on the sidelines.']);
+    else if(usdtDom>6.5) warns.push(['caution','<b>Defensive tone:</b> stablecoin dominance '+usdtDom.toFixed(1)+'%.']);
+    if(!warns.length) warns.push(['','<b>No major stress flags</b> — conditions look orderly. Stay disciplined; regimes change fast.']);
+    if($('macroWarn')) $('macroWarn').innerHTML = warns.map(function(x){ return '<div class="macro-item'+(x[0]?' '+x[0]:'')+'">'+x[1]+'</div>'; }).join('');
+
+    // --- early indicators ---
+    var inds=[];
+    inds.push(ind('Sentiment shift (7d)', (f-f7>=0?'+':'')+Math.round(f-f7)+' pts', f-f7));
+    inds.push(ind('BTC momentum (30d)', pc(m30), m30));
+    inds.push(ind('Market breadth (24h cap)', pc(mcap24), mcap24));
+    inds.push(ind('Safe-haven flow', usdtDom.toFixed(1)+'% stables', -(usdtDom-5)));
+    inds.push(ind('BTC dominance', btcDom.toFixed(1)+'%', 0));
+    if($('macroInd')) $('macroInd').innerHTML = inds.join('');
+  }
+  function stat(label,val,chg,color){
+    var cls = color ? (chg>=0?' up':' down') : '';
+    var sub = color ? ' <span style="font-size:11px">'+pc(chg)+'</span>' : '';
+    return '<div class="mstat"><span>'+label+'</span><strong class="'+cls.trim()+'">'+val+sub+'</strong></div>';
+  }
+  function ind(label,val,dir){
+    var col = dir>0?'up':dir<0?'down':'';
+    return '<div class="macro-item"><b>'+label+':</b> <span class="'+col+'" style="font-family:JetBrains Mono,monospace;font-weight:700">'+val+'</span></div>';
+  }
+
+  var loading=false, cache=null, lastLoad=0;
+  function loadMacro(force){
+    if(loading) return;
+    if(!force && cache && Date.now()-lastLoad < 60000){ render(cache[0], cache[1], cache[2]); return; } // redraw from cache
+    loading=true;
+    var btn=$('macroRefresh'); if(btn){ btn.disabled=true; btn.textContent='… loading'; }
+    Promise.all([ getJSON(FNG).catch(function(){return null;}), getJSON(GLOBAL).catch(function(){return null;}), getJSON(BTCHART).catch(function(){return null;}) ])
+      .then(function(res){ cache=res; lastLoad=Date.now(); render(res[0], res[1], res[2]); })
+      .catch(function(){ if($('macroRegime')) $('macroRegime').textContent='Could not load macro data — tap refresh.'; })
+      .then(function(){ loading=false; if(btn){ btn.disabled=false; btn.textContent='↻ refresh'; } });
+  }
+  window.aryxLoadMacro = loadMacro;   // called when the Macro tab is opened
+  function init(){
+    if(!$('macroCard')) return;
+    if($('macroRefresh')) $('macroRefresh').addEventListener('click', function(){ loadMacro(true); });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+
 <!-- ============ Section tabs (reorganize, nothing removed) ============ -->
 <script>
 (function () {
@@ -4330,14 +4514,16 @@ function aryxBackToLanding(){
                  document.querySelector('.ca-bar'), document.getElementById('tfbar'),
                  content, document.querySelector('.watch-card')].filter(Boolean),
       movers:   [document.getElementById('moverCard')].filter(Boolean),
-      bot:      [document.getElementById('botCard')].filter(Boolean)
+      bot:      [document.getElementById('botCard')].filter(Boolean),
+      macro:    [document.getElementById('macroCard')].filter(Boolean)
     };
     var bar = document.createElement('div');
     bar.id = 'aryxTabs'; bar.className = 'aryx-tabs';
     bar.innerHTML =
       '<button data-t="terminal" class="atab is-active">📈 Terminal</button>' +
       '<button data-t="movers" class="atab">🚀 Early Movers</button>' +
-      '<button data-t="bot" class="atab">🤖 Auto-Bot</button>';
+      '<button data-t="bot" class="atab">🤖 Auto-Bot</button>' +
+      '<button data-t="macro" class="atab">🌍 Macro</button>';
     content.parentNode.insertBefore(bar, groups.terminal[0] || content);
     function show(t){
       Object.keys(groups).forEach(function(k){
@@ -4346,6 +4532,7 @@ function aryxBackToLanding(){
       bar.querySelectorAll('.atab').forEach(function(b){ b.classList.toggle('is-active', b.dataset.t===t); });
       try{ localStorage.setItem('aryx.tab', t); }catch(e){}
       try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(e){}
+      if(t==='macro' && window.aryxLoadMacro){ setTimeout(window.aryxLoadMacro, 30); } // draw once visible
     }
     bar.addEventListener('click', function(e){ var b=e.target.closest('.atab'); if(b) show(b.dataset.t); });
     var saved='terminal'; try{ saved=localStorage.getItem('aryx.tab')||'terminal'; }catch(e){}
@@ -4446,6 +4633,40 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 /* colors for up/down where the file uses these hooks */
 .up,.pt.up,.chg.up{color:var(--ax-up)!important;}
 .down,.pt.down,.chg.down{color:var(--ax-down)!important;}
+
+/* Global Macro & Risk Radar */
+.macro-card{background:var(--ax-surface)!important;border:1px solid var(--ax-line)!important;border-radius:15px!important;
+  padding:16px 18px!important;margin-top:0!important;box-shadow:0 12px 30px -18px rgba(0,0,0,.6)!important;}
+.macro-regime{border-radius:12px;padding:14px 16px;margin-bottom:14px;font-weight:700;font-size:14px;
+  border:1px solid var(--ax-line);background:var(--ax-surface2);color:var(--ax-text);}
+.macro-regime .rg-sub{display:block;font-weight:500;font-size:12px;color:var(--ax-muted);margin-top:3px;}
+.macro-regime.calm{border-color:rgba(38,217,130,.4);background:rgba(38,217,130,.08);}
+.macro-regime.neutral{border-color:rgba(77,124,255,.4);background:rgba(77,124,255,.08);}
+.macro-regime.elevated{border-color:rgba(255,198,92,.45);background:rgba(255,198,92,.09);}
+.macro-regime.riskoff{border-color:rgba(255,140,90,.5);background:rgba(255,140,90,.1);}
+.macro-regime.crisis{border-color:rgba(255,92,115,.55);background:rgba(255,92,115,.12);animation:dropPulse 1.6s ease-in-out infinite;}
+.macro-grid{display:grid;grid-template-columns:200px 1fr;gap:14px;margin-bottom:14px;}
+.macro-gauge{background:var(--ax-surface2);border:1px solid var(--ax-line);border-radius:13px;padding:12px;text-align:center;}
+.macro-gauge canvas{display:block;margin:0 auto;}
+.fng-val{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:800;margin-top:2px;}
+.fng-lbl{font-size:11px;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.06em;}
+.macro-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;}
+.mstat{background:var(--ax-surface2);border:1px solid var(--ax-line);border-radius:11px;padding:11px 13px;}
+.mstat span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--ax-dim);}
+.mstat strong{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--ax-text);}
+.mstat strong.up{color:var(--ax-up);} .mstat strong.down{color:var(--ax-down);}
+.macro-panel{background:var(--ax-surface2);border:1px solid var(--ax-line);border-radius:13px;padding:14px;margin-bottom:14px;}
+.macro-panel canvas{width:100%;display:block;}
+.macro-dd{font-size:12px;color:var(--ax-muted);margin-top:8px;font-family:'JetBrains Mono',monospace;}
+.macro-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.macro-h{font-size:13px;font-weight:700;color:var(--ax-text);margin-bottom:9px;}
+.macro-list{display:flex;flex-direction:column;gap:7px;}
+.macro-item{background:var(--ax-surface2);border:1px solid var(--ax-line);border-radius:9px;padding:9px 12px;font-size:12.5px;color:var(--ax-muted);}
+.macro-item.warn{border-color:rgba(255,92,115,.35);color:var(--ax-down);background:rgba(255,92,115,.06);}
+.macro-item.caution{border-color:rgba(255,198,92,.3);color:var(--ax-warn);background:rgba(255,198,92,.05);}
+.macro-item b{color:var(--ax-text);}
+.macro-empty{color:var(--ax-dim);font-size:12px;padding:6px;}
+@media(max-width:640px){ .macro-grid{grid-template-columns:1fr;} .macro-cols{grid-template-columns:1fr;} }
 
 /* Section tabs */
 .aryx-tabs{display:flex;gap:6px;margin:6px 0 18px;padding:5px;border-radius:13px;
