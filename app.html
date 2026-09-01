@@ -4366,7 +4366,7 @@ function aryxBackToLanding(){
   var GLOBAL = 'https://api.coingecko.com/api/v3/global';
   var BTCHART = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=90&interval=daily';
   var $ = function(id){ return document.getElementById(id); };
-  var tradData = { spy:null, gold:null, dxy:null };   // daily % changes, folded into the risk score
+  var tradData = { spy:null, gold:null, dxy:null, bonds:null };   // daily % changes, folded into the risk score
   var macroState = null;                              // crypto-side inputs for applyRegime()
   function getJSON(u){ return fetch(u).then(function(r){ if(!r.ok) throw 0; return r.json(); }); }
   function tUsd(v){ v=+v||0; if(v>=1e12)return '$'+(v/1e12).toFixed(2)+'T'; if(v>=1e9)return '$'+(v/1e9).toFixed(1)+'B'; return '$'+Math.round(v).toLocaleString(); }
@@ -4455,22 +4455,28 @@ function aryxBackToLanding(){
 
   function applyRegime(){
     if(!macroState) return;
-    var s=macroState, t=tradData, stress=0;
-    // crypto drivers
-    stress += Math.min(Math.max(-s.dd,0)*1.4, 46);
-    if(s.f<25) stress+=14; else if(s.f>78) stress+=11;
-    if(s.mcap24<=-4) stress+=10; if(s.mcap24<=-8) stress+=10;
-    if(s.usdtDom>6.5) stress+=8; if(s.usdtDom>8.5) stress+=9;
-    // traditional-market drivers
-    if(t.spy!=null){ if(t.spy<=-1.5) stress+=8; if(t.spy<=-3) stress+=8; }      // equities selling off
-    if(t.dxy!=null && t.dxy>=0.8) stress+=5;                                     // strong dollar = tightening
-    if(t.gold!=null && t.gold>=2 && (t.spy==null || t.spy<0 || s.dd<0)) stress+=6; // safe-haven bid while risk falls
-    stress=Math.max(0,Math.min(100,Math.round(stress)));
+    var s=macroState, t=tradData;
+    // --- crypto drivers ---
+    var cStress=0;
+    cStress += Math.min(Math.max(-s.dd,0)*1.4, 46);
+    if(s.f<25) cStress+=14; else if(s.f>78) cStress+=11;
+    if(s.mcap24<=-4) cStress+=10; if(s.mcap24<=-8) cStress+=10;
+    if(s.usdtDom>6.5) cStress+=8; if(s.usdtDom>8.5) cStress+=9;
+    // --- traditional-market drivers ---
+    var mStress=0, hasTrad=(t.spy!=null||t.gold!=null||t.dxy!=null||t.bonds!=null);
+    if(t.spy!=null){ if(t.spy<=-1.5) mStress+=8; if(t.spy<=-3) mStress+=8; }        // equities selling off
+    if(t.dxy!=null && t.dxy>=0.8) mStress+=5;                                        // strong dollar = tightening
+    if(t.gold!=null && t.gold>=2 && (t.spy==null || t.spy<0 || s.dd<0)) mStress+=6;  // safe-haven bid while risk falls
+    if(t.bonds!=null){ if(t.bonds<=-0.6) mStress+=5; if(t.bonds<=-1.2) mStress+=5; } // Treasuries falling = 10Y yields spiking
 
+    var cClamp=Math.min(cStress, 100), mClamp=Math.min(mStress, 60);
+    var stress=Math.max(0, Math.min(100, Math.round(cClamp + mClamp)));
     var band = stress<20?['calm','🟢 Risk-ON — calm']:stress<40?['neutral','🔵 Neutral']:stress<60?['elevated','🟡 Elevated risk']:stress<80?['riskoff','🟠 Risk-OFF']:['crisis','🔴 Crisis conditions'];
     var rg=$('macroRegime');
     if(rg){ rg.className='macro-regime '+band[0];
-      rg.innerHTML=band[1]+' · stress '+stress+'/100 <span class="rg-sub">Blends crypto drawdown, sentiment &amp; safe-haven flow with the S&amp;P 500, the dollar and gold.</span>'; }
+      var bk = hasTrad ? ' <span class="rg-bk">crypto '+Math.round(cClamp)+' + macro '+Math.round(mClamp)+'</span>'
+                       : ' <span class="rg-bk">crypto '+Math.round(cClamp)+' · add TWELVEDATA_API_KEY for macro</span>';
+      rg.innerHTML=band[1]+' · stress '+stress+'/100'+bk+'<span class="rg-sub">Blends crypto drawdown, sentiment &amp; safe-haven flow with the S&amp;P 500, the dollar, 10Y bonds and gold.</span>'; }
 
     // warnings (crypto + traditional)
     var warns=[];
@@ -4481,6 +4487,7 @@ function aryxBackToLanding(){
     if(s.mcap24<=-6) warns.push(['warn','<b>Broad crypto sell-off:</b> total cap '+pc(s.mcap24)+' in 24h.']);
     if(t.spy!=null && t.spy<=-2) warns.push(['warn','<b>Equities selling off:</b> S&amp;P 500 '+pc(t.spy)+' today — macro risk-off.']);
     if(t.dxy!=null && t.dxy>=1) warns.push(['caution','<b>Strong dollar:</b> DXY '+pc(t.dxy)+' — tightening pressure on risk assets.']);
+    if(t.bonds!=null && t.bonds<=-0.6) warns.push(['warn','<b>Yields spiking:</b> Treasuries '+pc(t.bonds)+' (10Y yield up) — higher rates pressure risk assets.']);
     if(t.gold!=null && t.gold>=2) warns.push(['caution','<b>Safe-haven bid:</b> gold '+pc(t.gold)+' — investors hedging.']);
     if(s.usdtDom>8.5) warns.push(['warn','<b>Flight to safety:</b> stablecoin dominance '+s.usdtDom.toFixed(1)+'%.']);
     else if(s.usdtDom>6.5) warns.push(['caution','<b>Defensive tone:</b> stablecoin dominance '+s.usdtDom.toFixed(1)+'%.']);
@@ -4495,6 +4502,7 @@ function aryxBackToLanding(){
     if(t.spy!=null) inds.push(ind('S&P 500 (1d)', pc(t.spy), t.spy));
     if(t.gold!=null) inds.push(ind('Gold (1d)', pc(t.gold), t.gold));
     if(t.dxy!=null) inds.push(ind('US Dollar (1d)', pc(t.dxy), -t.dxy));
+    if(t.bonds!=null) inds.push(ind('10Y yield proxy', pc(-t.bonds), -t.bonds));
     inds.push(ind('Stablecoin dom.', s.usdtDom.toFixed(1)+'%', -(s.usdtDom-5)));
     if($('macroInd')) $('macroInd').innerHTML = inds.join('');
   }
@@ -4509,7 +4517,7 @@ function aryxBackToLanding(){
   }
 
   // Traditional markets via the /api/market proxy (Twelve Data key required)
-  var TRAD = [['SPY','S&P 500'],['QQQ','Nasdaq 100'],['DXY','US Dollar'],['XAU','Gold'],['XAG','Silver']];
+  var TRAD = [['SPY','S&P 500'],['QQQ','Nasdaq 100'],['DXY','US Dollar'],['IEF','US 10Y bonds'],['XAU','Gold'],['XAG','Silver']];
   function loadTrad(){
     var box=$('macroTrad'); if(!box) return;
     Promise.all(TRAD.map(function(t){
@@ -4517,7 +4525,7 @@ function aryxBackToLanding(){
         .then(function(r){ return r.json(); }).then(function(d){ return { sym:t[0], label:t[1], d:d }; })
         .catch(function(){ return { sym:t[0], label:t[1], d:null }; });
     })).then(function(rows){
-      var any=false; tradData={ spy:null, gold:null, dxy:null };
+      var any=false; tradData={ spy:null, gold:null, dxy:null, bonds:null };
       var html=rows.map(function(r){
         var c=r.d && r.d.candles; if(!c || !c.length) return '';
         any=true;
@@ -4525,6 +4533,7 @@ function aryxBackToLanding(){
         if(r.sym==='SPY') tradData.spy=chg;
         if(r.sym==='XAU') tradData.gold=chg;
         if(r.sym==='DXY') tradData.dxy=chg;
+        if(r.sym==='IEF') tradData.bonds=chg;
         var val=(r.sym==='DXY')? lastC.toFixed(2) : '$'+lastC.toLocaleString('en-US',{maximumFractionDigits:2});
         return '<div class="mstat"><span>'+r.label+'</span><strong class="'+(chg>=0?'up':'down')+'">'+val+
           ' <span style="font-size:11px">'+(chg>=0?'+':'')+chg.toFixed(2)+'%</span></strong></div>';
@@ -4692,6 +4701,8 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .macro-regime{border-radius:12px;padding:14px 16px;margin-bottom:14px;font-weight:700;font-size:14px;
   border:1px solid var(--ax-line);background:var(--ax-surface2);color:var(--ax-text);}
 .macro-regime .rg-sub{display:block;font-weight:500;font-size:12px;color:var(--ax-muted);margin-top:3px;}
+.macro-regime .rg-bk{display:inline-block;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;
+  padding:2px 8px;border-radius:6px;background:rgba(255,255,255,.06);color:var(--ax-muted);margin-left:6px;}
 .macro-regime.calm{border-color:rgba(38,217,130,.4);background:rgba(38,217,130,.08);}
 .macro-regime.neutral{border-color:rgba(77,124,255,.4);background:rgba(77,124,255,.08);}
 .macro-regime.elevated{border-color:rgba(255,198,92,.45);background:rgba(255,198,92,.09);}
