@@ -9,7 +9,12 @@
 const { json } = require('./_lib/util');
 
 var TD_INTERVAL = { '15m': '15min', '1H': '1h', '4H': '4h', '1D': '1day' };
-var ALLOWED = { 'AAPL': 'AAPL', 'NVDA': 'NVDA', 'XAU': 'XAU/USD', 'XAG': 'XAG/USD' };
+var ALLOWED = {
+  'AAPL': 'AAPL', 'NVDA': 'NVDA',
+  'XAU': 'XAU/USD', 'XAG': 'XAG/USD', 'XPT': 'XPT/USD',   // gold, silver, platinum
+  'SPY': 'SPY', 'QQQ': 'QQQ',                              // S&P 500 & Nasdaq-100 ETFs
+  'DXY': 'DXY'                                             // US Dollar index
+};
 
 module.exports = async function handler(req, res) {
   var q = req.query || {};

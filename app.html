@@ -1107,7 +1107,7 @@
       <div class="chart-title">🌍 Global Macro &amp; Risk Radar</div>
       <button id="macroRefresh" class="ctool">↻ refresh</button>
     </div>
-    <div class="mover-note">A live global-risk read from market-wide data — Fear &amp; Greed, total crypto market cap, BTC &amp; stablecoin dominance, and BTC drawdown. <b>Educational context, not economic forecasting or investment advice.</b></div>
+    <div class="mover-note">A live global-risk read — crypto Fear &amp; Greed, total market cap, BTC &amp; stablecoin dominance, BTC drawdown, plus <b>traditional markets</b> (S&amp;P 500, Nasdaq, US Dollar, gold &amp; silver). <b>Educational context, not economic forecasting or investment advice.</b></div>
 
     <div id="macroRegime" class="macro-regime">Loading global risk read…</div>
 
@@ -1119,6 +1119,9 @@
       </div>
       <div class="macro-stats" id="macroStats"></div>
     </div>
+
+    <div class="macro-h" style="margin-bottom:9px">🏛 Traditional markets</div>
+    <div class="macro-stats" id="macroTrad" style="margin-bottom:14px"><div class="macro-empty">Loading equities, metals &amp; the dollar…</div></div>
 
     <div class="macro-panel">
       <div class="chart-title" style="font-size:14px;margin-bottom:6px">Bitcoin · 90-day (crisis chart)</div>
@@ -1246,7 +1249,7 @@ window.addEventListener('DOMContentLoaded',()=>{
 const VS='usd';
 let chart={};               // cache: key = coin|tf
 let COINS=[];               // top 100 list
-let current={mode:'cex',id:'solana',symbol:'SOL',name:'Solana',binance:'SOLUSDT'};
+let current={mode:'cex',id:'bitcoin',symbol:'BTC',name:'Bitcoin',binance:'BTCUSDT'};
 
 // ---------- indicator math ----------
 function ema(arr,p){const k=2/(p+1);let e=arr[0],out=[e];for(let i=1;i<arr.length;i++){e=arr[i]*k+e*(1-k);out.push(e)}return out}
@@ -4483,11 +4486,34 @@ function aryxBackToLanding(){
     return '<div class="macro-item"><b>'+label+':</b> <span class="'+col+'" style="font-family:JetBrains Mono,monospace;font-weight:700">'+val+'</span></div>';
   }
 
+  // Traditional markets via the /api/market proxy (Twelve Data key required)
+  var TRAD = [['SPY','S&P 500'],['QQQ','Nasdaq 100'],['DXY','US Dollar'],['XAU','Gold'],['XAG','Silver']];
+  function loadTrad(){
+    var box=$('macroTrad'); if(!box) return;
+    Promise.all(TRAD.map(function(t){
+      return fetch('/api/market?symbol='+t[0]+'&interval=1D', { credentials:'same-origin' })
+        .then(function(r){ return r.json(); }).then(function(d){ return { sym:t[0], label:t[1], d:d }; })
+        .catch(function(){ return { sym:t[0], label:t[1], d:null }; });
+    })).then(function(rows){
+      var any=false;
+      var html=rows.map(function(r){
+        var c=r.d && r.d.candles; if(!c || !c.length) return '';
+        any=true;
+        var lastC=c[c.length-1].c, prev=c.length>1?c[c.length-2].c:lastC, chg=(lastC/prev-1)*100;
+        var val=(r.sym==='DXY')? lastC.toFixed(2) : '$'+lastC.toLocaleString('en-US',{maximumFractionDigits:2});
+        return '<div class="mstat"><span>'+r.label+'</span><strong class="'+(chg>=0?'up':'down')+'">'+val+
+          ' <span style="font-size:11px">'+(chg>=0?'+':'')+chg.toFixed(2)+'%</span></strong></div>';
+      }).join('');
+      box.innerHTML = any ? html :
+        '<div class="macro-empty">Live equities, metals &amp; the dollar need a Twelve Data key — add <b>TWELVEDATA_API_KEY</b> in Vercel and redeploy. (Crypto risk read above works without it.)</div>';
+    }).catch(function(){ box.innerHTML='<div class="macro-empty">Traditional-market data unavailable right now.</div>'; });
+  }
+
   var loading=false, cache=null, lastLoad=0;
   function loadMacro(force){
     if(loading) return;
     if(!force && cache && Date.now()-lastLoad < 60000){ render(cache[0], cache[1], cache[2]); return; } // redraw from cache
-    loading=true;
+    loading=true; loadTrad();
     var btn=$('macroRefresh'); if(btn){ btn.disabled=true; btn.textContent='… loading'; }
     Promise.all([ getJSON(FNG).catch(function(){return null;}), getJSON(GLOBAL).catch(function(){return null;}), getJSON(BTCHART).catch(function(){return null;}) ])
       .then(function(res){ cache=res; lastLoad=Date.now(); render(res[0], res[1], res[2]); })
