@@ -941,6 +941,32 @@
     </div>
   </header>
 
+  <div class="dash-card" id="dashCard">
+    <div class="dash-grid">
+      <div class="dash-tile" data-goto="terminal" id="dSignal">
+        <div class="dt-h">◉ Aryx signal</div>
+        <div class="dt-big" id="dSignalV">—</div>
+        <div class="dt-sub" id="dSignalS">loading the chart…</div>
+      </div>
+      <div class="dash-tile" data-goto="macro" id="dRisk">
+        <div class="dt-h">🌍 Global risk</div>
+        <div class="dt-big" id="dRiskV">—</div>
+        <div class="dt-sub" id="dRiskS">reading markets…</div>
+      </div>
+      <div class="dash-tile" data-goto="movers" id="dMover">
+        <div class="dt-h">🚀 Top early mover</div>
+        <div class="dt-big" id="dMoverV">—</div>
+        <div class="dt-sub" id="dMoverS">scanning…</div>
+      </div>
+      <div class="dash-tile" data-goto="bot" id="dBot">
+        <div class="dt-h">🤖 Bot equity</div>
+        <div class="dt-big" id="dBotV">$10,000</div>
+        <div class="dt-sub" id="dBotS">paper wallet</div>
+      </div>
+    </div>
+    <div class="dash-hint">Tap a card to open its tab. Everything here is analytical / simulated — not financial advice.</div>
+  </div>
+
   <div class="status">
     <span class="dot"></span><span id="status">Connecting to live market data…</span>
     <span class="refresh-ctl">
@@ -2290,6 +2316,7 @@ function render(d,tf){
   const tfName={'15m':'Next 15m','1h':'Next Hour','4h':'Next 4h',day:'Today',week:'This Week',month:'This Month'}[tf];
   const vClass=a.verdict;
   const vText={buy:'BUY',sell:'SELL',neutral:'HOLD'}[a.verdict];
+  try{ window.__aryxSignal={ verdict:a.verdict, text:vText, score:a.score, conf:a.conf, sym:current&&current.symbol, price:a.price }; }catch(e){}
   const htfBadge=a.htf&&a.htf.dir?`<span class="htf-badge ${a.htf.dir===1?'up':'down'}" title="Higher-timeframe trend (confluence is scored)">${a.htf.tf.toUpperCase()} ${a.htf.dir===1?'▲ up':'▼ down'}</span>`:'';
 
   // gauge color split
@@ -3975,6 +4002,7 @@ function aryxBackToLanding(){
   }
 
   function render(rows){
+    try{ window.__aryxTopMover = rows && rows[0] ? rows[0] : null; }catch(e){}
     if(!rows.length){ listEl.innerHTML = '<div class="mover-empty">No clean early setups right now — trending tokens are either too illiquid or already ran. Try again shortly.</div>'; return; }
     var SAFE = { ok:['✓ safe-ish','ok'], caution:['⚠ caution','caution'], danger:['⛔ danger','danger'], '?':['? unchecked','unk'] };
     listEl.innerHTML = rows.map(function(m){
@@ -4476,6 +4504,7 @@ function aryxBackToLanding(){
     var stress=Math.max(0, Math.min(100, Math.round(cClamp + mClamp)));
     renderTrend(recordStress(stress));   // log + show whether risk is rising/falling
     var band = stress<20?['calm','🟢 Risk-ON — calm']:stress<40?['neutral','🔵 Neutral']:stress<60?['elevated','🟡 Elevated risk']:stress<80?['riskoff','🟠 Risk-OFF']:['crisis','🔴 Crisis conditions'];
+    try{ window.__aryxStress={ score:stress, band:band[0], label:band[1] }; }catch(e){}
     var rg=$('macroRegime');
     if(rg){ rg.className='macro-regime '+band[0];
       var bk = hasTrad ? ' <span class="rg-bk">crypto '+Math.round(cClamp)+' + macro '+Math.round(mClamp)+'</span>'
@@ -4596,6 +4625,48 @@ function aryxBackToLanding(){
 })();
 </script>
 
+<!-- ============ Dashboard (summary of all tabs) ============ -->
+<script>
+(function () {
+  var $=function(id){ return document.getElementById(id); };
+  function set(id,txt,cls){ var e=$(id); if(e){ e.textContent=txt; if(cls!=null) e.className=e.className.replace(/\b(up|down|buy|sell|neutral)\b/g,'').trim()+(cls?' '+cls:''); } }
+  function fill(){
+    // Aryx signal (from the live terminal)
+    var sig=window.__aryxSignal;
+    if(sig){ set('dSignalV', sig.text, sig.verdict==='buy'?'up':sig.verdict==='sell'?'down':'');
+      set('dSignalS', (sig.sym||'')+' · '+sig.conf+'% conviction · score '+(sig.score>0?'+':'')+(+sig.score).toFixed(1)); }
+
+    // Global risk (from macro radar)
+    var r=window.__aryxStress;
+    if(r){ set('dRiskV', r.score+'/100', r.score>=60?'down':r.score<40?'up':'');
+      set('dRiskS', r.label.replace(/^[^ ]+ /,'')); }
+
+    // Top early mover (from scanner)
+    var mv=window.__aryxTopMover;
+    if(mv){ set('dMoverV', mv.sym+' '+(mv.h1>=0?'+':'')+(+mv.h1).toFixed(1)+'%', mv.h1>=0?'up':'down');
+      set('dMoverS', mv.chain+' · setup '+mv.pct+'/100'+(mv.safety&&mv.safety.v?' · '+mv.safety.v:'')); }
+
+    // Bot equity (paper wallet)
+    var bot=null; try{ bot=JSON.parse(localStorage.getItem('aryx.bot')); }catch(e){}
+    if(bot){ var eq=(bot.cash||0)+(bot.pos?bot.pos.qty*(bot.lastPrice||bot.pos.entry):0);
+      var ret=(eq/10000-1)*100;
+      set('dBotV', '$'+Math.round(eq).toLocaleString(), ret>=0?'up':'down');
+      set('dBotS', (ret>=0?'+':'')+ret.toFixed(1)+'% · '+(bot.pos?'Long '+(bot.symLabel||''):'flat')+(bot.running?' · running':'')); }
+  }
+  function init(){
+    if(!$('dashCard')) return;
+    $('dashCard').addEventListener('click', function(e){
+      var t=e.target.closest('[data-goto]'); if(!t) return;
+      var b=document.querySelector('.atab[data-t="'+t.getAttribute('data-goto')+'"]'); if(b) b.click();
+    });
+    fill(); setInterval(fill, 3000);
+    // warm up the macro read so the risk tile has data even before its tab is opened
+    setTimeout(function(){ if(window.aryxLoadMacro) window.aryxLoadMacro(); }, 2600);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+
 <!-- ============ Section tabs (reorganize, nothing removed) ============ -->
 <script>
 (function () {
@@ -4603,6 +4674,7 @@ function aryxBackToLanding(){
     var content = document.getElementById('content');
     if(!content || document.getElementById('aryxTabs')) return;
     var groups = {
+      dashboard:[document.getElementById('dashCard')].filter(Boolean),
       terminal: [document.querySelector('.status'), document.querySelector('.picker-bar'),
                  document.querySelector('.ca-bar'), document.getElementById('tfbar'),
                  content, document.querySelector('.watch-card')].filter(Boolean),
@@ -4613,11 +4685,13 @@ function aryxBackToLanding(){
     var bar = document.createElement('div');
     bar.id = 'aryxTabs'; bar.className = 'aryx-tabs';
     bar.innerHTML =
-      '<button data-t="terminal" class="atab is-active">📈 Terminal</button>' +
+      '<button data-t="dashboard" class="atab is-active">🏠 Dashboard</button>' +
+      '<button data-t="terminal" class="atab">📈 Terminal</button>' +
       '<button data-t="movers" class="atab">🚀 Early Movers</button>' +
       '<button data-t="bot" class="atab">🤖 Auto-Bot</button>' +
       '<button data-t="macro" class="atab">🌍 Macro</button>';
-    content.parentNode.insertBefore(bar, groups.terminal[0] || content);
+    var firstEl = (groups.dashboard[0]) || (groups.terminal[0]) || content;
+    firstEl.parentNode.insertBefore(bar, firstEl);
     function show(t){
       Object.keys(groups).forEach(function(k){
         groups[k].forEach(function(el){ el.style.display = (k===t) ? '' : 'none'; });
@@ -4628,8 +4702,8 @@ function aryxBackToLanding(){
       if(t==='macro' && window.aryxLoadMacro){ setTimeout(window.aryxLoadMacro, 30); } // draw once visible
     }
     bar.addEventListener('click', function(e){ var b=e.target.closest('.atab'); if(b) show(b.dataset.t); });
-    var saved='terminal'; try{ saved=localStorage.getItem('aryx.tab')||'terminal'; }catch(e){}
-    if(!groups[saved] || !groups[saved].length) saved='terminal';
+    var saved='dashboard'; try{ saved=localStorage.getItem('aryx.tab')||'dashboard'; }catch(e){}
+    if(!groups[saved] || !groups[saved].length) saved='dashboard';
     show(saved);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
@@ -4769,6 +4843,19 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .macro-item b{color:var(--ax-text);}
 .macro-empty{color:var(--ax-dim);font-size:12px;padding:6px;}
 @media(max-width:640px){ .macro-grid{grid-template-columns:1fr;} .macro-cols{grid-template-columns:1fr;} }
+
+/* Dashboard */
+.dash-card{margin-bottom:4px;}
+.dash-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+.dash-tile{background:var(--ax-surface);border:1px solid var(--ax-line);border-radius:15px;padding:18px 20px;
+  cursor:pointer;transition:transform .15s,border-color .15s;box-shadow:0 12px 30px -20px rgba(0,0,0,.6);}
+.dash-tile:hover{transform:translateY(-3px);border-color:rgba(0,224,164,.4);}
+.dt-h{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ax-muted);text-transform:uppercase;}
+.dt-big{font-family:'Syne','Inter',sans-serif;font-weight:800;font-size:30px;line-height:1.05;margin:8px 0 4px;color:var(--ax-text);}
+.dt-big.up{color:var(--ax-up);} .dt-big.down{color:var(--ax-down);}
+.dt-sub{font-size:12.5px;color:var(--ax-muted);font-family:'JetBrains Mono',monospace;}
+.dash-hint{font-size:11.5px;color:var(--ax-dim);text-align:center;margin-top:12px;}
+@media(max-width:560px){ .dash-grid{grid-template-columns:1fr;} .dt-big{font-size:26px;} }
 
 /* Section tabs */
 .aryx-tabs{display:flex;gap:6px;margin:6px 0 18px;padding:5px;border-radius:13px;
