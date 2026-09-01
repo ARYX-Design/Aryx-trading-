@@ -1111,6 +1111,7 @@
 
     <div id="macroRegime" class="macro-regime">Loading global risk read…</div>
 
+    <div class="macro-section">₿ Crypto market</div>
     <div class="macro-grid">
       <div class="macro-gauge">
         <canvas id="fngGauge" width="190" height="120"></canvas>
@@ -1119,16 +1120,16 @@
       </div>
       <div class="macro-stats" id="macroStats"></div>
     </div>
-
-    <div class="macro-h" style="margin-bottom:9px">🏛 Traditional markets</div>
-    <div class="macro-stats" id="macroTrad" style="margin-bottom:14px"><div class="macro-empty">Loading equities, metals &amp; the dollar…</div></div>
-
     <div class="macro-panel">
       <div class="chart-title" style="font-size:14px;margin-bottom:6px">Bitcoin · 90-day (crisis chart)</div>
       <canvas id="macroChart" height="190"></canvas>
       <div class="macro-dd" id="macroDD"></div>
     </div>
 
+    <div class="macro-section">🏛 Traditional &amp; global markets</div>
+    <div class="macro-stats" id="macroTrad" style="margin-bottom:6px"><div class="macro-empty">Loading equities, metals, the dollar, bonds &amp; VIX…</div></div>
+
+    <div class="macro-section">🧭 Read</div>
     <div class="macro-cols">
       <div class="macro-col">
         <div class="macro-h">⚠ Warnings</div>
@@ -4366,7 +4367,7 @@ function aryxBackToLanding(){
   var GLOBAL = 'https://api.coingecko.com/api/v3/global';
   var BTCHART = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=90&interval=daily';
   var $ = function(id){ return document.getElementById(id); };
-  var tradData = { spy:null, gold:null, dxy:null, bonds:null };   // daily % changes, folded into the risk score
+  var tradData = { spy:null, gold:null, dxy:null, bonds:null, vix:null, vixChg:null };   // folded into the risk score
   var macroState = null;                              // crypto-side inputs for applyRegime()
   function getJSON(u){ return fetch(u).then(function(r){ if(!r.ok) throw 0; return r.json(); }); }
   function tUsd(v){ v=+v||0; if(v>=1e12)return '$'+(v/1e12).toFixed(2)+'T'; if(v>=1e9)return '$'+(v/1e9).toFixed(1)+'B'; return '$'+Math.round(v).toLocaleString(); }
@@ -4468,6 +4469,7 @@ function aryxBackToLanding(){
     if(t.dxy!=null && t.dxy>=0.8) mStress+=5;                                        // strong dollar = tightening
     if(t.gold!=null && t.gold>=2 && (t.spy==null || t.spy<0 || s.dd<0)) mStress+=6;  // safe-haven bid while risk falls
     if(t.bonds!=null){ if(t.bonds<=-0.6) mStress+=5; if(t.bonds<=-1.2) mStress+=5; } // Treasuries falling = 10Y yields spiking
+    if(t.vix!=null){ if(t.vix>=22) mStress+=6; if(t.vix>=30) mStress+=8; }             // equity volatility / fear gauge
 
     var cClamp=Math.min(cStress, 100), mClamp=Math.min(mStress, 60);
     var stress=Math.max(0, Math.min(100, Math.round(cClamp + mClamp)));
@@ -4486,6 +4488,8 @@ function aryxBackToLanding(){
     if(s.f>78) warns.push(['caution','<b>Extreme Greed ('+Math.round(s.f)+'):</b> euphoria — elevated top / pullback risk.']);
     if(s.mcap24<=-6) warns.push(['warn','<b>Broad crypto sell-off:</b> total cap '+pc(s.mcap24)+' in 24h.']);
     if(t.spy!=null && t.spy<=-2) warns.push(['warn','<b>Equities selling off:</b> S&amp;P 500 '+pc(t.spy)+' today — macro risk-off.']);
+    if(t.vix!=null && t.vix>=30) warns.push(['warn','<b>Volatility spike:</b> VIX '+t.vix.toFixed(1)+' — fear regime in equities.']);
+    else if(t.vix!=null && t.vix>=22) warns.push(['caution','<b>Rising volatility:</b> VIX '+t.vix.toFixed(1)+' — nerves building.']);
     if(t.dxy!=null && t.dxy>=1) warns.push(['caution','<b>Strong dollar:</b> DXY '+pc(t.dxy)+' — tightening pressure on risk assets.']);
     if(t.bonds!=null && t.bonds<=-0.6) warns.push(['warn','<b>Yields spiking:</b> Treasuries '+pc(t.bonds)+' (10Y yield up) — higher rates pressure risk assets.']);
     if(t.gold!=null && t.gold>=2) warns.push(['caution','<b>Safe-haven bid:</b> gold '+pc(t.gold)+' — investors hedging.']);
@@ -4503,6 +4507,7 @@ function aryxBackToLanding(){
     if(t.gold!=null) inds.push(ind('Gold (1d)', pc(t.gold), t.gold));
     if(t.dxy!=null) inds.push(ind('US Dollar (1d)', pc(t.dxy), -t.dxy));
     if(t.bonds!=null) inds.push(ind('10Y yield proxy', pc(-t.bonds), -t.bonds));
+    if(t.vix!=null) inds.push(ind('VIX (equity fear)', t.vix.toFixed(1), -(t.vix-18)));
     inds.push(ind('Stablecoin dom.', s.usdtDom.toFixed(1)+'%', -(s.usdtDom-5)));
     if($('macroInd')) $('macroInd').innerHTML = inds.join('');
   }
@@ -4517,7 +4522,7 @@ function aryxBackToLanding(){
   }
 
   // Traditional markets via the /api/market proxy (Twelve Data key required)
-  var TRAD = [['SPY','S&P 500'],['QQQ','Nasdaq 100'],['DXY','US Dollar'],['IEF','US 10Y bonds'],['XAU','Gold'],['XAG','Silver']];
+  var TRAD = [['SPY','S&P 500'],['QQQ','Nasdaq 100'],['VIX','Volatility (VIX)'],['DXY','US Dollar'],['IEF','US 10Y bonds'],['XAU','Gold'],['XAG','Silver']];
   function loadTrad(){
     var box=$('macroTrad'); if(!box) return;
     Promise.all(TRAD.map(function(t){
@@ -4525,7 +4530,7 @@ function aryxBackToLanding(){
         .then(function(r){ return r.json(); }).then(function(d){ return { sym:t[0], label:t[1], d:d }; })
         .catch(function(){ return { sym:t[0], label:t[1], d:null }; });
     })).then(function(rows){
-      var any=false; tradData={ spy:null, gold:null, dxy:null, bonds:null };
+      var any=false; tradData={ spy:null, gold:null, dxy:null, bonds:null, vix:null, vixChg:null };
       var html=rows.map(function(r){
         var c=r.d && r.d.candles; if(!c || !c.length) return '';
         any=true;
@@ -4534,7 +4539,8 @@ function aryxBackToLanding(){
         if(r.sym==='XAU') tradData.gold=chg;
         if(r.sym==='DXY') tradData.dxy=chg;
         if(r.sym==='IEF') tradData.bonds=chg;
-        var val=(r.sym==='DXY')? lastC.toFixed(2) : '$'+lastC.toLocaleString('en-US',{maximumFractionDigits:2});
+        if(r.sym==='VIX'){ tradData.vix=lastC; tradData.vixChg=chg; }
+        var val=(r.sym==='DXY')? lastC.toFixed(2) : (r.sym==='VIX')? lastC.toFixed(1) : '$'+lastC.toLocaleString('en-US',{maximumFractionDigits:2});
         return '<div class="mstat"><span>'+r.label+'</span><strong class="'+(chg>=0?'up':'down')+'">'+val+
           ' <span style="font-size:11px">'+(chg>=0?'+':'')+chg.toFixed(2)+'%</span></strong></div>';
       }).join('');
@@ -4708,6 +4714,8 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .macro-regime.elevated{border-color:rgba(255,198,92,.45);background:rgba(255,198,92,.09);}
 .macro-regime.riskoff{border-color:rgba(255,140,90,.5);background:rgba(255,140,90,.1);}
 .macro-regime.crisis{border-color:rgba(255,92,115,.55);background:rgba(255,92,115,.12);animation:dropPulse 1.6s ease-in-out infinite;}
+.macro-section{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ax-mint);
+  margin:18px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--ax-line);}
 .macro-grid{display:grid;grid-template-columns:200px 1fr;gap:14px;margin-bottom:14px;}
 .macro-gauge{background:var(--ax-surface2);border:1px solid var(--ax-line);border-radius:13px;padding:12px;text-align:center;}
 .macro-gauge canvas{display:block;margin:0 auto;}

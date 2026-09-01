@@ -14,7 +14,8 @@ var ALLOWED = {
   'XAU': 'XAU/USD', 'XAG': 'XAG/USD', 'XPT': 'XPT/USD',   // gold, silver, platinum
   'SPY': 'SPY', 'QQQ': 'QQQ',                              // S&P 500 & Nasdaq-100 ETFs
   'DXY': 'DXY',                                            // US Dollar index
-  'IEF': 'IEF', 'TLT': 'TLT'                               // 7-10yr & 20yr Treasuries (bond/yield proxy)
+  'IEF': 'IEF', 'TLT': 'TLT',                              // 7-10yr & 20yr Treasuries (bond/yield proxy)
+  'VIX': 'VIX'                                             // CBOE Volatility Index (equity fear gauge)
 };
 
 module.exports = async function handler(req, res) {
