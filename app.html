@@ -1110,6 +1110,7 @@
     <div class="mover-note">A live global-risk read — crypto Fear &amp; Greed, total market cap, BTC &amp; stablecoin dominance, BTC drawdown, plus <b>traditional markets</b> (S&amp;P 500, Nasdaq, US Dollar, gold &amp; silver). <b>Educational context, not economic forecasting or investment advice.</b></div>
 
     <div id="macroRegime" class="macro-regime">Loading global risk read…</div>
+    <div id="macroTrend" class="macro-trend"></div>
 
     <div class="macro-section">₿ Crypto market</div>
     <div class="macro-grid">
@@ -4473,6 +4474,7 @@ function aryxBackToLanding(){
 
     var cClamp=Math.min(cStress, 100), mClamp=Math.min(mStress, 60);
     var stress=Math.max(0, Math.min(100, Math.round(cClamp + mClamp)));
+    renderTrend(recordStress(stress));   // log + show whether risk is rising/falling
     var band = stress<20?['calm','🟢 Risk-ON — calm']:stress<40?['neutral','🔵 Neutral']:stress<60?['elevated','🟡 Elevated risk']:stress<80?['riskoff','🟠 Risk-OFF']:['crisis','🔴 Crisis conditions'];
     var rg=$('macroRegime');
     if(rg){ rg.className='macro-regime '+band[0];
@@ -4511,6 +4513,30 @@ function aryxBackToLanding(){
     inds.push(ind('Stablecoin dom.', s.usdtDom.toFixed(1)+'%', -(s.usdtDom-5)));
     if($('macroInd')) $('macroInd').innerHTML = inds.join('');
   }
+  // ---- stress history (shows whether risk is rising or falling over time) ----
+  function recordStress(v){
+    var arr=[]; try{ arr=JSON.parse(localStorage.getItem('aryx.stress'))||[]; }catch(e){}
+    var now=Date.now();
+    if(!arr.length || now-arr[arr.length-1].t > 10*60000) arr.push({ t:now, v:v });
+    else arr[arr.length-1]={ t:now, v:v };          // refresh the current 10-min bucket
+    arr=arr.slice(-72);
+    try{ localStorage.setItem('aryx.stress', JSON.stringify(arr)); }catch(e){}
+    return arr;
+  }
+  function renderTrend(arr){
+    var el=$('macroTrend'); if(!el) return;
+    if(!arr || arr.length<2){ el.innerHTML='<span class="mt-lbl">Risk-trend history builds as you check back over time.</span>'; return; }
+    var vals=arr.map(function(a){return a.v;}), w=150,h=30;
+    var pts=vals.map(function(v,i){ return (i/(vals.length-1)*w).toFixed(1)+','+(h-Math.max(0,Math.min(100,v))/100*h).toFixed(1); }).join(' ');
+    var cur=vals[vals.length-1], first=vals[0], delta=cur-first;
+    var col = cur>=80?'#ff5c73':cur>=60?'#ff8c5a':cur>=40?'#ffc65c':cur>=20?'#9ed36a':'#26d982';
+    var arrow = delta>4?'▲ rising':delta<-4?'▼ easing':'▬ stable';
+    var acol = delta>4?'down':delta<-4?'up':'';
+    el.innerHTML='<svg class="mt-spark" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'">'+
+      '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.6"/></svg>'+
+      '<span class="mt-lbl">Risk trend <b class="'+acol+'">'+arrow+'</b> '+(delta>=0?'+':'')+Math.round(delta)+' over last '+vals.length+' readings</span>';
+  }
+
   function stat(label,val,chg,color){
     var cls = color ? (chg>=0?' up':' down') : '';
     var sub = color ? ' <span style="font-size:11px">'+pc(chg)+'</span>' : '';
@@ -4716,6 +4742,11 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .macro-regime.crisis{border-color:rgba(255,92,115,.55);background:rgba(255,92,115,.12);animation:dropPulse 1.6s ease-in-out infinite;}
 .macro-section{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ax-mint);
   margin:18px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--ax-line);}
+.macro-trend{display:flex;align-items:center;gap:10px;margin:-6px 0 14px;padding:0 2px;}
+.macro-trend .mt-spark{flex:none;}
+.macro-trend .mt-lbl{font-size:12px;color:var(--ax-muted);font-family:'JetBrains Mono',monospace;}
+.macro-trend .mt-lbl b{font-weight:700;}
+.macro-trend .mt-lbl b.up{color:var(--ax-up);} .macro-trend .mt-lbl b.down{color:var(--ax-down);}
 .macro-grid{display:grid;grid-template-columns:200px 1fr;gap:14px;margin-bottom:14px;}
 .macro-gauge{background:var(--ax-surface2);border:1px solid var(--ax-line);border-radius:13px;padding:12px;text-align:center;}
 .macro-gauge canvas{display:block;margin:0 auto;}
