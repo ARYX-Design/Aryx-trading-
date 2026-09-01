@@ -4366,6 +4366,8 @@ function aryxBackToLanding(){
   var GLOBAL = 'https://api.coingecko.com/api/v3/global';
   var BTCHART = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=90&interval=daily';
   var $ = function(id){ return document.getElementById(id); };
+  var tradData = { spy:null, gold:null, dxy:null };   // daily % changes, folded into the risk score
+  var macroState = null;                              // crypto-side inputs for applyRegime()
   function getJSON(u){ return fetch(u).then(function(r){ if(!r.ok) throw 0; return r.json(); }); }
   function tUsd(v){ v=+v||0; if(v>=1e12)return '$'+(v/1e12).toFixed(2)+'T'; if(v>=1e9)return '$'+(v/1e9).toFixed(1)+'B'; return '$'+Math.round(v).toLocaleString(); }
   function pc(v){ return (v>=0?'+':'')+(+v).toFixed(1)+'%'; }
@@ -4444,36 +4446,56 @@ function aryxBackToLanding(){
       stat('Stablecoin dom.', usdtDom.toFixed(1)+'%', 0, false) +
       stat('BTC 7d', pc(m7), m7, true);
 
-    // --- risk regime (stress score 0-100) ---
-    var stress=0;
-    stress += Math.min(Math.max(-dd,0)*1.4, 46);        // drawdown is the biggest driver
-    if(f<25) stress+=14; else if(f>78) stress+=11;       // extremes both add risk
-    if(mcap24<=-4) stress+=10; if(mcap24<=-8) stress+=10;
-    if(usdtDom>6.5) stress+=8; if(usdtDom>8.5) stress+=9;
-    stress=Math.max(0,Math.min(100,Math.round(stress)));
-    var band = stress<20?['calm','🟢 Risk-ON — calm']:stress<40?['neutral','🔵 Neutral']:stress<60?['elevated','🟡 Elevated risk']:stress<80?['riskoff','🟠 Risk-OFF']:['crisis','🔴 Crisis conditions'];
-    if($('macroRegime')){ $('macroRegime').className='macro-regime '+band[0];
-      $('macroRegime').innerHTML=band[1]+' · stress '+stress+'/100 <span class="rg-sub">Composite of drawdown, sentiment extremes, market-cap momentum and safe-haven (stablecoin) flow.</span>'; }
+    // stash crypto-side inputs; the regime (which also folds in S&P 500, gold
+    // and the dollar) is computed in applyRegime() so it updates whenever
+    // either the crypto OR the traditional-market data arrives.
+    macroState = { dd:dd, f:f, f7:f7, mcap24:mcap24, usdtDom:usdtDom, btcDom:btcDom, m7:m7, m30:m30 };
+    applyRegime();
+  }
 
-    // --- warnings ---
+  function applyRegime(){
+    if(!macroState) return;
+    var s=macroState, t=tradData, stress=0;
+    // crypto drivers
+    stress += Math.min(Math.max(-s.dd,0)*1.4, 46);
+    if(s.f<25) stress+=14; else if(s.f>78) stress+=11;
+    if(s.mcap24<=-4) stress+=10; if(s.mcap24<=-8) stress+=10;
+    if(s.usdtDom>6.5) stress+=8; if(s.usdtDom>8.5) stress+=9;
+    // traditional-market drivers
+    if(t.spy!=null){ if(t.spy<=-1.5) stress+=8; if(t.spy<=-3) stress+=8; }      // equities selling off
+    if(t.dxy!=null && t.dxy>=0.8) stress+=5;                                     // strong dollar = tightening
+    if(t.gold!=null && t.gold>=2 && (t.spy==null || t.spy<0 || s.dd<0)) stress+=6; // safe-haven bid while risk falls
+    stress=Math.max(0,Math.min(100,Math.round(stress)));
+
+    var band = stress<20?['calm','🟢 Risk-ON — calm']:stress<40?['neutral','🔵 Neutral']:stress<60?['elevated','🟡 Elevated risk']:stress<80?['riskoff','🟠 Risk-OFF']:['crisis','🔴 Crisis conditions'];
+    var rg=$('macroRegime');
+    if(rg){ rg.className='macro-regime '+band[0];
+      rg.innerHTML=band[1]+' · stress '+stress+'/100 <span class="rg-sub">Blends crypto drawdown, sentiment &amp; safe-haven flow with the S&amp;P 500, the dollar and gold.</span>'; }
+
+    // warnings (crypto + traditional)
     var warns=[];
-    if(dd<=-35) warns.push(['warn','<b>Deep drawdown:</b> BTC '+pc(dd)+' below its 90-day high — bear-market territory.']);
-    else if(dd<=-20) warns.push(['caution','<b>Correction:</b> BTC '+pc(dd)+' off the 90-day high.']);
-    if(f<25) warns.push(['warn','<b>Extreme Fear ('+Math.round(f)+'):</b> capitulation risk — historically volatile, sometimes a bottoming zone.']);
-    if(f>78) warns.push(['caution','<b>Extreme Greed ('+Math.round(f)+'):</b> euphoria — elevated top / pullback risk.']);
-    if(mcap24<=-6) warns.push(['warn','<b>Broad sell-off:</b> total crypto cap '+pc(mcap24)+' in 24h.']);
-    if(usdtDom>8.5) warns.push(['warn','<b>Flight to safety:</b> stablecoin dominance elevated ('+usdtDom.toFixed(1)+'%) — capital sitting on the sidelines.']);
-    else if(usdtDom>6.5) warns.push(['caution','<b>Defensive tone:</b> stablecoin dominance '+usdtDom.toFixed(1)+'%.']);
-    if(!warns.length) warns.push(['','<b>No major stress flags</b> — conditions look orderly. Stay disciplined; regimes change fast.']);
+    if(s.dd<=-35) warns.push(['warn','<b>Deep drawdown:</b> BTC '+pc(s.dd)+' below its 90-day high — bear-market territory.']);
+    else if(s.dd<=-20) warns.push(['caution','<b>Correction:</b> BTC '+pc(s.dd)+' off the 90-day high.']);
+    if(s.f<25) warns.push(['warn','<b>Extreme Fear ('+Math.round(s.f)+'):</b> capitulation risk — sometimes a bottoming zone.']);
+    if(s.f>78) warns.push(['caution','<b>Extreme Greed ('+Math.round(s.f)+'):</b> euphoria — elevated top / pullback risk.']);
+    if(s.mcap24<=-6) warns.push(['warn','<b>Broad crypto sell-off:</b> total cap '+pc(s.mcap24)+' in 24h.']);
+    if(t.spy!=null && t.spy<=-2) warns.push(['warn','<b>Equities selling off:</b> S&amp;P 500 '+pc(t.spy)+' today — macro risk-off.']);
+    if(t.dxy!=null && t.dxy>=1) warns.push(['caution','<b>Strong dollar:</b> DXY '+pc(t.dxy)+' — tightening pressure on risk assets.']);
+    if(t.gold!=null && t.gold>=2) warns.push(['caution','<b>Safe-haven bid:</b> gold '+pc(t.gold)+' — investors hedging.']);
+    if(s.usdtDom>8.5) warns.push(['warn','<b>Flight to safety:</b> stablecoin dominance '+s.usdtDom.toFixed(1)+'%.']);
+    else if(s.usdtDom>6.5) warns.push(['caution','<b>Defensive tone:</b> stablecoin dominance '+s.usdtDom.toFixed(1)+'%.']);
+    if(!warns.length) warns.push(['','<b>No major stress flags</b> — conditions look orderly. Regimes change fast.']);
     if($('macroWarn')) $('macroWarn').innerHTML = warns.map(function(x){ return '<div class="macro-item'+(x[0]?' '+x[0]:'')+'">'+x[1]+'</div>'; }).join('');
 
-    // --- early indicators ---
+    // early indicators (crypto + traditional)
     var inds=[];
-    inds.push(ind('Sentiment shift (7d)', (f-f7>=0?'+':'')+Math.round(f-f7)+' pts', f-f7));
-    inds.push(ind('BTC momentum (30d)', pc(m30), m30));
-    inds.push(ind('Market breadth (24h cap)', pc(mcap24), mcap24));
-    inds.push(ind('Safe-haven flow', usdtDom.toFixed(1)+'% stables', -(usdtDom-5)));
-    inds.push(ind('BTC dominance', btcDom.toFixed(1)+'%', 0));
+    inds.push(ind('Sentiment shift (7d)', (s.f-s.f7>=0?'+':'')+Math.round(s.f-s.f7)+' pts', s.f-s.f7));
+    inds.push(ind('BTC momentum (30d)', pc(s.m30), s.m30));
+    inds.push(ind('Crypto breadth (24h)', pc(s.mcap24), s.mcap24));
+    if(t.spy!=null) inds.push(ind('S&P 500 (1d)', pc(t.spy), t.spy));
+    if(t.gold!=null) inds.push(ind('Gold (1d)', pc(t.gold), t.gold));
+    if(t.dxy!=null) inds.push(ind('US Dollar (1d)', pc(t.dxy), -t.dxy));
+    inds.push(ind('Stablecoin dom.', s.usdtDom.toFixed(1)+'%', -(s.usdtDom-5)));
     if($('macroInd')) $('macroInd').innerHTML = inds.join('');
   }
   function stat(label,val,chg,color){
@@ -4495,17 +4517,21 @@ function aryxBackToLanding(){
         .then(function(r){ return r.json(); }).then(function(d){ return { sym:t[0], label:t[1], d:d }; })
         .catch(function(){ return { sym:t[0], label:t[1], d:null }; });
     })).then(function(rows){
-      var any=false;
+      var any=false; tradData={ spy:null, gold:null, dxy:null };
       var html=rows.map(function(r){
         var c=r.d && r.d.candles; if(!c || !c.length) return '';
         any=true;
         var lastC=c[c.length-1].c, prev=c.length>1?c[c.length-2].c:lastC, chg=(lastC/prev-1)*100;
+        if(r.sym==='SPY') tradData.spy=chg;
+        if(r.sym==='XAU') tradData.gold=chg;
+        if(r.sym==='DXY') tradData.dxy=chg;
         var val=(r.sym==='DXY')? lastC.toFixed(2) : '$'+lastC.toLocaleString('en-US',{maximumFractionDigits:2});
         return '<div class="mstat"><span>'+r.label+'</span><strong class="'+(chg>=0?'up':'down')+'">'+val+
           ' <span style="font-size:11px">'+(chg>=0?'+':'')+chg.toFixed(2)+'%</span></strong></div>';
       }).join('');
       box.innerHTML = any ? html :
         '<div class="macro-empty">Live equities, metals &amp; the dollar need a Twelve Data key — add <b>TWELVEDATA_API_KEY</b> in Vercel and redeploy. (Crypto risk read above works without it.)</div>';
+      applyRegime();   // fold S&P 500 / gold / dollar into the risk score
     }).catch(function(){ box.innerHTML='<div class="macro-empty">Traditional-market data unavailable right now.</div>'; });
   }
 
