@@ -4743,7 +4743,7 @@ function aryxBackToLanding(){
     fetch('/api/fred?series='+FRED_IDS.join(','), { credentials:'same-origin' })
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(d){
-        if(d && d.missing){ head.innerHTML='<div class="macro-empty">Recession &amp; crisis indicators need a free FRED key — get one at <b>fred.stlouisfed.org</b> (My Account → API Keys), add <b>FRED_API_KEY</b> in Vercel and redeploy.</div>'; return; }
+        if(d && d.missing){ head.innerHTML='<div class="macro-empty">Economic data unavailable right now — try refresh later.</div>'; return; }
         var c=evalCrisis((d && d.series) || {});
         if(!c){ head.innerHTML='<div class="macro-empty">Economic data unavailable right now — try refresh later.</div>'; return; }
         crisisState=c; crisisAt=Date.now();

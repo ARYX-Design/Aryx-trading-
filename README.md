@@ -98,7 +98,7 @@ and VWAP on live candles:
   the `/api/market` serverless proxy (set `TWELVEDATA_API_KEY`), polled every 20–30s.
 
 - **Recession & crisis early-warning** (Macro tab) — FRED (St. Louis Fed) via the `/api/fred`
-  proxy (set `FRED_API_KEY`, free): 10Y−3M / 10Y−2Y yield curves, high-yield credit spreads,
+  proxy — works with no key (public FRED CSV); `FRED_API_KEY` optional: 10Y−3M / 10Y−2Y yield curves, high-yield credit spreads,
   Sahm rule, initial jobless claims, Chicago Fed NFCI, St. Louis Fed stress index, VIX, housing
   permits, consumer sentiment, and a 12-month recession probability from the NY Fed
   yield-curve model. Combined into a 0–100 early-warning score that also feeds the global
