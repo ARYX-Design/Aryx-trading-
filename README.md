@@ -103,6 +103,11 @@ and VWAP on live candles:
   permits, consumer sentiment, and a 12-month recession probability from the NY Fed
   yield-curve model. Combined into a 0–100 early-warning score that also feeds the global
   risk score.
+- **Gold, silver & financial crashes** (Macro tab) — daily gold & silver via `/api/metals`
+  (no key: Stooq, CoinGecko gold/silver tokens; Twelve Data if `TWELVEDATA_API_KEY` is set) vs
+  the S&P 500 (FRED): gold/silver "fear" ratio, 1-year indexed performance, 60-day
+  correlations, a crash-pattern detector (flight to safety, margin-call squeeze, ratio spikes)
+  and how both metals behaved in past crashes (2000, 2008, 2011, 2020, 2022).
 
 Any symbol falls back to simulation if its feed is unavailable — shown by a **LIVE / SIM**
 badge next to the pair.

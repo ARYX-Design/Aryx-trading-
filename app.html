@@ -1193,6 +1193,21 @@
       <div class="crisis-note">The indicators with the strongest historical record ahead of US recessions &amp; market crashes: the <b>yield curve</b> (10Y−3M inverted before every US recession since 1968 — the danger window is often when it <i>re-steepens</i>), <b>high-yield credit spreads</b>, the <b>Sahm rule</b>, <b>jobless claims</b>, and Fed <b>financial-stress</b> indexes. Recession probability uses the NY Fed yield-curve model (12 months ahead). Lead times vary from months to 2 years and false alarms happen (e.g. the 2022–24 inversion) — <b>a risk gauge, not a forecast</b>. Source: FRED, St. Louis Fed.</div>
     </div>
 
+    <div class="macro-section">🥇 Gold, silver &amp; financial crashes</div>
+    <div class="crisis-wrap" id="metalsCard">
+      <div class="crisis-head" id="metalsHead"><div class="macro-empty">Loading gold, silver &amp; S&amp;P 500 history…</div></div>
+      <div class="crisis-strip" id="metalsSignals"></div>
+      <div class="crisis-charts">
+        <div class="cz-chart" id="mtPerf"></div>
+        <div class="cz-chart" id="mtRatio"></div>
+      </div>
+      <div class="mt-hist">
+        <div class="mt-hist-h">📜 How gold &amp; silver behaved in past crashes <span>S&amp;P 500 peak → trough, approximate closing prices</span></div>
+        <div class="mt-table" id="mtCrashes"></div>
+      </div>
+      <div class="mt-lessons" id="mtLessons"></div>
+    </div>
+
     <div class="macro-section">🧭 Read</div>
     <div class="macro-cols">
       <div class="macro-col">
@@ -4524,6 +4539,8 @@ function aryxBackToLanding(){
     if(!macroState) return;
     var s=macroState, t=tradData, cz=crisisState;
     if(t.vix==null && cz && cz.vix!=null) t=Object.assign({}, t, { vix:cz.vix });   // FRED VIX fallback
+    var mt=metalsState;
+    if(t.gold==null && mt && mt.g && mt.g.d1!=null) t=Object.assign({}, t, { gold:mt.g.d1 });   // metals feed fallback
     // --- crypto drivers ---
     var cStress=0;
     cStress += Math.min(Math.max(-s.dd,0)*1.4, 46);
@@ -4579,6 +4596,7 @@ function aryxBackToLanding(){
         else if(r.status==='warn' && amb++<2) warns.push(['caution','<b>'+r.name+' ('+r.val+'):</b> '+r.note]);
       });
     }
+    if(mt) mt.flags.forEach(function(f){ warns.push([f[0]==='bad'?'warn':'caution','<b>🥇 '+f[1]+':</b> '+f[2]]); });
     if(!warns.length) warns.push(['','<b>No major stress flags</b> — conditions look orderly. Regimes change fast.']);
     if($('macroWarn')) $('macroWarn').innerHTML = warns.map(function(x){ return '<div class="macro-item'+(x[0]?' '+x[0]:'')+'">'+x[1]+'</div>'; }).join('');
 
@@ -4597,6 +4615,7 @@ function aryxBackToLanding(){
       if(cz.prob!=null) inds.push(ind('Recession odds (12m)', cz.prob+'%', -(cz.prob-25)));
       inds.push(ind('Crisis early-warning', cz.score+'/100', -(cz.score-25)));
     }
+    if(mt && mt.ratio!=null) inds.push(ind('Gold/silver ratio', mt.ratio.toFixed(1), -(mt.ratio-80)));
     if($('macroInd')) $('macroInd').innerHTML = inds.join('');
   }
   // ---- stress history (shows whether risk is rising or falling over time) ----
@@ -4894,7 +4913,7 @@ function aryxBackToLanding(){
   }
   window.__aryxViz = { gauge:gauge, ring:ring, meter:meter, spark:spark, colors:{ ok:C_OK, warn:C_WARN, bad:C_BAD, line:C_LINE } };
   var rsT=null;
-  window.addEventListener('resize', function(){ clearTimeout(rsT); rsT=setTimeout(function(){ if(crisisState && $('crisisCharts') && $('crisisCharts').offsetWidth) renderCrisis(crisisState); }, 200); });
+  window.addEventListener('resize', function(){ clearTimeout(rsT); rsT=setTimeout(function(){ if(crisisState && $('crisisCharts') && $('crisisCharts').offsetWidth) renderCrisis(crisisState); if(metalsState && $('mtPerf') && $('mtPerf').offsetWidth) renderMetals(); }, 200); });
   var crisisLoading=false, crisisAt=0;
   function loadCrisis(){
     var head=$('crisisHead'); if(!head || crisisLoading || Date.now()-crisisAt<30*60000) return;
@@ -4912,6 +4931,185 @@ function aryxBackToLanding(){
       })
       .catch(function(){ head.innerHTML='<div class="macro-empty">Economic data unavailable (the /api/fred function isn’t reachable).</div>'; })
       .then(function(){ crisisLoading=false; });
+  }
+
+  // ---- Gold, silver & financial crashes ----
+  // Live metals (via /api/metals, CoinGecko fallback) vs the S&P 500 (FRED),
+  // the gold/silver "fear" ratio, correlations, a crash-pattern detector and
+  // a history of how both metals behaved in past crashes.
+  var C_SPX='#3987e5', C_GOLD='#c98500', C_SILV='#9085e9';
+  var CRASHES = [
+    // name, period, S&P 500, gold, silver, what happened
+    ['Dot-com bust', 'Mar 2000 → Oct 2002', -49, 12, -10, 'Slow bear market. Gold held up and began a decade-long bull run; silver drifted lower.'],
+    ['Global Financial Crisis', 'Oct 2007 → Mar 2009', -57, 24, -5, 'Oct 2008 margin calls hit everything (gold −30%, silver −58% from their 2008 highs). Gold recovered first; the gold/silver ratio peaked ≈84.'],
+    ['US downgrade / euro crisis', 'Apr 2011 → Oct 2011', -19, 7, -37, 'Gold hit a record ≈$1,900 as a safe haven while silver’s speculative bubble burst.'],
+    ['COVID crash', 'Feb 2020 → Mar 2020', -34, -3, -31, '“Dash for cash” sold everything for a week; the ratio hit a record ≈125. Silver then more than doubled within 5 months.'],
+    ['2022 rate shock', 'Jan 2022 → Oct 2022', -25, -7, -17, 'Rising real yields and a surging dollar hurt metals too — gold is not a hedge against rate-driven sell-offs.']
+  ];
+  var LESSONS = [
+    ['1 · Liquidity phase', 'In the panic week, funds sell what they can to meet margin calls — gold and silver often fall with stocks (Oct 2008, Mar 2020).'],
+    ['2 · Gold recovers first', 'Once central banks step in, gold usually rebounds first and outperforms stocks through the recovery.'],
+    ['3 · Silver lags, then snaps back', 'Silver is half industrial metal: it falls harder in crashes and recessions, then rebounds hardest (2009, 2020).'],
+    ['4 · The ratio is a fear gauge', 'Gold ÷ silver spikes during stress and tends to peak near market bottoms; a falling ratio signals risk appetite returning.'],
+    ['5 · Rates beat safe-havens', 'When crashes are caused by surging real yields and a strong dollar (2022), gold and silver fall too.']
+  ];
+  var metalsRaw=null, spxRaw=null, metalsState=null, metalsLoading=false, metalsAt=0;
+
+  function ser(obj){ return obj && obj.hist && obj.hist.length ? obj : null; }
+  function pctAgo(s, days){ var v=valueAgo(s, days); return v ? (s.latest/v-1)*100 : null; }
+  function mapOf(hist){ var m={}; hist.forEach(function(p){ m[p[0]]=p[1]; }); return m; }
+  function corr(a,b){ var n=a.length; if(n<10) return null; var ma=avg(a), mb=avg(b), sab=0,saa=0,sbb=0;
+    for(var i=0;i<n;i++){ var x=a[i]-ma, y=b[i]-mb; sab+=x*y; saa+=x*x; sbb+=y*y; } return (saa&&sbb)? sab/Math.sqrt(saa*sbb) : null; }
+  function retCorr(A, B, n){   // correlation of daily returns over the last n shared observations
+    var mb=mapOf(B.hist), pts=A.hist.filter(function(p){ return mb[p[0]]!=null; }).slice(-(n+1));
+    var ra=[], rb=[]; for(var i=1;i<pts.length;i++){ ra.push(pts[i][1]/pts[i-1][1]-1); rb.push(mb[pts[i][0]]/mb[pts[i-1][0]]-1); }
+    return corr(ra, rb);
+  }
+
+  function analyzeMetals(){
+    var G=ser(metalsRaw&&metalsRaw.gold), SV=ser(metalsRaw&&metalsRaw.silver), SP=ser(spxRaw);
+    if(!G && !SV) return;
+    var m={ gold:G, silver:SV, spx:SP, flags:[] };
+    function chg(s){ return s ? { d1:(s.hist.length>1? (s.latest/s.hist[s.hist.length-2][1]-1)*100 : null), m1:pctAgo(s,30), m3:pctAgo(s,91), y1:pctAgo(s,365) } : null; }
+    m.g=chg(G); m.s=chg(SV); m.p=chg(SP);
+    // gold/silver ratio series on shared dates
+    if(G && SV){ var ms=mapOf(SV.hist);
+      m.ratioHist=G.hist.filter(function(p){ return ms[p[0]]; }).map(function(p){ return [p[0], p[1]/ms[p[0]]]; });
+      if(m.ratioHist.length){ var rs={ latest:m.ratioHist[m.ratioHist.length-1][1], date:m.ratioHist[m.ratioHist.length-1][0], hist:m.ratioHist };
+        m.ratio=rs.latest; m.ratio1m=valueAgo(rs,30); var yr=since(rs,365); m.rLo=minOf(yr); m.rHi=Math.max.apply(null,yr); } }
+    if(G && SP) m.cG=retCorr(G, SP, 60);
+    if(SV && SP) m.cS=retCorr(SV, SP, 60);
+
+    var F=m.flags, g=m.g||{}, s=m.s||{}, p=m.p||{};
+    if(p.m1!=null && g.m1!=null && s.m1!=null && p.m1<=-8 && g.m1<=-3 && s.m1<=-10)
+      F.push(['bad','Margin-call squeeze','Stocks '+f2(p.m1,1)+'%, gold '+f2(g.m1,1)+'%, silver '+f2(s.m1,1)+'% in a month — the Oct 2008 / Mar 2020 “sell everything” pattern. Historically near the panic low; gold usually recovers first.']);
+    else if(p.m1!=null && g.m1!=null && p.m1<=-5 && g.m1>=1)
+      F.push(['bad','Flight to safety','S&P 500 '+f2(p.m1,1)+'% while gold '+f2(g.m1,1)+'% in a month — classic crash rotation into gold.']);
+    if(p.m3!=null && g.m3!=null && g.m3-p.m3>=10)
+      F.push(['warn','Gold beating stocks','Gold has outperformed the S&P 500 by '+(g.m3-p.m3).toFixed(0)+' pts over 3 months — investors are hedging.']);
+    if(m.ratio!=null){
+      if(m.ratio1m && m.ratio/m.ratio1m-1>=0.08) F.push(['warn','Ratio spiking','Gold/silver ratio '+f2((m.ratio/m.ratio1m-1)*100,0)+'% in a month — silver (industrial) lagging signals growth or liquidity worries.']);
+      if(m.ratio>=100) F.push(['bad','Extreme ratio','Gold/silver ratio '+m.ratio.toFixed(0)+' — levels seen only in severe stress (2020 peak ≈125).']);
+      else if(m.ratio>=85) F.push(['warn','High ratio','Gold/silver ratio '+m.ratio.toFixed(0)+' — defensive: gold favoured over silver (2008 peak ≈84).']);
+    }
+    if(m.cG!=null && p.m1!=null && g.m1!=null && m.cG>0.5 && p.m1<-3 && g.m1<0)
+      F.push(['warn','Hedge not working','Gold is moving with falling stocks (corr '+f2(m.cG)+') — typical of rate/dollar-driven sell-offs like 2022.']);
+    m.status = F.some(function(x){return x[0]==='bad';}) ? 'bad' : F.length ? 'warn' : 'ok';
+    metalsState=m;
+    try{ window.__aryxMetals={ ratio:m.ratio, status:m.status, gold:G&&G.latest, silver:SV&&SV.latest, g1m:g.m1, s1m:s.m1,
+      flags:F.map(function(x){ return { st:x[0], name:x[1] }; }) }; }catch(e){}
+    renderMetals(); applyRegime();
+  }
+
+  function money(v){ return '$'+(+v).toLocaleString('en-US',{ minimumFractionDigits:2, maximumFractionDigits:2 }); }
+  function chip(label, v){ if(v==null||!isFinite(v)) return ''; return '<em class="'+(v>=0?'ok':'bad')+'">'+label+' '+f2(v,1)+'%</em>'; }
+
+  // multi-series chart, indexed to 100 at the start (one shared axis — no dual scales)
+  function multiChart(id, title, sub, dates, series){
+    var box=$(id); if(!box) return;
+    if(dates.length<2){ box.innerHTML='<div class="macro-empty">Not enough history yet.</div>'; return; }
+    var W=Math.max(260, box.clientWidth||520), H=190, L=8, R=86, T=12, B=22, pw=W-L-R, ph=H-T-B, n=dates.length;
+    var all=[]; series.forEach(function(sr){ all=all.concat(sr.vals); }); all.push(100);
+    var lo=Math.min.apply(null,all), hi=Math.max.apply(null,all), pad=(hi-lo)*0.08||2; lo-=pad; hi+=pad;
+    var x=function(i){ return L+i/(n-1)*pw; }, y=function(v){ return T+(1-(v-lo)/(hi-lo))*ph; };
+    var g='', k; for(k=0;k<=3;k++){ var gv=lo+(hi-lo)*k/3; g+='<line x1="'+L+'" x2="'+(L+pw)+'" y1="'+y(gv).toFixed(1)+'" y2="'+y(gv).toFixed(1)+'" class="cz-grid"/><text x="'+(W-2)+'" y="'+y(gv).toFixed(1)+'" class="cz-ax" text-anchor="end" dominant-baseline="middle">'+(gv>=100?'+':'')+(gv-100).toFixed(0)+'%</text>'; }
+    var base='<line x1="'+L+'" x2="'+(L+pw)+'" y1="'+y(100).toFixed(1)+'" y2="'+y(100).toFixed(1)+'" stroke="rgba(233,238,252,.28)" stroke-dasharray="3 4"/>';
+    var yrs='', lastM=null; dates.forEach(function(d,i){ var mo=d.slice(0,7); if(i>0 && mo!==lastM && (+d.slice(5,7))%3===1){ yrs+='<text x="'+x(i).toFixed(1)+'" y="'+(H-6)+'" class="cz-ax" text-anchor="middle">'+['Jan','Apr','Jul','Oct'][Math.floor((+d.slice(5,7)-1)/3)]+' '+d.slice(2,4)+'</text>'; } lastM=mo; });
+    // end labels, nudged apart so they never overlap
+    var ends=series.map(function(sr){ return { sr:sr, y:y(sr.vals[n-1]) }; }).sort(function(a,b){ return a.y-b.y; });
+    for(k=1;k<ends.length;k++) if(ends[k].y-ends[k-1].y<13) ends[k].y=ends[k-1].y+13;
+    var paths=series.map(function(sr){ return '<path d="'+sr.vals.map(function(v,i){ return (i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1); }).join(' ')+'" fill="none" stroke="'+sr.col+'" stroke-width="2" stroke-linejoin="round"/>'+
+      '<circle cx="'+x(n-1).toFixed(1)+'" cy="'+y(sr.vals[n-1]).toFixed(1)+'" r="3.5" fill="'+sr.col+'" stroke="#0d1119" stroke-width="2"/>'; }).join('');
+    var labels=ends.map(function(e){ var v=e.sr.vals[n-1]; return '<text x="'+(L+pw+6)+'" y="'+e.y.toFixed(1)+'" class="mt-end" dominant-baseline="middle" fill="'+e.sr.col+'">'+(v>=100?'+':'')+(v-100).toFixed(0)+'%</text>'; }).join('');
+    var legend=series.map(function(sr){ var v=sr.vals[n-1]-100; return '<span class="mt-lg"><i style="background:'+sr.col+'"></i>'+sr.name+' <b>'+(v>=0?'+':'')+v.toFixed(1)+'%</b></span>'; }).join('');
+    box.innerHTML='<div class="cz-ch-h"><b>'+title+'</b><span>'+sub+'</span></div><div class="mt-legend">'+legend+'</div>'+
+      '<div class="cz-ch-body"><svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(title)+'">'+g+base+paths+labels+yrs+
+      '<g class="cz-hov" style="display:none"><line y1="'+T+'" y2="'+(T+ph)+'" stroke="rgba(233,238,252,.35)"/>'+series.map(function(sr){ return '<circle r="4" fill="'+sr.col+'" stroke="#0d1119" stroke-width="2"/>'; }).join('')+'</g>'+
+      '<rect x="'+L+'" y="0" width="'+pw+'" height="'+H+'" fill="transparent" class="cz-hit"/></svg><div class="cz-tip mt-tip"></div></div>';
+    var svg=box.querySelector('svg'), hov=box.querySelector('.cz-hov'), tip=box.querySelector('.cz-tip'), hit=box.querySelector('.cz-hit'), dots=hov.querySelectorAll('circle');
+    function move(ev){
+      var r=svg.getBoundingClientRect(), cx=(ev.touches?ev.touches[0].clientX:ev.clientX)-r.left;
+      var i=Math.max(0,Math.min(n-1,Math.round((cx-L)/pw*(n-1)))), px=x(i);
+      hov.style.display=''; hov.querySelector('line').setAttribute('x1',px); hov.querySelector('line').setAttribute('x2',px);
+      series.forEach(function(sr,j){ dots[j].setAttribute('cx',px); dots[j].setAttribute('cy',y(sr.vals[i])); });
+      tip.style.display='block';
+      tip.innerHTML='<span>'+dates[i]+'</span>'+series.map(function(sr){ var v=sr.vals[i]-100; return '<div><i style="background:'+sr.col+'"></i>'+sr.name+' <b>'+(v>=0?'+':'')+v.toFixed(1)+'%</b></div>'; }).join('');
+      tip.style.left=Math.max(0,Math.min(W-150, px-75))+'px'; tip.style.top='6px';
+    }
+    function out(){ hov.style.display='none'; tip.style.display='none'; }
+    hit.addEventListener('mousemove',move); hit.addEventListener('touchmove',move,{passive:true});
+    hit.addEventListener('mouseleave',out); hit.addEventListener('touchend',out);
+  }
+
+  function renderMetals(){
+    var m=metalsState, head=$('metalsHead'); if(!m||!head) return;
+    function tile(icon,name,s,c,col){
+      if(!s) return '<div class="cz-tile"><span>'+icon+' '+name+'</span><div class="macro-empty">unavailable</div></div>';
+      return '<div class="cz-tile mt-tile"><span><i class="mt-sw" style="background:'+col+'"></i>'+icon+' '+name+' · USD / oz</span><strong>'+money(s.latest)+'</strong>'+
+        '<div class="cz-counts">'+chip('1m',c.m1)+chip('3m',c.m3)+chip('1y',c.y1)+'</div>'+spark(s.hist.slice(-120))+'<small>'+s.date+(s.source?' · '+s.source:'')+'</small></div>';
+    }
+    var rt='';
+    if(m.ratio!=null){
+      var rst=m.ratio>=100?'bad':m.ratio>=85?'warn':'ok';
+      var rTxt=m.ratio>=100?'Extreme fear':m.ratio>=85?'Defensive — gold favoured':m.ratio>=65?'Normal range':'Risk-on — silver favoured';
+      rt='<div class="cz-tile mt-ratio '+(rst==='bad'?'severe':rst==='warn'?'elevated':'low')+'"><span>⚖ Gold / silver ratio · fear gauge</span><strong>'+m.ratio.toFixed(1)+'</strong>'+
+        '<div class="cz-band">'+ST_ICON[rst]+' '+rTxt+'</div><div class="mt-meter">'+meter({ v:m.ratio, min:40, max:130, warn:85, bad:100, lab:'ounces of silver per ounce of gold' }, rst)+'</div>'+
+        '<small>1-year range '+(m.rLo!=null?m.rLo.toFixed(0)+'–'+m.rHi.toFixed(0):'—')+' · peaks: 2008 ≈84 · 2020 ≈125</small></div>';
+    }
+    head.innerHTML = tile('🥇','Gold',m.gold,m.g||{},C_GOLD) + tile('🥈','Silver',m.silver,m.s||{},C_SILV) + rt;
+
+    // signal pills: crash-pattern flags + correlations
+    var pills=m.flags.map(function(f){ return '<span class="cz-pill '+f[0]+'" title="'+esc(f[2])+'"><b>'+ST_ICON[f[0]]+'</b>'+f[1]+'</span>'; });
+    if(!m.flags.length) pills.push('<span class="cz-pill ok"><b>✓</b>No crash pattern in metals vs stocks</span>');
+    function cp(name,c){ if(c==null) return ''; var st=c<=0.3?'ok':'warn'; return '<span class="cz-pill '+st+'" title="60-day correlation of daily returns: −1 opposite, 0 unrelated, +1 same direction"><b>'+ST_ICON[st]+'</b>'+name+' ↔ S&amp;P corr '+f2(c)+(c<=0?' · hedging':c<=0.3?' · diversifying':' · moving together')+'</span>'; }
+    pills.push(cp('Gold', m.cG)); pills.push(cp('Silver', m.cS));
+    $('metalsSignals').innerHTML = pills.join('') +
+      (m.flags.length ? '<div class="mt-flagtxt">'+m.flags.map(function(f){ return '<div class="macro-item '+(f[0]==='bad'?'warn':'caution')+'"><b>'+f[1]+':</b> '+f[2]+'</div>'; }).join('')+'</div>' : '');
+
+    // 1-year performance, indexed to 100
+    var sets=[['S&P 500',m.spx,C_SPX],['Gold',m.gold,C_GOLD],['Silver',m.silver,C_SILV]].filter(function(x){ return x[1]; });
+    if(sets.length){
+      var maps=sets.map(function(x){ return mapOf(x[1].hist); }), last=sets[0][1].date;
+      sets.forEach(function(x){ if(x[1].date<last) last=x[1].date; });
+      var from=ymd365(last);
+      var dates=sets[0][1].hist.map(function(p){ return p[0]; }).filter(function(d){ return d>=from && d<=last && maps.every(function(mp){ return mp[d]!=null; }); });
+      multiChart('mtPerf','1-year performance','indexed: 0% = a year ago · hover to compare', dates,
+        sets.map(function(x,j){ var b=maps[j][dates[0]]; return { name:x[0], col:x[2], vals:dates.map(function(d){ return maps[j][d]/b*100; }) }; }));
+    }
+    if(m.ratioHist && m.ratioHist.length>2){
+      var rh=m.ratioHist.filter(function(p){ return p[0]>=ymd365(m.ratioHist[m.ratioHist.length-1][0]); });
+      lineChart('mtRatio','Gold / silver ratio','shaded = extreme stress (≥ 100)', rh, { danger:100, lines:[85,100], lineCols:[C_WARN,C_BAD], lineLbl:['85 defensive','100 extreme'], fmt:function(v){ return v.toFixed(1); } });
+    } else if($('mtRatio')) $('mtRatio').style.display='none';
+
+    // crash history: values + diverging bars on a shared −60…+30% scale
+    var sc=function(v){ return Math.min(100, Math.abs(v)/60*100); };
+    function cell(v,lbl){ return '<div class="mt-c"><small class="mt-cl">'+lbl+'</small><b class="'+(v>=0?'up':'down')+'">'+(v>=0?'+':'−')+Math.abs(v)+'%</b><div class="mt-bar"><i class="'+(v>=0?'pos':'neg')+'" style="width:'+sc(v).toFixed(0)+'%"></i></div></div>'; }
+    $('mtCrashes').innerHTML = '<div class="mt-row mt-th"><span>Crash</span><span>S&amp;P 500</span><span>Gold</span><span>Silver</span><span>What happened</span></div>'+
+      CRASHES.map(function(c){ return '<div class="mt-row"><span class="mt-n"><b>'+c[0]+'</b><small>'+c[1]+'</small></span>'+cell(c[2],'S&amp;P 500')+cell(c[3],'Gold')+cell(c[4],'Silver')+'<span class="mt-w">'+c[5]+'</span></div>'; }).join('');
+    $('mtLessons').innerHTML = '<div class="mt-hist-h">🔗 How metals relate to crashes</div><div class="mt-lgrid">'+
+      LESSONS.map(function(l){ return '<div class="mt-lesson"><b>'+l[0]+'</b><span>'+l[1]+'</span></div>'; }).join('')+'</div>';
+  }
+  function ymd365(d){ return new Date(new Date(d).getTime()-365*86400000).toISOString().slice(0,10); }
+
+  function loadMetals(){
+    if(!$('metalsHead') || metalsLoading || Date.now()-metalsAt<30*60000) return;
+    metalsLoading=true;
+    var cgDirect=function(id){ return getJSON('https://api.coingecko.com/api/v3/coins/'+id+'/market_chart?vs_currency=usd&days=365&interval=daily')
+      .then(function(d){ var h=(d.prices||[]).map(function(p){ return [new Date(p[0]).toISOString().slice(0,10), p[1]]; });
+        return h.length>30 ? { latest:h[h.length-1][1], date:h[h.length-1][0], hist:h, source:'coingecko' } : null; }).catch(function(){ return null; }); };
+    Promise.all([
+      fetch('/api/metals',{ credentials:'same-origin' }).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return {}; }),
+      fetch('/api/fred?series=SP500&days=400&points=400',{ credentials:'same-origin' }).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return {}; })
+    ]).then(function(res){
+      var d=res[0]||{}; spxRaw=(res[1]&&res[1].series&&res[1].series.SP500)||null;
+      // browser-side fallback if the server couldn't reach any metals source
+      return Promise.all([ d.gold?d.gold:cgDirect('pax-gold'), d.silver?d.silver:cgDirect('kinesis-silver') ])
+        .then(function(gs){ metalsRaw={ gold:gs[0], silver:gs[1] }; });
+    }).then(function(){
+      if(!metalsRaw.gold && !metalsRaw.silver){ $('metalsHead').innerHTML='<div class="macro-empty">Gold &amp; silver data unavailable right now — try refresh later.</div>'; return; }
+      metalsAt=Date.now(); analyzeMetals();
+    }).catch(function(){ $('metalsHead').innerHTML='<div class="macro-empty">Gold &amp; silver data unavailable right now.</div>'; })
+      .then(function(){ metalsLoading=false; });
   }
 
   // Traditional markets via the /api/market proxy (Twelve Data key required)
@@ -4946,8 +5144,8 @@ function aryxBackToLanding(){
   var loading=false, cache=null, lastLoad=0;
   function loadMacro(force){
     if(loading) return;
-    if(!force && cache && Date.now()-lastLoad < 60000){ render(cache[0], cache[1], cache[2]); if(crisisState) renderCrisis(crisisState); return; } // redraw from cache
-    loading=true; loadTrad(); loadCrisis();
+    if(!force && cache && Date.now()-lastLoad < 60000){ render(cache[0], cache[1], cache[2]); if(crisisState) renderCrisis(crisisState); if(metalsState) renderMetals(); return; } // redraw from cache
+    loading=true; loadTrad(); loadCrisis(); loadMetals();
     var btn=$('macroRefresh'); if(btn){ btn.disabled=true; btn.textContent='… loading'; }
     Promise.all([ getJSON(FNG).catch(function(){return null;}), getJSON(GLOBAL).catch(function(){return null;}), getJSON(BTCHART).catch(function(){return null;}) ])
       .then(function(res){ cache=res; lastLoad=Date.now(); render(res[0], res[1], res[2]); })
@@ -5050,6 +5248,14 @@ function aryxBackToLanding(){
       var bb=$('dBotBar'); if(bb){ bb.style.width=wr+'%'; bb.style.background=wr>=55?G.ok:wr>=40?G.warn:G.bad; }
       html('dBotP', cnt(bot.running?'ok':'', bot.running?'✓ running':'■ stopped')+cnt('', 'win '+wr+'%')+cnt((bot.realized||0)>=0?'ok':'bad', 'P&L '+((bot.realized||0)>=0?'+$':'-$')+Math.abs(Math.round(bot.realized||0)).toLocaleString()));
       strip.push(pill(ret>=0?'ok':'bad','Bot '+(ret>=0?'+':'')+ret.toFixed(1)+'%'));
+    }
+
+    // Gold & silver vs crashes (from the macro radar)
+    var mtl=window.__aryxMetals;
+    if(mtl){
+      if(mtl.gold) strip.push(pill(mtl.g1m==null||mtl.g1m>=0?'ok':'warn','Gold $'+Math.round(mtl.gold).toLocaleString()+(mtl.g1m!=null?' '+(mtl.g1m>=0?'+':'')+mtl.g1m.toFixed(1)+'% 1m':'')));
+      if(mtl.ratio!=null) strip.push(pill(mtl.ratio>=100?'bad':mtl.ratio>=85?'warn':'ok','Gold/Silver ratio '+mtl.ratio.toFixed(0)));
+      (mtl.flags||[]).forEach(function(f){ if(f.st==='bad') strip.push(pill('bad','🥇 '+f.name)); });
     }
 
     html('dStrip', strip.join(''));
@@ -5314,6 +5520,47 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .crisis-note b{color:var(--ax-muted);}
 @media(max-width:760px){ .crisis-head{grid-template-columns:1fr 1fr;} .cz-asof{grid-column:1 / -1;} .crisis-charts{grid-template-columns:1fr;} }
 @media(max-width:520px){ .crisis-head{grid-template-columns:1fr;} .crisis-grid{grid-template-columns:1fr;} .cz-spark{display:none;} }
+
+/* Gold, silver & financial crashes */
+.mt-sw{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0;}
+.mt-tile strong,.mt-ratio strong{font:800 28px 'Syne','Inter',sans-serif;color:var(--ax-text);margin:8px 0 6px;}
+.mt-tile .cz-spark{margin:8px 0 4px;align-self:center;}
+.mt-tile .cz-counts em.ok,.mt-ratio .cz-counts em.ok{color:var(--ax-up);}
+.mt-ratio.severe{border-color:rgba(255,92,115,.5);background:linear-gradient(180deg,rgba(255,92,115,.12),var(--ax-surface2));}
+.mt-ratio.elevated{border-color:rgba(255,198,92,.4);background:linear-gradient(180deg,rgba(255,198,92,.08),var(--ax-surface2));}
+.mt-ratio.low{background:linear-gradient(180deg,rgba(38,217,130,.06),var(--ax-surface2));}
+.mt-meter{align-self:stretch;margin:6px 4px 6px;}
+.mt-flagtxt{flex-basis:100%;display:flex;flex-direction:column;gap:6px;margin-top:4px;}
+.mt-legend{display:flex;gap:12px;flex-wrap:wrap;margin:2px 0 4px;}
+.mt-lg{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ax-muted);}
+.mt-lg i{width:12px;height:3px;border-radius:2px;display:inline-block;}
+.mt-lg b{font-family:'JetBrains Mono',monospace;color:var(--ax-text);}
+.mt-end{font:700 10.5px 'JetBrains Mono',monospace;}
+.mt-tip{width:150px;text-align:left;}
+.mt-tip span{display:block;margin-bottom:3px;}
+.mt-tip div{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ax-muted);}
+.mt-tip div i{width:8px;height:8px;border-radius:2px;display:inline-block;}
+.mt-tip div b{display:inline;font-size:11.5px;margin-left:auto;}
+.mt-hist{background:var(--ax-surface2);border:1px solid var(--ax-line);border-radius:14px;padding:12px 14px;margin-bottom:10px;}
+.mt-hist-h{font-size:13px;font-weight:700;color:var(--ax-text);margin-bottom:8px;}
+.mt-hist-h span{font-size:11px;font-weight:500;color:var(--ax-dim);margin-left:6px;}
+.mt-table{display:flex;flex-direction:column;}
+.mt-row{display:grid;grid-template-columns:1.25fr .7fr .7fr .7fr 2.2fr;gap:12px;align-items:center;padding:9px 2px;border-top:1px solid var(--ax-line);}
+.mt-th{border-top:0;padding-top:0;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ax-dim);font-weight:700;}
+.mt-n b{display:block;font-size:12.5px;color:var(--ax-text);} .mt-n small{font:600 10.5px 'JetBrains Mono',monospace;color:var(--ax-dim);}
+.mt-cl{display:none;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ax-dim);font-weight:700;}
+.mt-c b{font:700 13px 'JetBrains Mono',monospace;} .mt-c b.up{color:var(--ax-up);} .mt-c b.down{color:var(--ax-down);}
+.mt-bar{height:5px;border-radius:3px;background:rgba(255,255,255,.05);margin-top:4px;overflow:hidden;}
+.mt-bar i{display:block;height:100%;border-radius:3px;} .mt-bar i.pos{background:var(--ax-up);} .mt-bar i.neg{background:var(--ax-down);}
+.mt-w{font-size:11.5px;color:var(--ax-muted);line-height:1.45;}
+.mt-lessons{margin-bottom:6px;}
+.mt-lgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;}
+.mt-lesson{background:var(--ax-surface2);border:1px solid var(--ax-line);border-top:3px solid #c98500;border-radius:11px;padding:10px 12px;}
+.mt-lesson b{display:block;font-size:12px;color:var(--ax-text);margin-bottom:4px;}
+.mt-lesson span{font-size:11.5px;color:var(--ax-muted);line-height:1.45;}
+@media(max-width:760px){ #metalsHead .mt-ratio{grid-column:1 / -1;}
+  .mt-row{grid-template-columns:1fr 1fr 1fr;} .mt-th span:first-child,.mt-th span:last-child{display:none;}
+  .mt-n,.mt-w{grid-column:1 / -1;} .mt-th{display:none;} .mt-cl{display:block;} }
 
 /* Dashboard (same visual language as the crisis panel) */
 .dash-card{margin-bottom:6px;}

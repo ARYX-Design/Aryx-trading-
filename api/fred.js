@@ -8,7 +8,8 @@
    first (falling back to CSV on any error).
 
    Responds { series: { ID: { latest, date, hist:[[date,value],...] } } }
-   (hist is oldest-first, ~3 years, thinned to <=160 points). FRED data
+   (hist is oldest-first, ~3 years thinned to <=160 points by default;
+   ?days= and ?points= override the window). FRED data
    updates at most daily, so responses are cached at the edge for an hour. */
 const { json } = require('./_lib/util');
 
@@ -23,7 +24,8 @@ var ALLOWED = {
   VIXCLS: 1,        // CBOE VIX close
   PERMIT: 1,        // New private housing permits (leading indicator)
   UMCSENT: 1,       // University of Michigan consumer sentiment
-  RECPROUSM156N: 1  // Smoothed US recession probabilities (Chauvet-Piger)
+  RECPROUSM156N: 1, // Smoothed US recession probabilities (Chauvet-Piger)
+  SP500: 1          // S&P 500 index (daily close) — for the gold/silver vs stocks comparison
 };
 var MAX_SERIES = 12, MAX_POINTS = 160;
 var HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; AryxMacro/1.0)', 'Accept': 'text/csv,application/json,*/*' };
@@ -56,8 +58,8 @@ async function fromCsv(id, start) {
   });
 }
 
-async function fetchSeries(id, key) {
-  var start = isoDaysAgo(3 * 365 + 30), raw = null;
+async function fetchSeries(id, key, days, maxPoints) {
+  var start = isoDaysAgo(days), raw = null;
   if (key) { try { raw = await fromApi(id, key, start); } catch (e) { raw = null; } }
   if (!raw || !raw.length) raw = await fromCsv(id, start);
   var obs = raw
@@ -66,10 +68,10 @@ async function fetchSeries(id, key) {
   if (!obs.length) return null;
   // thin long daily series, always keeping the most recent observation
   var hist = obs;
-  if (obs.length > MAX_POINTS) {
-    var step = obs.length / MAX_POINTS;
+  if (obs.length > maxPoints) {
+    var step = obs.length / maxPoints;
     hist = [];
-    for (var i = 0; i < MAX_POINTS - 1; i++) hist.push(obs[Math.floor(i * step)]);
+    for (var i = 0; i < maxPoints - 1; i++) hist.push(obs[Math.floor(i * step)]);
     hist.push(obs[obs.length - 1]);
   }
   var last = obs[obs.length - 1];
@@ -85,10 +87,13 @@ module.exports = async function handler(req, res) {
     .slice(0, MAX_SERIES);
 
   if (!ids.length) return json(res, 400, { error: 'unsupported_series' });
+  // optional window: ?days=400&points=300 (defaults: ~3 years thinned to 160 points)
+  var days = Math.max(30, Math.min(1500, parseInt(q.days, 10) || (3 * 365 + 30)));
+  var maxPoints = Math.max(20, Math.min(400, parseInt(q.points, 10) || MAX_POINTS));
 
   var out = {};
   await Promise.all(ids.map(function (id) {
-    return fetchSeries(id, key)
+    return fetchSeries(id, key, days, maxPoints)
       .then(function (s) { if (s) out[id] = s; })
       .catch(function (e) { console.error('[aryx] fred', id, e && e.message); });
   }));
