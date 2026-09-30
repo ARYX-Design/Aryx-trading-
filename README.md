@@ -97,6 +97,13 @@ and VWAP on live candles:
 - **Metals** (gold XAU/USD, silver XAG/USD) and **stocks** (AAPL, NVDA) — Twelve Data via
   the `/api/market` serverless proxy (set `TWELVEDATA_API_KEY`), polled every 20–30s.
 
+- **Traditional markets** (Macro tab) — S&P 500, Nasdaq, VIX, US dollar, 10Y and gold/silver. Intraday via
+  Twelve Data when `TWELVEDATA_API_KEY` is set; otherwise each tile falls back to end-of-day FRED data
+  (SP500, NASDAQCOM, VIXCLS, DTWEXBGS, DGS10) and the metals feed, so the section works with no key.
+  The Macro tab auto-refreshes every 5 minutes while open.
+- **Early Movers** — DexScreener trending, boosted and newly listed tokens scored on 1h momentum,
+  buy/sell pressure (1h transactions), volume surge vs the 24h pace, turnover and pair age, with
+  sorting and an automatic re-scan every 5 minutes while the tab is open.
 - **Recession & crisis early-warning** (Macro tab) — FRED (St. Louis Fed) via the `/api/fred`
   proxy — works with no key (public FRED CSV); `FRED_API_KEY` optional: 10Y−3M / 10Y−2Y yield curves, high-yield credit spreads,
   Sahm rule, initial jobless claims, Chicago Fed NFCI, St. Louis Fed stress index, VIX, housing
