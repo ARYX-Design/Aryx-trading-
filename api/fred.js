@@ -25,7 +25,10 @@ var ALLOWED = {
   PERMIT: 1,        // New private housing permits (leading indicator)
   UMCSENT: 1,       // University of Michigan consumer sentiment
   RECPROUSM156N: 1, // Smoothed US recession probabilities (Chauvet-Piger)
-  SP500: 1          // S&P 500 index (daily close) — for the gold/silver vs stocks comparison
+  SP500: 1,         // S&P 500 index (daily close) — for the gold/silver vs stocks comparison
+  NASDAQCOM: 1,     // Nasdaq Composite (daily close) — Traditional-markets fallback without a Twelve Data key
+  DTWEXBGS: 1,      // Nominal broad US dollar index (daily) — DXY fallback
+  DGS10: 1          // 10-year Treasury constant-maturity yield (daily) — bond/yield fallback
 };
 var MAX_SERIES = 12, MAX_POINTS = 160;
 var HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; AryxMacro/1.0)', 'Accept': 'text/csv,application/json,*/*' };

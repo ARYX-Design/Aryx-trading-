@@ -1047,10 +1047,11 @@
 
   <div class="mover-card" id="moverCard">
     <div class="mover-h">
-      <div class="chart-title">🚀 Early Movers — bullish setups forming</div>
-      <button id="moverScan" class="ctool">↻ scan</button>
+      <div class="chart-title" id="moverTitle">🚀 Early Movers — bullish setups forming</div>
+      <div class="mv-hr"><div class="mv-mode" id="mvMode"><button data-m="movers" class="is-on">🚀 Movers</button><button data-m="gems">💎 Early Gems</button></div><span id="moverStatus" class="mv-status"></span><button id="moverScan" class="ctool">↻ scan</button></div>
     </div>
-    <div class="mover-note">Scans <b>trending + established DEX tokens</b> (via DexScreener) across market caps for <b>early</b> momentum with real liquidity — rising 1h price, high turnover, fresh pairs — and <b>down-ranks anything that already ran</b>. Tap a token to chart it in the terminal (supported chains) or open it on DexScreener. These are <b>extremely high-risk, low-cap speculative tokens, not predictions</b> — most go to zero, many are scams/rugs. Verify the contract, liquidity, and holders yourself. Each token is auto-checked for honeypots/high tax/mint &amp; freeze authority via GoPlus (confirmed honeypots are dropped), with one-tap links to Honeypot.is, TokenSniffer &amp; Bubblemaps — but automated checks miss things, so always verify yourself. Turn on <b>🔔 Alerts</b> to get a notification (and a red flag) if a spotted token drops past your threshold since it appeared. Never risk more than you can lose.</div>
+    <div class="mover-note">Scans <b>trending + established DEX tokens</b> (via DexScreener) across market caps for <b>early</b> momentum with real liquidity — rising 1h price, <b>buyers outnumbering sellers</b>, a <b>volume surge</b> vs the 24h pace, high turnover, fresh pairs — and <b>down-ranks anything that already ran or is being sold into</b>. The list re-scans every 5 minutes while this tab is open. Tap a token to chart it in the terminal (supported chains) or open it on DexScreener. These are <b>extremely high-risk, low-cap speculative tokens, not predictions</b> — most go to zero, many are scams/rugs. Verify the contract, liquidity, and holders yourself. Each token is auto-checked for honeypots/high tax/mint &amp; freeze authority via GoPlus (confirmed honeypots are dropped), with one-tap links to Honeypot.is, TokenSniffer &amp; Bubblemaps — but automated checks miss things, so always verify yourself. Turn on <b>🔔 Alerts</b> to get a notification (and a red flag) if a spotted token drops past your threshold since it appeared. Never risk more than you can lose.</div>
+    <div class="mover-note gem-note" id="gemNote" hidden>💎 <b>Early Gems</b> looks for <b>brand-new, small-cap tokens</b> (hours to ~2 weeks old, under ~$10M cap) that show the footprints that often come <b>before</b> a big move: steady buying across 5m/1h/6h, buyers outnumbering sellers, activity and volume accelerating, healthy liquidity for the size, a real website/socials — and <b>not already pumped</b>. It also checks <b>holder concentration</b> and whether <b>liquidity is locked/burned</b> where data exists. <b>Nobody can know which token will “blow up.”</b> This ranks the best-looking early setups; the large majority of new tokens still fail or rug. Use tiny position sizes only.</div>
     <div class="mover-filters">
       <select id="mvChain" class="mv-sel" title="Chain">
         <option value="">All chains</option>
@@ -1083,6 +1084,14 @@
         <option value="10000000-100000000">Mid $10M–$100M</option>
         <option value="100000000-1000000000">Large $100M–$1B</option>
         <option value="1000000000-">Mega &gt; $1B</option>
+      </select>
+      <select id="mvSort" class="mv-sel" title="Sort by">
+        <option value="s">Sort: score</option>
+        <option value="mcap">Sort: smallest cap</option>
+        <option value="h1">Sort: 1h change</option>
+        <option value="accel">Sort: volume surge</option>
+        <option value="bp">Sort: buy pressure</option>
+        <option value="age">Sort: newest</option>
       </select>
       <label class="mv-toggle"><input type="checkbox" id="mvSafe" checked> Safe only</label>
       <select id="mvDrop" class="mv-sel" title="Alert if a spotted token drops this much">
@@ -1159,12 +1168,32 @@
   <div class="macro-card" id="macroCard">
     <div class="mover-h">
       <div class="chart-title">🌍 Global Macro &amp; Risk Radar</div>
-      <button id="macroRefresh" class="ctool">↻ refresh</button>
+      <div class="mv-hr"><span id="macroStamp" class="mv-status"></span><button id="macroRefresh" class="ctool">↻ refresh</button></div>
     </div>
-    <div class="mover-note">A live global-risk read — crypto Fear &amp; Greed, total market cap, BTC &amp; stablecoin dominance, BTC drawdown, plus <b>traditional markets</b> (S&amp;P 500, Nasdaq, VIX, US Dollar, bonds, gold &amp; silver) and <b>recession / crisis early-warning</b> indicators. <b>Educational context, not economic forecasting or investment advice.</b></div>
+    <div class="mover-note">The <b>📌 briefing</b> at the top sums up what matters most right now; the sections below have the detail. A live global-risk read — crypto Fear &amp; Greed, total market cap, BTC &amp; stablecoin dominance, BTC drawdown, plus <b>traditional markets</b> (S&amp;P 500, Nasdaq, VIX, US Dollar, bonds, gold &amp; silver) and <b>recession / crisis early-warning</b> indicators. Refreshes every 5 minutes while open; traditional markets fall back to end-of-day FRED data when no market-data key is set. <b>Educational context, not economic forecasting or investment advice.</b></div>
 
     <div id="macroRegime" class="macro-regime">Loading global risk read…</div>
     <div id="macroTrend" class="macro-trend"></div>
+
+    <div class="macro-brief" id="macroBrief">
+      <div class="mb-h">📌 Most important right now</div>
+      <div class="mb-bottom" id="mbBottom">Building the briefing…</div>
+      <div class="mb-keys" id="mbKeys"></div>
+      <div class="mb-top" id="mbTop"></div>
+    </div>
+
+    <div class="macro-section">🧭 Full read — every warning &amp; indicator</div>
+    <div class="macro-cols">
+      <div class="macro-col">
+        <div class="macro-h">⚠ Warnings</div>
+        <div id="macroWarn" class="macro-list"><div class="macro-empty">—</div></div>
+      </div>
+      <div class="macro-col">
+        <div class="macro-h">📡 Early indicators</div>
+        <div id="macroInd" class="macro-list"><div class="macro-empty">—</div></div>
+      </div>
+    </div>
+
 
     <div class="macro-section">₿ Crypto market</div>
     <div class="macro-grid">
@@ -1208,17 +1237,6 @@
       <div class="mt-lessons" id="mtLessons"></div>
     </div>
 
-    <div class="macro-section">🧭 Read</div>
-    <div class="macro-cols">
-      <div class="macro-col">
-        <div class="macro-h">⚠ Warnings</div>
-        <div id="macroWarn" class="macro-list"><div class="macro-empty">—</div></div>
-      </div>
-      <div class="macro-col">
-        <div class="macro-h">📡 Early indicators</div>
-        <div id="macroInd" class="macro-list"><div class="macro-empty">—</div></div>
-      </div>
-    </div>
   </div>
 
   <div class="disc">
@@ -3942,6 +3960,11 @@ function aryxBackToLanding(){
   // with real liquidity, while down-ranking anything that already ran.
   var BOOSTS = 'https://api.dexscreener.com/token-boosts/top/v1';
   var LATEST = 'https://api.dexscreener.com/token-boosts/latest/v1';
+  var PROFILES = 'https://api.dexscreener.com/token-profiles/latest/v1'; // freshly listed token profiles
+  // GeckoTerminal new pools (keyless, CORS) — the freshest launches, for Early Gems
+  var GT_NEW = 'https://api.geckoterminal.com/api/v2/networks/new_pools?page=';
+  var GT_NET = { solana:'solana', eth:'ethereum', bsc:'bsc', base:'base', polygon_pos:'polygon', arbitrum:'arbitrum', avax:'avalanche' };
+  var mode = 'movers', allGems = [];
   var TOKENS = 'https://api.dexscreener.com/latest/dex/tokens/'; // + comma addresses
   var SEARCH = 'https://api.dexscreener.com/latest/dex/search?q=';
   // established mid/large-cap DEX tokens searched alongside trending ones,
@@ -3952,7 +3975,8 @@ function aryxBackToLanding(){
     'CRV','LDO','GALA','SAND','APE','CHZ','BLUR','ETHFI','JTO','RAY','ORCA','GIGA','ZEREBRO','GOAT','ACT'];
   var CHAINMAP = { solana:'solana', ethereum:'eth', bsc:'bsc', base:'base', polygon:'polygon_pos', arbitrum:'arbitrum', avalanche:'avax' };
 
-  var listEl, scanBtn, scanning = false, allMovers = [];
+  var listEl, scanBtn, statusEl, scanning = false, allMovers = [], lastScan = 0, lastSeen = 0;
+  var RESCAN_MS = 5 * 60000;
   function last(a){ return a[a.length-1]; }
   function fmtUsd(v){ if(v==null||isNaN(v)) return '—'; if(v>=1e9)return '$'+(v/1e9).toFixed(1)+'B'; if(v>=1e6)return '$'+(v/1e6).toFixed(1)+'M'; if(v>=1e3)return '$'+(v/1e3).toFixed(1)+'K'; return '$'+(+v).toFixed(0); }
   function fmtPrice(v){ v=+v; if(!isFinite(v))return '—'; var d=v>=1?4:v>=0.01?5:8; return '$'+v.toLocaleString('en-US',{maximumFractionDigits:d}); }
@@ -3964,7 +3988,31 @@ function aryxBackToLanding(){
   var TS_CHAIN   = { ethereum:'eth', bsc:'bsc', base:'base', polygon:'polygon', arbitrum:'arbitrum', avalanche:'avalanche' };
   var BM_CHAIN   = { ethereum:'eth', bsc:'bsc', base:'base', polygon:'poly', arbitrum:'arbi', avalanche:'avax', solana:'sol' };
 
+  // holder concentration (top-10 non-LP, non-burn wallets) and LP lock share, when GoPlus has them
+  function holderInfo(d){
+    var out = { top10:null, lpLocked:null, holders:d && d.holder_count ? +d.holder_count : null };
+    if(d && Array.isArray(d.holders) && d.holders.length){
+      var t = 0, n = 0;
+      d.holders.forEach(function(h){
+        if(n >= 10 || !h) return;
+        var addr = String(h.address||'').toLowerCase(), tag = String(h.tag||'').toLowerCase();
+        if(/^0x0{40}$|dead$/.test(addr) || /burn|lock|pool|lp|pair|raydium|uniswap|pancake/.test(tag) || h.is_contract==1 && h.is_locked==1) return;
+        t += (+h.percent || 0) * 100; n++;
+      });
+      out.top10 = t;
+    }
+    if(d && Array.isArray(d.lp_holders) && d.lp_holders.length){
+      var lk = 0;
+      d.lp_holders.forEach(function(h){ var a = String(h.address||'').toLowerCase();
+        if(h.is_locked==1 || /^0x0{40}$|0x0{36}dead$/.test(a)) lk += (+h.percent || 0) * 100; });
+      out.lpLocked = Math.min(100, lk);
+    }
+    return out;
+  }
   function parseEvmSafety(d){
+    var r = parseEvmSafetyCore(d); if(d) r.info = holderInfo(d); return r;
+  }
+  function parseEvmSafetyCore(d){
     if(!d) return { v:'?', why:'no data' };
     var honey = d.is_honeypot==='1' || d.cannot_sell_all==='1';
     var sellTax = (+d.sell_tax||0)*100, buyTax = (+d.buy_tax||0)*100;
@@ -3985,6 +4033,9 @@ function aryxBackToLanding(){
     return { v:'ok', why:'no major flags' };
   }
   function parseSolSafety(d){
+    var r = parseSolSafetyCore(d); if(d) r.info = holderInfo(d); return r;
+  }
+  function parseSolSafetyCore(d){
     if(!d) return { v:'?', why:'no data' };
     var fr = (d.freezable && d.freezable.status)==='1';
     var nt = d.non_transferable==='1' || (d.transferable && d.transferable.status)==='0';
@@ -4029,6 +4080,20 @@ function aryxBackToLanding(){
     if (h1 > 0) { s += 2; tags.push(['H1 ↑ '+h1.toFixed(0)+'%', 0]); }
     if (m5 > 0 && h1 > 0) { s += 0.8; }
     if (h6 > 0) { s += 1; }
+
+    // order flow — are buyers outnumbering sellers over the last hour?
+    var tx = (p.txns && p.txns.h1) || {}, buys = +tx.buys || 0, sells = +tx.sells || 0, ntx = buys + sells;
+    var bp = ntx ? buys / ntx : null;
+    if (ntx >= 20) {
+      if (bp >= 0.62) { s += 1.4; tags.push(['Buy pressure', 0]); }
+      else if (bp >= 0.55) { s += 0.6; }
+      else if (bp <= 0.4) { s -= 1.4; tags.push(['Sell pressure', 1]); }
+    }
+    // volume acceleration — last hour vs the average hour of the day
+    var vh1 = (p.volume && +p.volume.h1) || 0, accel = vol > 0 ? vh1 / (vol / 24) : 0;
+    if (accel >= 2.5 && h1 > 0) { s += 1.5; tags.push(['Vol surge ×'+accel.toFixed(1), 0]); }
+    else if (accel >= 1.5 && h1 > 0) { s += 0.7; }
+
     var vlr = vol / liq;                              // turnover — real activity
     if (vlr > 3) { s += 2; tags.push(['High turnover', 0]); }
     else if (vlr > 1) { s += 1; tags.push(['Active', 0]); }
@@ -4045,21 +4110,111 @@ function aryxBackToLanding(){
     else if (h24 > 60) { s -= 1.2; tags.push(['Extended', 1]); }
     if (h1 < -8) { s -= 1.5; }                         // dumping now
 
-    var pct = Math.max(0, Math.min(100, Math.round(s / 8 * 100)));
+    var pct = Math.max(0, Math.min(100, Math.round(s / 10.5 * 100)));
     return {
       sym: (p.baseToken && p.baseToken.symbol) || '?', chain: p.chainId, addr: (p.baseToken && p.baseToken.address),
       pair: p.pairAddress, url: p.url, price: +p.priceUsd, liq: liq, vol: vol, mcap: (+p.marketCap || +p.fdv || 0),
-      h1: h1, h6: h6, h24: h24, s: s, pct: pct, tags: tags
+      h1: h1, h6: h6, h24: h24, s: s, pct: pct, tags: tags,
+      buys: buys, sells: sells, bp: bp, accel: accel, ageH: ageH
     };
   }
 
+  // Early-gem score: very young, small-cap tokens with accumulation footprints
+  // (steady multi-timeframe buying, accelerating activity) that haven't pumped yet.
+  function gemScore(p){
+    var liq = (p.liquidity && p.liquidity.usd) || 0, vol = (p.volume && p.volume.h24) || 0;
+    var mcap = +p.marketCap || +p.fdv || 0;
+    var ch = p.priceChange || {}, m5 = +ch.m5 || 0, h1 = +ch.h1 || 0, h6 = +ch.h6 || 0, h24 = +ch.h24 || 0;
+    var ageH = p.pairCreatedAt ? (Date.now() - p.pairCreatedAt) / 3600000 : 9999;
+    // hard gates: early, small, tradeable, not already ran, not dumping
+    if (ageH > 24 * 14 || !mcap || mcap < 30000 || mcap > 10000000) return null;
+    if (liq < 10000 || vol < 15000 || liq / mcap < 0.04) return null;
+    if (h24 > 150 || h1 < -10 || h6 < -25) return null;
+
+    var s = 0, tags = [];
+    if (ageH < 24) { s += 2; tags.push(['Launched '+fmtAge(ageH)+' ago', 0]); }
+    else if (ageH < 72) { s += 1.5; tags.push(['New '+fmtAge(ageH), 0]); }
+    else if (ageH < 24 * 7) { s += 0.8; }
+    if (mcap < 1e6) { s += 2; tags.push(['Micro cap', 0]); } else if (mcap < 3e6) s += 1.4; else s += 0.6;
+    var lr = liq / mcap;
+    if (lr >= 0.1) { s += 1; tags.push(['Deep liq', 0]); }
+
+    var t1 = (p.txns && p.txns.h1) || {}, t6 = (p.txns && p.txns.h6) || {}, t24 = (p.txns && p.txns.h24) || {};
+    var b1 = +t1.buys || 0, s1 = +t1.sells || 0, b6 = +t6.buys || 0, s6 = +t6.sells || 0;
+    var bp1 = b1 + s1 ? b1 / (b1 + s1) : null, bp6 = b6 + s6 ? b6 / (b6 + s6) : null;
+    if (b1 + s1 >= 15) { if (bp1 >= 0.6) s += 1.3; else if (bp1 <= 0.42) { s -= 2; tags.push(['Sell pressure', 1]); } }
+    if (b6 + s6 >= 40 && bp6 >= 0.56) { s += 1.2; }
+    if (bp1 >= 0.6 && bp6 >= 0.56) tags.push(['Accumulation', 0]);
+    // activity accelerating: last hour's trades vs the 6h and 24h hourly pace
+    var n1 = b1 + s1, n6h = (b6 + s6) / 6, n24h = ((+t24.buys || 0) + (+t24.sells || 0)) / 24;
+    if (n1 >= 15 && n6h > 0 && n1 >= n6h * 1.5) { s += 1; tags.push(['Activity rising', 0]); }
+    var vh1 = (p.volume && +p.volume.h1) || 0, accel = vol > 0 ? vh1 / (vol / 24) : 0;
+    if (accel >= 2 && h1 > 0) { s += 1.3; tags.push(['Vol surge ×'+accel.toFixed(1), 0]); }
+    // steady climb beats a single spike
+    if (m5 >= 0 && h1 > 0 && h6 > 0 && h1 < 60) { s += 1.5; tags.push(['Steady climb', 0]); }
+    else if (h1 > 0) s += 0.5;
+    if (h24 > 80) { s -= 1.5; tags.push(['Extended', 1]); }
+    if (h1 > 60) { s -= 1; tags.push(['Spiking', 1]); }
+    var info = p.info || {}, soc = (info.socials || []).length + (info.websites || []).length;
+    if (soc >= 2) { s += 0.8; tags.push(['Socials', 0]); } else if (!soc) { s -= 0.6; tags.push(['No socials', 1]); }
+    if (p._boosted) s += 0.3;
+
+    return {
+      gem: true, sym: (p.baseToken && p.baseToken.symbol) || '?', chain: p.chainId, addr: (p.baseToken && p.baseToken.address),
+      pair: p.pairAddress, url: p.url, price: +p.priceUsd, liq: liq, vol: vol, mcap: mcap,
+      h1: h1, h6: h6, h24: h24, s: s, pct: Math.max(0, Math.min(100, Math.round(s / 13 * 100))), tags: tags,
+      buys: b1, sells: s1, bp: bp1, accel: accel, ageH: ageH
+    };
+  }
+  // after safety checks: fold in holder concentration & LP lock
+  function gemAdjust(m){
+    var i = m.safety && m.safety.info; if(!i) return;
+    if (i.top10 != null) {
+      if (i.top10 > 50) { m.s -= 2.5; m.tags.unshift(['Top10 hold '+i.top10.toFixed(0)+'%', 1]); }
+      else if (i.top10 > 30) { m.s -= 1; m.tags.push(['Top10 '+i.top10.toFixed(0)+'%', 1]); }
+      else { m.s += 1; m.tags.push(['Spread holders', 0]); }
+    }
+    if (i.lpLocked != null) {
+      if (i.lpLocked >= 80) { m.s += 1; m.tags.push(['LP locked', 0]); }
+      else if (i.lpLocked < 20) { m.s -= 1.2; m.tags.push(['LP unlocked', 1]); }
+    }
+    if (i.holders != null && i.holders >= 500) m.s += 0.5;
+    // concentrated supply or unlocked liquidity = classic rug set-up: never call that "safe"
+    var risky = [];
+    if (i.top10 != null && i.top10 > 50) risky.push('top-10 wallets hold '+i.top10.toFixed(0)+'%');
+    if (i.lpLocked != null && i.lpLocked < 20) risky.push('liquidity not locked');
+    if (risky.length && m.safety.v === 'ok') m.safety = { v:'caution', why:risky.join(', '), info:i };
+    m.pct = Math.max(0, Math.min(100, Math.round(m.s / 13 * 100)));
+  }
+  function holderLine(m){
+    var i = m.safety && m.safety.info; if(!i) return '';
+    var bits = [];
+    if (i.holders != null) bits.push(i.holders.toLocaleString()+' holders');
+    if (i.top10 != null) bits.push('top10 '+i.top10.toFixed(0)+'%');
+    if (i.lpLocked != null) bits.push('LP locked '+i.lpLocked.toFixed(0)+'%');
+    return bits.length ? '<div class="mover-price">'+bits.join(' · ')+'</div>' : '';
+  }
+
+  function fmtAge(h){ if(h==null||h>=9999) return '—'; if(h<1) return Math.max(1,Math.round(h*60))+'m'; if(h<48) return Math.round(h)+'h'; if(h<24*60) return Math.round(h/24)+'d'; return Math.round(h/24/30)+'mo'; }
+  function flowBar(m){
+    var n=(m.buys||0)+(m.sells||0); if(!n) return '';
+    var b=Math.round(m.buys/n*100);
+    return '<div class="mv-flow" title="Last hour: '+m.buys+' buys vs '+m.sells+' sells">'+
+      '<div class="mv-flow-bar"><i style="width:'+b+'%"></i></div>'+
+      '<span class="mv-flow-lbl"><b class="up">'+m.buys+'</b> buys · <b class="down">'+m.sells+'</b> sells <small>1h</small>'+
+      (m.accel?' · vol <b class="'+(m.accel>=1.5?'up':'')+'">×'+m.accel.toFixed(1)+'</b> <small>vs avg hr</small>':'')+
+      ' · age '+fmtAge(m.ageH)+'</span></div>';
+  }
+
   function render(rows){
-    try{ window.__aryxTopMover = rows && rows[0] ? rows[0] : null; }catch(e){}
-    if(!rows.length){ listEl.innerHTML = '<div class="mover-empty">No clean early setups right now — trending tokens are either too illiquid or already ran. Try again shortly.</div>'; return; }
+    if(mode === 'movers'){ try{ window.__aryxTopMover = rows && rows[0] ? rows[0] : null; }catch(e){} }
+    if(!rows.length){ listEl.innerHTML = '<div class="mover-empty">'+(mode==='gems'
+      ? 'No early gems pass the filters right now — fresh launches are either too thin, already pumped, or being sold into. New tokens appear constantly; the scan repeats every 5 minutes.'
+      : 'No clean early setups right now — trending tokens are either too illiquid or already ran. Try again shortly.')+'</div>'; return; }
     var SAFE = { ok:['✓ safe-ish','ok'], caution:['⚠ caution','caution'], danger:['⛔ danger','danger'], '?':['? unchecked','unk'] };
     listEl.innerHTML = rows.map(function(m){
       var cls = m.h1>=0?'up':'down';
-      var tags = m.tags.slice(0,3).map(function(t){ return '<span class="mover-tag'+(t[1]?' warn':'')+'">'+t[0]+'</span>'; }).join('');
+      var tags = m.tags.slice().sort(function(a,b){ return b[1]-a[1]; }).slice(0,4).map(function(t){ return '<span class="mover-tag'+(t[1]?' warn':'')+'">'+t[0]+'</span>'; }).join('');
       var sv = (m.safety && m.safety.v) || '?';
       var sl = SAFE[sv] || SAFE['?'];
       var pill = '<span class="mv-safe '+sl[1]+'" title="'+((m.safety&&m.safety.why)||'')+'">'+sl[0]+'</span>';
@@ -4068,6 +4223,7 @@ function aryxBackToLanding(){
         '<span class="mover-chg '+cls+'">'+(m.h1>=0?'+':'')+m.h1.toFixed(1)+'% <small style="opacity:.6">1h</small></span></div>'+
         '<div class="mover-score"><div class="mover-bar"><span style="width:'+m.pct+'%"></span></div><span class="mover-pct">'+m.pct+'</span></div>'+
         '<div class="mover-tags">'+pill+tags+'</div>'+
+        flowBar(m)+holderLine(m)+
         '<div class="mover-price">'+fmtPrice(m.price)+' · '+(m.mcap?'mc '+fmtUsd(m.mcap)+' · ':'')+'liq '+fmtUsd(m.liq)+' · vol '+fmtUsd(m.vol)+' · 24h '+(m.h24>=0?'+':'')+m.h24.toFixed(0)+'%</div>'+
         '<div class="mv-links" onclick="event.stopPropagation()">'+safetyLinks(m)+'</div></div>';
     }).join('');
@@ -4076,24 +4232,35 @@ function aryxBackToLanding(){
   function scan(){
     if(scanning || !listEl) return;
     scanning = true;
-    listEl.innerHTML = '<div class="mover-loading">scanning DEX markets…</div>';
+    listEl.innerHTML = '<div class="mover-loading">scanning DEX markets'+(mode==='gems'?' for fresh launches':'')+'…</div>';
     if(scanBtn) scanBtn.textContent = '… scanning';
 
     // 1) collect trending / boosted token addresses (both endpoints), dedupe
-    Promise.all([ getJSON(BOOSTS).catch(function(){return [];}), getJSON(LATEST).catch(function(){return [];}) ])
+    Promise.all([ getJSON(BOOSTS).catch(function(){return [];}), getJSON(LATEST).catch(function(){return [];}),
+                  getJSON(PROFILES).catch(function(){return [];}),
+                  Promise.all([1,2,3].map(function(pg){ return getJSON(GT_NEW+pg).catch(function(){ return {}; }); })) ])
     .then(function(res){
       var items = [].concat(res[0]||[], res[1]||[]);
       var boosted = {};
-      var byChain = {};
-      items.forEach(function(it){
+      var byChain = {}, seen = {};
+      function add(it){
         if(!it || !it.tokenAddress || !it.chainId) return;
-        boosted[it.chainId+':'+it.tokenAddress] = true;
+        var k = it.chainId+':'+it.tokenAddress; if(seen[k]) return; seen[k] = true;
         (byChain[it.chainId] = byChain[it.chainId] || []).push(it.tokenAddress);
+      }
+      items.forEach(function(it){ if(it && it.tokenAddress && it.chainId) boosted[it.chainId+':'+it.tokenAddress] = true; add(it); });
+      (Array.isArray(res[2]) ? res[2] : []).forEach(add);   // new listings (not boosted)
+      (res[3] || []).forEach(function(page){                 // GeckoTerminal new pools
+        ((page && page.data) || []).forEach(function(pool){
+          var id = pool && pool.relationships && pool.relationships.base_token && pool.relationships.base_token.data && pool.relationships.base_token.data.id;
+          if(!id) return; var cut = id.indexOf('_'); if(cut < 0) return;
+          var chain = GT_NET[id.slice(0, cut)]; if(chain) add({ chainId: chain, tokenAddress: id.slice(cut + 1) });
+        });
       });
       // 2) fetch pair data: trending token addresses (chunks) + major-cap searches
       var calls = [];
       Object.keys(byChain).forEach(function(chain){
-        var addrs = byChain[chain].slice(0, 60);
+        var addrs = byChain[chain].slice(0, 150);
         for(var i=0;i<addrs.length;i+=30){
           var chunk = addrs.slice(i, i+30).join(',');
           calls.push(getJSON(TOKENS + chunk).catch(function(){ return {pairs:[]}; }));
@@ -4101,6 +4268,7 @@ function aryxBackToLanding(){
       });
       MAJORS.forEach(function(t){ calls.push(getJSON(SEARCH + encodeURIComponent(t)).catch(function(){ return {pairs:[]}; })); });
       if(!calls.length){ render([]); scanning=false; if(scanBtn) scanBtn.textContent='↻ scan'; return; }
+      var nTokens = 0;
 
       Promise.all(calls).then(function(results){
         var bestByToken = {};
@@ -4116,17 +4284,28 @@ function aryxBackToLanding(){
           });
         });
         var out = [];
+        nTokens = Object.keys(bestByToken).length;
         Object.keys(bestByToken).forEach(function(k){ var m = score(bestByToken[k]); if(m && m.s >= 3) out.push(m); });
         out.sort(function(a,b){ return b.s - a.s; });
         var pool = out.slice(0, 40);
-        // 3) run rug/honeypot safety checks on the shortlist
+        var gems = [];
+        Object.keys(bestByToken).forEach(function(k){ var g = gemScore(bestByToken[k]); if(g && g.s >= 4) gems.push(g); });
+        gems.sort(function(a,b){ return b.s - a.s; });
+        var gemPool = gems.slice(0, 30);
+        // 3) run rug/honeypot safety checks on both shortlists (one call per token)
         if(scanBtn) scanBtn.textContent = '… safety';
-        Promise.all(pool.map(function(m){ return checkSafety(m).then(function(s){ m.safety = s; return m; }); }))
+        var checks = {};
+        function safetyOf(m){ var k = m.chain+':'+m.addr; return checks[k] || (checks[k] = checkSafety(m)); }
+        Promise.all(pool.concat(gemPool).map(function(m){ return safetyOf(m).then(function(s){ m.safety = s; return m; }); }))
           .then(function(){
             // always drop confirmed honeypots; keep the rest for filtering
-            allMovers = pool.filter(function(m){ return !(m.safety && m.safety.v==='danger' && /honeypot|cannot sell|non-transferable|freeze/.test(m.safety.why)); });
+            function notRug(m){ return !(m.safety && m.safety.v==='danger' && /honeypot|cannot sell|non-transferable|freeze/.test(m.safety.why)); }
+            allMovers = pool.filter(notRug);
+            gemPool.forEach(gemAdjust);
+            allGems = gemPool.filter(notRug).filter(function(m){ return m.s >= 4; });
             applyFilters();
             startWatch();   // begin drop-alert monitoring on the fresh list
+            lastScan = Date.now(); lastSeen = nTokens; updateStatus();
             scanning = false;
             if(scanBtn) scanBtn.textContent = '↻ scan';
           });
@@ -4146,7 +4325,8 @@ function aryxBackToLanding(){
     var capBand = ((document.getElementById('mvMcap')||{}).value) || '0';
     var capLo = 0, capHi = Infinity;
     if(capBand !== '0'){ var pr = capBand.split('-'); capLo = +pr[0] || 0; capHi = pr[1] ? +pr[1] : Infinity; }
-    var rows = allMovers.filter(function(m){
+    var src = mode === 'gems' ? allGems : allMovers;
+    var rows = src.filter(function(m){
       if(chain && m.chain !== chain) return false;
       if(m.liq < minLiq) return false;
       if(m.vol < minVol) return false;
@@ -4154,7 +4334,11 @@ function aryxBackToLanding(){
       if(safeOnly && !(m.safety && m.safety.v === 'ok')) return false;
       return true;
     });
-    if(!allMovers.length){ render([]); return; }
+    if(!src.length){ render([]); return; }
+    var sortBy = ((document.getElementById('mvSort')||{}).value) || 's';
+    var key = { s:function(m){ return m.s; }, mcap:function(m){ return -(m.mcap||1e15); }, h1:function(m){ return m.h1; }, accel:function(m){ return m.accel||0; },
+                bp:function(m){ return m.bp==null?-1:m.bp; }, age:function(m){ return -(m.ageH==null?9999:m.ageH); } }[sortBy] || function(m){ return m.s; };
+    rows.sort(function(a,b){ return key(b) - key(a) || b.s - a.s; });
     if(!rows.length){
       listEl.innerHTML = '<div class="mover-empty">No tokens match these filters. Loosen the chain / cap band, lower min liquidity, or turn off “Safe only”.</div>';
       return;
@@ -4168,8 +4352,11 @@ function aryxBackToLanding(){
   function alertsOn(){ var c=document.getElementById('mvAlert'); return !!(c && c.checked); }
 
   function startWatch(){
-    tracked = {};
-    allMovers.forEach(function(m){ if(m.addr) tracked[m.chain+':'+m.addr] = { addr:m.addr, chain:m.chain, sym:m.sym, base:m.price, alerted:false }; });
+    // keep the original "spotted" price for tokens that survive a re-scan,
+    // so drop alerts measure from when a token first appeared
+    var prev = tracked; tracked = {};
+    allMovers.concat(allGems).forEach(function(m){ if(!m.addr) return; var k = m.chain+':'+m.addr;
+      tracked[k] = prev[k] || { addr:m.addr, chain:m.chain, sym:m.sym, base:m.price, alerted:false }; });
     if(watchTimer) clearInterval(watchTimer);
     if(Object.keys(tracked).length) watchTimer = setInterval(checkDrops, 60000);
   }
@@ -4209,6 +4396,13 @@ function aryxBackToLanding(){
     }).catch(function(){});
   }
 
+  function updateStatus(){
+    if(!statusEl || !lastScan) return;
+    var mins = Math.floor((Date.now()-lastScan)/60000);
+    statusEl.textContent = (mode==='gems' ? allGems.length+' gems' : allMovers.length+' setups')+' from '+lastSeen+' tokens · '+(mins<1?'just now':mins+'m ago');
+  }
+  function visible(){ var c=document.getElementById('moverCard'); return !!(c && c.offsetParent !== null) && !document.hidden; }
+
   function openMover(chain, addr, url){
     // chart in-terminal via contract-address loader when the chain is supported
     var ch = CHAINMAP[chain];
@@ -4224,7 +4418,24 @@ function aryxBackToLanding(){
     scanBtn = document.getElementById('moverScan');
     if(!listEl) return;
     if(scanBtn) scanBtn.addEventListener('click', scan);
-    ['mvChain','mvLiq','mvVol','mvMcap','mvSafe'].forEach(function(id){
+    statusEl = document.getElementById('moverStatus');
+    var modeEl = document.getElementById('mvMode'), liqEl = document.getElementById('mvLiq'), moverLiq = null;
+    function setMode(m){
+      if(m === mode) return; mode = m;
+      modeEl.querySelectorAll('button').forEach(function(b){ b.classList.toggle('is-on', b.dataset.m === m); });
+      var t = document.getElementById('moverTitle');
+      if(t) t.textContent = m === 'gems' ? '💎 Early Gems — fresh small caps before the move' : '🚀 Early Movers — bullish setups forming';
+      var gn = document.getElementById('gemNote'); if(gn) gn.hidden = m !== 'gems';
+      // gems are small by definition: loosen the liquidity floor while in gem mode
+      if(liqEl){ if(m === 'gems'){ moverLiq = liqEl.value; if(+liqEl.value > 25000) liqEl.value = '25000'; }
+                 else if(moverLiq != null) liqEl.value = moverLiq; }
+      try{ localStorage.setItem('aryx.mvMode', m); }catch(e){}
+      applyFilters(); updateStatus();
+    }
+    if(modeEl) modeEl.addEventListener('click', function(e){ var b = e.target.closest('button'); if(b) setMode(b.dataset.m); });
+    try{ if(localStorage.getItem('aryx.mvMode') === 'gems') setMode('gems'); }catch(e){}
+    window.aryxMoverMode = setMode;
+    ['mvChain','mvLiq','mvVol','mvMcap','mvSafe','mvSort'].forEach(function(id){
       var el = document.getElementById(id); if(el) el.addEventListener('change', applyFilters);
     });
     var alertEl = document.getElementById('mvAlert');
@@ -4239,6 +4450,9 @@ function aryxBackToLanding(){
     });
     window.aryxScanMovers = scan;
     setTimeout(scan, 2200);
+    // auto re-scan while the Early Movers tab is on screen (or on return to it once stale)
+    setInterval(function(){ updateStatus(); if(!scanning && visible() && Date.now()-lastScan >= RESCAN_MS) scan(); }, 30000);
+    document.addEventListener('visibilitychange', function(){ if(!scanning && visible() && lastScan && Date.now()-lastScan >= RESCAN_MS) scan(); });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);
   else init();
@@ -4617,6 +4831,64 @@ function aryxBackToLanding(){
     }
     if(mt && mt.ratio!=null) inds.push(ind('Gold/silver ratio', mt.ratio.toFixed(1), -(mt.ratio-80)));
     if($('macroInd')) $('macroInd').innerHTML = inds.join('');
+    renderBrief(stress, band[0], { crypto:cClamp, markets:hasTrad?mClamp:null, cycle:cz?yClamp:null }, warns, s, t, cz, mt);
+  }
+
+  // ---- "Most important right now": bottom line, key numbers, top 3 flags ----
+  var BOTTOM = {
+    calm:     ['Backdrop supports risk-taking.', 'Normal position sizes are reasonable — keep stops in place, regimes can turn fast.'],
+    neutral:  ['Mixed backdrop — no strong macro headwind or tailwind.', 'Be selective, size moderately and let the chart signals lead.'],
+    elevated: ['Risk is building.', 'Cut leverage, tighten stops and favour majors (BTC/ETH) over small caps and new tokens.'],
+    riskoff:  ['Risk-off conditions.', 'Defensive posture: smaller positions, more cash/stablecoins, avoid illiquid tokens and leverage.'],
+    crisis:   ['Crisis conditions.', 'Capital preservation first — liquidity can vanish and moves overshoot in both directions.']
+  };
+  var DRIVER = { crypto:'crypto itself (drawdown, sentiment, stablecoin flows)', markets:'traditional markets (stocks, VIX, dollar, yields)', cycle:'the economic cycle (recession early-warning)' };
+  function kchip(label, val, st, hint){
+    return '<div class="mb-k '+(st||'')+'"'+(hint?' title="'+hint+'"':'')+'><span>'+label+'</span><b>'+val+'</b></div>';
+  }
+  function renderBrief(stress, band, parts, warns, s, t, cz, mt){
+    if(!$('macroBrief')) return;
+    // trend from the stress history
+    var hist=[]; try{ hist=JSON.parse(localStorage.getItem('aryx.stress'))||[]; }catch(e){}
+    var delta = hist.length>1 ? stress-hist[0].v : 0;
+    var trend = delta>4?' and <b class="down">rising</b>':delta<-4?' and <b class="up">easing</b>':'';
+    var main=null, mv=-1; Object.keys(parts).forEach(function(k){ if(parts[k]!=null && parts[k]>mv){ mv=parts[k]; main=k; } });
+    var bl=BOTTOM[band]||BOTTOM.neutral;
+    var bottom = bl[0]+' '+bl[1];
+    $('mbBottom').className='mb-bottom '+band;
+    $('mbBottom').innerHTML='<b>'+bl[0]+'</b> Stress '+stress+'/100'+trend+(mv>=8&&main?' — driven mostly by '+DRIVER[main]:'')+'. '+bl[1];
+
+    // key numbers
+    var k=[];
+    k.push(kchip('Risk score', stress+'/100', stress>=60?'bad':stress>=40?'warn':'ok'));
+    k.push(kchip('Fear &amp; Greed', Math.round(s.f), s.f<25||s.f>78?'warn':'ok', '0 = extreme fear, 100 = extreme greed'));
+    k.push(kchip('BTC vs 90d high', pc(s.dd), s.dd<=-35?'bad':s.dd<=-20?'warn':'ok'));
+    if(t.spy!=null) k.push(kchip('S&amp;P 500', pc(t.spy), t.spy<=-2?'bad':t.spy<=-1?'warn':'ok'));
+    if(t.vix!=null) k.push(kchip('VIX', t.vix.toFixed(1), t.vix>=30?'bad':t.vix>=22?'warn':'ok', 'Equity fear gauge: <20 calm, >30 fear'));
+    if(t.y10!=null) k.push(kchip('US 10Y yield', t.y10.toFixed(2)+'%', t.y10bp>=10?'warn':'ok', 'Change '+(t.y10bp>=0?'+':'')+Math.round(t.y10bp)+' bp'));
+    else if(t.bonds!=null) k.push(kchip('Bonds (IEF)', pc(t.bonds), t.bonds<=-0.6?'warn':'ok'));
+    if(t.dxy!=null) k.push(kchip('US dollar', pc(t.dxy), t.dxy>=1?'warn':'ok'));
+    if(cz && cz.prob!=null) k.push(kchip('Recession odds 12m', cz.prob+'%', cz.prob>=50?'bad':cz.prob>=30?'warn':'ok'));
+    if(cz) k.push(kchip('Crisis early-warning', cz.score+'/100', cz.score>=55?'bad':cz.score>=35?'warn':'ok'));
+    if(t.gold!=null) k.push(kchip('Gold', pc(t.gold), t.gold>=2?'warn':'ok'));
+    $('mbKeys').innerHTML=k.join('');
+
+    // top 3 flags (alerts before cautions), else the healthiest signs
+    var ranked=warns.filter(function(w){ return w[0]; }).map(function(w,i){ return [w[0]==='warn'?0:1, i, w]; })
+      .sort(function(a,b){ return a[0]-b[0] || a[1]-b[1]; }).slice(0,3).map(function(x){ return x[2]; });
+    if(ranked.length){
+      $('mbTop').innerHTML='<div class="mb-sub">Top '+ranked.length+' thing'+(ranked.length>1?'s':'')+' to watch</div>'+
+        ranked.map(function(w,i){ return '<div class="mb-item '+w[0]+'"><span class="mb-n">'+(i+1)+'</span><div>'+w[1]+'</div></div>'; }).join('');
+    } else {
+      var good=[];
+      if(s.f>=45 && s.f<=75) good.push('Sentiment balanced (Fear &amp; Greed '+Math.round(s.f)+').');
+      if(s.dd>-10) good.push('BTC within '+Math.abs(s.dd).toFixed(0)+'% of its 90-day high.');
+      if(t.vix!=null && t.vix<20) good.push('Equity volatility low (VIX '+t.vix.toFixed(1)+').');
+      if(cz && cz.red===0) good.push('No recession indicator in the red zone.');
+      $('mbTop').innerHTML='<div class="mb-sub">No major stress flags</div>'+
+        (good.length?good.slice(0,3):['Conditions look orderly.']).map(function(g){ return '<div class="mb-item ok"><span class="mb-n">✓</span><div>'+g+'</div></div>'; }).join('');
+    }
+    try{ window.__aryxStress.bottom=bottom; window.__aryxStress.top=ranked.map(function(w){ return w[1].replace(/<[^>]*>/g,''); }); }catch(e){}
   }
   // ---- stress history (shows whether risk is rising or falling over time) ----
   function recordStress(v){
@@ -4927,7 +5199,7 @@ function aryxBackToLanding(){
         crisisState=c; crisisAt=Date.now();
         try{ window.__aryxCrisis={ score:c.score, band:c.band, label:c.label, prob:c.prob, spread:c.spread, red:c.red, amber:c.amber, asOf:c.asOf,
           rows:c.rows.map(function(r){ return { id:r.id, name:r.name, val:r.val, status:r.status, note:r.note, m:r.m }; }) }; }catch(e){}
-        renderCrisis(c); applyRegime();
+        renderCrisis(c); applyRegime(); stamp();
       })
       .catch(function(){ head.innerHTML='<div class="macro-empty">Economic data unavailable (the /api/fred function isn’t reachable).</div>'; })
       .then(function(){ crisisLoading=false; });
@@ -5107,13 +5379,63 @@ function aryxBackToLanding(){
         .then(function(gs){ metalsRaw={ gold:gs[0], silver:gs[1] }; });
     }).then(function(){
       if(!metalsRaw.gold && !metalsRaw.silver){ $('metalsHead').innerHTML='<div class="macro-empty">Gold &amp; silver data unavailable right now — try refresh later.</div>'; return; }
-      metalsAt=Date.now(); analyzeMetals();
+      metalsAt=Date.now(); analyzeMetals(); renderTrad();
     }).catch(function(){ $('metalsHead').innerHTML='<div class="macro-empty">Gold &amp; silver data unavailable right now.</div>'; })
       .then(function(){ metalsLoading=false; });
   }
 
-  // Traditional markets via the /api/market proxy (Twelve Data key required)
+  // Traditional markets: intraday via the /api/market proxy (Twelve Data key),
+  // falling back per symbol to end-of-day FRED series (no key) and the metals
+  // feed for gold & silver, so this section always has data.
   var TRAD = [['SPY','S&P 500'],['QQQ','Nasdaq 100'],['VIX','Volatility (VIX)'],['DXY','US Dollar'],['IEF','US 10Y bonds'],['XAU','Gold'],['XAG','Silver']];
+  var TRAD_FRED = { SPY:['SP500','S&P 500'], QQQ:['NASDAQCOM','Nasdaq Comp.'], VIX:['VIXCLS','Volatility (VIX)'],
+    DXY:['DTWEXBGS','US Dollar (broad)'], IEF:['DGS10','US 10Y yield'] };
+  var tradRows=null;
+  function lastTwo(hist){ return hist && hist.length>1 ? [hist[hist.length-2][1], hist[hist.length-1][1]] : null; }
+  function renderTrad(){
+    var box=$('macroTrad'); if(!box || !tradRows) return;
+    tradData={ spy:null, gold:null, dxy:null, bonds:null, vix:null, vixChg:null };
+    var eod=false;
+    var html=tradRows.map(function(r){
+      var lastC, prev, label=r.label, src='';
+      if(r.d && r.d.candles && r.d.candles.length){
+        var c=r.d.candles; lastC=c[c.length-1].c; prev=c.length>1?c[c.length-2].c:lastC;
+      } else if(r.fred){
+        var lt=lastTwo(r.fred.hist); if(!lt) return '';
+        prev=lt[0]; lastC=lt[1]; label=TRAD_FRED[r.sym][1]; src=r.fred.date; eod=true;
+      } else if(r.sym==='XAU' || r.sym==='XAG'){
+        var m=metalsRaw && (r.sym==='XAU'?metalsRaw.gold:metalsRaw.silver), lm=m && lastTwo(m.hist); if(!lm) return '';
+        prev=lm[0]; lastC=lm[1]; src=m.date; eod=true;
+      } else return '';
+      if(!isFinite(lastC) || !isFinite(prev) || !prev) return '';
+      var chg=(lastC/prev-1)*100, val, sub;
+      if(r.sym==='IEF' && r.fred){
+        // FRED gives the 10Y yield itself: show it in bp, and map to a bond-price
+        // move (~7.5y duration) so the risk score reads it like the IEF ETF
+        var bps=(lastC-prev)*100;
+        tradData.bonds=-(lastC-prev)*7.5; tradData.y10=lastC; tradData.y10bp=bps;
+        val=lastC.toFixed(2)+'%'; sub=(bps>=0?'+':'')+bps.toFixed(0)+' bp';
+        return tile(label, val, sub, bps<=0, src);
+      }
+      if(r.sym==='SPY') tradData.spy=chg;
+      if(r.sym==='XAU') tradData.gold=chg;
+      if(r.sym==='DXY') tradData.dxy=chg;
+      if(r.sym==='IEF') tradData.bonds=chg;
+      if(r.sym==='VIX'){ tradData.vix=lastC; tradData.vixChg=chg; }
+      val=(r.sym==='DXY')? lastC.toFixed(2) : (r.sym==='VIX')? lastC.toFixed(1) :
+          (r.fred && r.sym!=='SPY' && r.sym!=='QQQ') ? lastC.toFixed(2) : (r.fred?'':'$')+lastC.toLocaleString('en-US',{maximumFractionDigits:2});
+      if(r.sym==='XAU'||r.sym==='XAG') val='$'+lastC.toLocaleString('en-US',{maximumFractionDigits:2});
+      sub=(chg>=0?'+':'')+chg.toFixed(2)+'%';
+      return tile(label, val, sub, (r.sym==='VIX'||r.sym==='DXY') ? chg<=0 : chg>=0, src);
+    }).join('');
+    box.innerHTML = html ? html + (eod ? '<div class="mt-eod">Tiles marked with a date are end-of-day (FRED / metals feed). Add <b>TWELVEDATA_API_KEY</b> for intraday quotes.</div>' : '')
+      : '<div class="macro-empty">Traditional-market data unavailable right now — try refresh later.</div>';
+    applyRegime();   // fold S&P 500 / gold / dollar / bonds / VIX into the risk score
+  }
+  function tile(label, val, sub, good, src){
+    return '<div class="mstat"><span>'+label+(src?' <em class="mt-src">'+src.slice(5)+'</em>':'')+'</span><strong class="'+(good?'up':'down')+'">'+val+
+      ' <span style="font-size:11px">'+sub+'</span></strong></div>';
+  }
   function loadTrad(){
     var box=$('macroTrad'); if(!box) return;
     Promise.all(TRAD.map(function(t){
@@ -5121,24 +5443,17 @@ function aryxBackToLanding(){
         .then(function(r){ return r.json(); }).then(function(d){ return { sym:t[0], label:t[1], d:d }; })
         .catch(function(){ return { sym:t[0], label:t[1], d:null }; });
     })).then(function(rows){
-      var any=false; tradData={ spy:null, gold:null, dxy:null, bonds:null, vix:null, vixChg:null };
-      var html=rows.map(function(r){
-        var c=r.d && r.d.candles; if(!c || !c.length) return '';
-        any=true;
-        var lastC=c[c.length-1].c, prev=c.length>1?c[c.length-2].c:lastC, chg=(lastC/prev-1)*100;
-        if(r.sym==='SPY') tradData.spy=chg;
-        if(r.sym==='XAU') tradData.gold=chg;
-        if(r.sym==='DXY') tradData.dxy=chg;
-        if(r.sym==='IEF') tradData.bonds=chg;
-        if(r.sym==='VIX'){ tradData.vix=lastC; tradData.vixChg=chg; }
-        var val=(r.sym==='DXY')? lastC.toFixed(2) : (r.sym==='VIX')? lastC.toFixed(1) : '$'+lastC.toLocaleString('en-US',{maximumFractionDigits:2});
-        return '<div class="mstat"><span>'+r.label+'</span><strong class="'+(chg>=0?'up':'down')+'">'+val+
-          ' <span style="font-size:11px">'+(chg>=0?'+':'')+chg.toFixed(2)+'%</span></strong></div>';
-      }).join('');
-      box.innerHTML = any ? html :
-        '<div class="macro-empty">Live equities, metals &amp; the dollar need a Twelve Data key — add <b>TWELVEDATA_API_KEY</b> in Vercel and redeploy. (Crypto risk read above works without it.)</div>';
-      applyRegime();   // fold S&P 500 / gold / dollar into the risk score
-    }).catch(function(){ box.innerHTML='<div class="macro-empty">Traditional-market data unavailable right now.</div>'; });
+      var need=rows.filter(function(r){ return !(r.d && r.d.candles && r.d.candles.length) && TRAD_FRED[r.sym]; })
+        .map(function(r){ return TRAD_FRED[r.sym][0]; });
+      if(!need.length) return rows;
+      return fetch('/api/fred?series='+need.join(',')+'&days=45&points=60', { credentials:'same-origin' })
+        .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+        .then(function(d){ var S=(d && d.series)||{};
+          rows.forEach(function(r){ var f=TRAD_FRED[r.sym]; if(f && S[f[0]] && !(r.d && r.d.candles && r.d.candles.length)) r.fred=S[f[0]]; });
+          return rows; })
+        .catch(function(){ return rows; });
+    }).then(function(rows){ tradRows=rows; renderTrad(); })
+      .catch(function(){ box.innerHTML='<div class="macro-empty">Traditional-market data unavailable right now.</div>'; });
   }
 
   var loading=false, cache=null, lastLoad=0;
@@ -5148,14 +5463,24 @@ function aryxBackToLanding(){
     loading=true; loadTrad(); loadCrisis(); loadMetals();
     var btn=$('macroRefresh'); if(btn){ btn.disabled=true; btn.textContent='… loading'; }
     Promise.all([ getJSON(FNG).catch(function(){return null;}), getJSON(GLOBAL).catch(function(){return null;}), getJSON(BTCHART).catch(function(){return null;}) ])
-      .then(function(res){ cache=res; lastLoad=Date.now(); render(res[0], res[1], res[2]); })
+      .then(function(res){ cache=res; lastLoad=Date.now(); render(res[0], res[1], res[2]); stamp(); })
       .catch(function(){ if($('macroRegime')) $('macroRegime').textContent='Could not load macro data — tap refresh.'; })
       .then(function(){ loading=false; if(btn){ btn.disabled=false; btn.textContent='↻ refresh'; } });
   }
+  function stamp(){
+    var el=$('macroStamp'); if(!el || !lastLoad) return;
+    var mins=Math.floor((Date.now()-lastLoad)/60000);
+    el.textContent='updated '+(mins<1?'just now':mins+'m ago')+(crisisState&&crisisState.asOf?' · econ data to '+crisisState.asOf:'');
+  }
   window.aryxLoadMacro = loadMacro;   // called when the Macro tab is opened
+  var REFRESH_MS=5*60000;
+  function macroVisible(){ var c=$('macroCard'); return !!(c && c.offsetParent!==null) && !document.hidden; }
   function init(){
     if(!$('macroCard')) return;
     if($('macroRefresh')) $('macroRefresh').addEventListener('click', function(){ loadMacro(true); });
+    // keep the risk read fresh while the Macro tab is on screen
+    setInterval(function(){ stamp(); if(!loading && macroVisible() && lastLoad && Date.now()-lastLoad>=REFRESH_MS) loadMacro(true); }, 30000);
+    document.addEventListener('visibilitychange', function(){ if(!loading && macroVisible() && lastLoad && Date.now()-lastLoad>=REFRESH_MS) loadMacro(true); });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
@@ -5195,7 +5520,7 @@ function aryxBackToLanding(){
     if(r){
       html('dRiskG', V.gauge(r.score, [[0,20,G.ok],[20,40,'#9ed36a'],[40,60,G.warn],[60,80,'#ff8c5a'],[80,100,G.bad]], ['calm','crisis'], 'Global risk '+r.score));
       html('dRiskV', r.score+'<small>/100</small>');
-      html('dRiskS', r.label);
+      html('dRiskS', r.label+(r.bottom?'<small class="db-bl">'+r.bottom+'</small>':''));
       var p=r.parts||{};
       html('dRiskC', cnt('', 'crypto '+(p.crypto!=null?p.crypto:'—'))+(p.markets!=null?cnt('', 'markets '+p.markets):'')+(p.cycle!=null?cnt('', 'cycle '+p.cycle):''));
       cls('dRisk', r.score>=80?'severe':r.score>=60?'high':r.score>=40?'elevated':'low');
@@ -5443,6 +5768,24 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .macro-dd{font-size:12px;color:var(--ax-muted);margin-top:8px;font-family:'JetBrains Mono',monospace;}
 .macro-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .macro-h{font-size:13px;font-weight:700;color:var(--ax-text);margin-bottom:9px;}
+.macro-brief{border:1px solid var(--ax-line2);border-radius:14px;padding:14px 16px;margin:14px 0 6px;background:linear-gradient(180deg,rgba(0,224,164,.05),transparent);}
+.mb-h{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ax-mint);margin-bottom:8px;}
+.mb-bottom{font-size:14px;line-height:1.55;color:var(--ax-text);padding:10px 12px;border-radius:10px;background:var(--ax-surface2);border-left:3px solid var(--ax-mint);margin-bottom:12px;}
+.mb-bottom.elevated{border-left-color:#ffc65c;} .mb-bottom.riskoff{border-left-color:#ff8c5a;} .mb-bottom.crisis{border-left-color:#ff5c73;} .mb-bottom.neutral{border-left-color:#4d7cff;}
+.mb-bottom b.up{color:#26d982;} .mb-bottom b.down{color:#ff5c73;}
+.mb-keys{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;margin-bottom:12px;}
+.mb-k{background:var(--ax-surface2);border:1px solid var(--ax-line);border-radius:10px;padding:8px 10px;border-top:2px solid #26d982;}
+.mb-k.warn{border-top-color:#ffc65c;} .mb-k.bad{border-top-color:#ff5c73;}
+.mb-k span{display:block;font-size:10.5px;color:var(--ax-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;}
+.mb-k b{font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--ax-text);}
+.mb-sub{font-size:11px;font-weight:700;color:var(--ax-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+.mb-item{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;color:var(--ax-muted);padding:7px 0;border-top:1px solid var(--ax-line);}
+.mb-item b{color:var(--ax-text);}
+.mb-n{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 11px 'JetBrains Mono',monospace;background:rgba(38,217,130,.15);color:#26d982;}
+.mb-item.warn .mb-n{background:rgba(255,92,115,.15);color:#ff5c73;} .mb-item.caution .mb-n{background:rgba(255,198,92,.15);color:#ffc65c;}
+.db-bl{display:block;font-size:11px;font-weight:500;opacity:.75;margin-top:3px;line-height:1.4;}
+.mt-src{white-space:nowrap;font-style:normal;font-family:'JetBrains Mono',monospace;font-size:9.5px;opacity:.6;margin-left:4px;}
+.mt-eod{grid-column:1/-1;font-size:11px;color:var(--ax-dim);margin-top:2px;}
 .macro-list{display:flex;flex-direction:column;gap:7px;}
 .macro-item{background:var(--ax-surface2);border:1px solid var(--ax-line);border-radius:9px;padding:9px 12px;font-size:12.5px;color:var(--ax-muted);}
 .macro-item.warn{border-color:rgba(255,92,115,.35);color:var(--ax-down);background:rgba(255,92,115,.06);}
@@ -5627,6 +5970,19 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
   padding:16px 18px!important;margin-top:16px!important;box-shadow:0 12px 30px -18px rgba(0,0,0,.6)!important;}
 .mover-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
 .mover-note{font-size:12px;color:var(--ax-muted);line-height:1.6;margin-bottom:14px;}
+.mv-hr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+.mv-status{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ax-dim);}
+.mv-mode{display:inline-flex;border:1px solid var(--ax-line2);border-radius:10px;overflow:hidden;}
+.mv-mode button{background:transparent;border:0;color:var(--ax-muted);font:600 12px/1 inherit;padding:8px 11px;cursor:pointer;}
+.mv-mode button.is-on{background:var(--ax-surface2);color:var(--ax-text);box-shadow:inset 0 -2px 0 var(--ax-mint);}
+.gem-note{border-left:2px solid var(--ax-mint);padding-left:10px;}
+.mv-flow{margin:7px 0 4px;}
+.mv-flow-bar{width:100%;height:4px;border-radius:3px;background:rgba(255,92,115,.55);overflow:hidden;margin-bottom:4px;}
+.mv-flow-bar i{display:block;height:100%;background:#26d982;}
+.mv-flow-lbl{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ax-dim);}
+.mv-flow-lbl b{font-weight:700;}
+.mv-flow-lbl b.up{color:#26d982;} .mv-flow-lbl b.down{color:#ff5c73;}
+.mv-flow-lbl small{opacity:.65;}
 .mover-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center;}
 .mv-sel{background:var(--ax-surface2);border:1px solid var(--ax-line2);color:var(--ax-text);
   font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:9px;cursor:pointer;outline:none;}
