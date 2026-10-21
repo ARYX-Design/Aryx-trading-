@@ -109,6 +109,16 @@ and VWAP on live candles:
   buying, buyers > sellers, rising activity & volume), liquidity depth and socials, and penalised
   if already pumped. GoPlus holder concentration and LP-lock data adjust the score; concentrated or
   unlocked tokens are marked caution. A ranking of early setups — not a prediction.
+- **🎯 Signal Lab** (Terminal) — grades all 19 indicator votes on the loaded chart (500 candles) against
+  what price did over the next 5 candles, learns weights on the older 60% and tests on the newer 40%
+  out-of-sample, versus the fixed formula and a same-mix coin-flip baseline. The adaptive model only
+  gets a 50% say in the verdict when it beats the fixed formula out-of-sample.
+- **💧 Liquidity & leverage** (Macro tab) — Fed net liquidity (WALCL − TGA − reverse repo), M2, 10Y
+  real yield (FRED), total stablecoin supply (DeFiLlama), BTC funding & open interest (Binance, OKX
+  fallback). Liquidity drains and overheated leverage add up to 25 points to the risk score.
+- **📊 Scanner track record** (Early Movers) — each top-10 pick is followed for 24h on the device;
+  shows % up and median return at 1h/4h/24h. Tokens strengthening across consecutive scans get a
+  "Persistent" bonus; ones fading since spotted are penalised.
 - **Recession & crisis early-warning** (Macro tab) — FRED (St. Louis Fed) via the `/api/fred`
   proxy — works with no key (public FRED CSV); `FRED_API_KEY` optional: 10Y−3M / 10Y−2Y yield curves, high-yield credit spreads,
   Sahm rule, initial jobless claims, Chicago Fed NFCI, St. Louis Fed stress index, VIX, housing
