@@ -28,7 +28,12 @@ var ALLOWED = {
   SP500: 1,         // S&P 500 index (daily close) — for the gold/silver vs stocks comparison
   NASDAQCOM: 1,     // Nasdaq Composite (daily close) — Traditional-markets fallback without a Twelve Data key
   DTWEXBGS: 1,      // Nominal broad US dollar index (daily) — DXY fallback
-  DGS10: 1          // 10-year Treasury constant-maturity yield (daily) — bond/yield fallback
+  DGS10: 1,         // 10-year Treasury constant-maturity yield (daily) — bond/yield fallback
+  WALCL: 1,         // Fed total assets (weekly, $M) — net-liquidity input
+  WTREGEN: 1,       // Treasury General Account (weekly avg, $M) — net-liquidity input
+  RRPONTSYD: 1,     // Overnight reverse repo (daily, $B) — net-liquidity input
+  M2SL: 1,          // M2 money supply (monthly, $B)
+  DFII10: 1         // 10-year TIPS real yield (daily, %)
 };
 var MAX_SERIES = 12, MAX_POINTS = 160;
 var HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; AryxMacro/1.0)', 'Accept': 'text/csv,application/json,*/*' };
