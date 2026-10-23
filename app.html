@@ -1027,7 +1027,7 @@
   </div>
 
   <div class="picker-bar">
-    <input id="search" class="search" placeholder="Search top 100 coins… (e.g. bitcoin, eth, sol)" autocomplete="off">
+    <input id="search" class="search" placeholder="Search coins or stocks… (e.g. bitcoin, sol, NVDA, COIN)" autocomplete="off">
     <div id="results" class="results"></div>
   </div>
 
@@ -1187,6 +1187,30 @@
       <div class="bot-lb-note">Backtests each strategy on ~90 days of the selected market (long-only, all-in, no fees) and ranks by return. Tap a row to load that strategy into the bot. Backtests are in-sample and optimistic vs live.</div>
       <div id="botLbList" class="lb-list"></div>
     </div>
+  </div>
+
+  <div class="macro-card stk-card" id="stocksCard">
+    <div class="mover-h">
+      <div class="chart-title">📊 Stocks &amp; the crypto link</div>
+      <div class="mv-hr"><span id="stkStamp" class="mv-status"></span><button id="stkRefresh" class="ctool">↻ refresh</button></div>
+    </div>
+    <div class="mover-note">US indices, big tech and crypto-linked stocks with the same composite signal the Terminal uses — plus <b>how tightly crypto is moving with the stock market right now</b>: correlations, beta, what Bitcoin has done on big Nasdaq down days, and which crypto stocks amplify Bitcoin. Daily data (Yahoo Finance / Stooq), refreshed every 10 minutes. Tap any stock to open the full chart and Signal Lab in the Terminal. <b>Not investment advice.</b></div>
+
+    <div class="macro-section">🏛 Market pulse</div>
+    <div class="stk-idx" id="stkIdx"><div class="macro-empty">Loading US indices…</div></div>
+
+    <div class="macro-section">🔗 Crypto ↔ stocks relationship</div>
+    <div class="crisis-wrap" id="stkLinkCard">
+      <div class="stk-head" id="stkLinkHead"><div class="macro-empty">Measuring how Bitcoin and Ethereum move with the S&amp;P 500 and Nasdaq…</div></div>
+      <div class="macro-stats" id="stkLinkTiles"></div>
+      <div class="crisis-charts"><div class="cz-chart" id="stkChCorr"></div><div class="cz-chart" id="stkChPerf"></div></div>
+      <div class="stk-cs" id="stkCryptoStocks"></div>
+      <div class="crisis-note">Correlation uses <b>daily returns</b> on days both markets traded (−1 = opposite, 0 = unrelated, +1 = move together). <b>Beta</b> is how big Bitcoin's move has been for a 1% Nasdaq move. When the link is tight, equity sell-offs, Fed decisions, CPI prints and big-tech earnings move crypto too; when it's loose, crypto is trading on its own flows. Relationships shift — the 30-day vs 90-day reading shows which way it's heading.</div>
+    </div>
+
+    <div class="macro-section">📈 Stock signals</div>
+    <div class="stk-tabs" id="stkTabs"><button data-g="all" class="is-on">All</button><button data-g="mega">Big tech</button><button data-g="crypto">Crypto stocks</button></div>
+    <div class="stk-table" id="stkTable"><div class="macro-empty">Loading stocks…</div></div>
   </div>
 
   <div class="macro-card" id="macroCard">
@@ -1765,8 +1789,23 @@ async function getData(tf){
 // ---------- Yahoo Finance (metals / indices: silver, S&P 500) ----------
 const YH_TF={'15m':{i:'15m',r:'30d'},'1h':{i:'60m',r:'180d'},'4h':{i:'60m',r:'720d',agg:4},
   'day':{i:'1d',r:'5y'},'week':{i:'1wk',r:'10y'},'month':{i:'1mo',r:'max'}};
+// candles [[t,o,h,l,c,v],...] via the /api/stocks proxy (Yahoo → Stooq → Twelve Data, server-side)
+async function stockCandles(sym,interval,range){
+  const r=await fetch(`/api/stocks?symbols=${encodeURIComponent(sym)}&interval=${interval}&range=${range}`,{credentials:'same-origin'});
+  if(!r.ok)throw new Error('stocks-proxy');
+  const j=await r.json();
+  const s=j&&j.series&&j.series[sym.toUpperCase()];
+  if(!s||!s.candles||s.candles.length<5)throw new Error('stocks-empty');
+  return{candles:s.candles,source:s.source};
+}
 async function fetchYahoo(tf){
   const cfg=YH_TF[tf];
+  let prices=[],opens=[],highs=[],lows=[],vols=[],times=[],src='Yahoo Finance';
+  try{
+    const sc=await stockCandles(current.yahoo,cfg.i,cfg.r);
+    sc.candles.forEach(c=>{times.push(c[0]);opens.push(c[1]);highs.push(c[2]);lows.push(c[3]);prices.push(c[4]);vols.push(c[5]);});
+    src={yahoo:'Yahoo Finance',stooq:'Stooq',twelvedata:'Twelve Data'}[sc.source]||'Yahoo Finance';
+  }catch(e){
   const url=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(current.yahoo)}?interval=${cfg.i}&range=${cfg.r}`;
   const r=await fetch(url);
   if(!r.ok)throw new Error('yahoo-miss');
@@ -1774,7 +1813,6 @@ async function fetchYahoo(tf){
   const res=j.chart&&j.chart.result&&j.chart.result[0];
   if(!res||!res.timestamp)throw new Error('yahoo-empty');
   const q=res.indicators.quote[0];
-  let prices=[],opens=[],highs=[],lows=[],vols=[],times=[];
   res.timestamp.forEach((t,i)=>{
     const c=q.close[i];
     if(c==null)return;
@@ -1782,6 +1820,7 @@ async function fetchYahoo(tf){
     highs.push(q.high[i]!=null?q.high[i]:c);lows.push(q.low[i]!=null?q.low[i]:c);
     vols.push(q.volume[i]||0);times.push(t*1000);
   });
+  }
   if(cfg.agg){ // build 4h bars from 1h
     const n=cfg.agg,P=[],O=[],H=[],L=[],V=[],T=[];
     for(let i=0;i<prices.length;i+=n){
@@ -1794,7 +1833,7 @@ async function fetchYahoo(tf){
   }
   const cut=Math.max(0,prices.length-500);
   return{prices:prices.slice(cut),opens:opens.slice(cut),highs:highs.slice(cut),
-    lows:lows.slice(cut),vols:vols.slice(cut),times:times.slice(cut),source:'Yahoo Finance'};
+    lows:lows.slice(cut),vols:vols.slice(cut),times:times.slice(cut),source:src};
 }
 
 // ---------- GeckoTerminal (contract-address / DEX tokens) ----------
@@ -1849,6 +1888,18 @@ const EXTRA_ASSETS=[
   {id:'silver',symbol:'XAG',name:'Silver',yahoo:'SI=F',rank:'Ag'},
   {id:'sp500',symbol:'SPX',name:'S&P 500 (VUAA)',yahoo:'^GSPC',rank:'SP'}
 ];
+// Stocks & ETFs — searchable in the Terminal (charted via /api/stocks), not added to the coin picker
+const STOCK_ASSETS=[['^NDX','Nasdaq 100'],['^DJI','Dow Jones'],['^RUT','Russell 2000'],['AAPL','Apple'],['MSFT','Microsoft'],
+  ['NVDA','NVIDIA'],['AMZN','Amazon'],['GOOGL','Alphabet'],['META','Meta Platforms'],['TSLA','Tesla'],['COIN','Coinbase'],
+  ['MSTR','MicroStrategy (Strategy)'],['MARA','MARA Holdings'],['RIOT','Riot Platforms'],['HOOD','Robinhood'],['IBIT','iShares Bitcoin ETF'],
+  ['SPY','SPDR S&P 500 ETF'],['QQQ','Invesco QQQ (Nasdaq 100)']]
+  .map(([y,n])=>({id:'stk-'+y.replace(/[^A-Za-z0-9]/g,''),symbol:y.replace('^',''),name:n,yahoo:y,rank:'ST'}));
+window.aryxOpenStock=function(sym,name){
+  const y=String(sym).toUpperCase();
+  current={mode:'cex',id:'stk-'+y.replace(/[^A-Z0-9]/g,''),symbol:y.replace('^',''),name:name||y,yahoo:y};
+  secsLeft=REFRESH_SEC; setHeader(); load(activeTf);
+  const b=document.querySelector('.atab[data-t="terminal"]'); if(b) b.click();
+};
 async function loadCoins(){
   try{
     const r=await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1');
@@ -3455,6 +3506,13 @@ async function setHeader(){
   }
   if(current.yahoo){
     try{
+      const sc=await stockCandles(current.yahoo,'1d','5d'), c=sc.candles;
+      const ch=(c[c.length-1][4]-c[c.length-2][4])/c[c.length-2][4]*100;
+      el.textContent=(ch>=0?'▲ +':'▼ ')+ch.toFixed(2)+'% · vs prev close';
+      el.className='chg '+(ch>=0?'up':'down');
+      return;
+    }catch(e){}
+    try{
       const r=await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(current.yahoo)}?interval=1d&range=5d`);
       const j=await r.json();
       const m=j.chart.result[0].meta;
@@ -3567,7 +3625,11 @@ function renderResults(list){
 search.addEventListener('input',()=>{
   const q=search.value.trim().toLowerCase();
   if(!q){results.style.display='none';return;}
-  renderResults(COINS.filter(c=>c.name.toLowerCase().includes(q)||c.symbol.toLowerCase().includes(q)||c.id.includes(q)));
+  const hits=COINS.concat(STOCK_ASSETS).filter(c=>c.name.toLowerCase().includes(q)||c.symbol.toLowerCase().includes(q)||c.id.includes(q));
+  // any ticker-looking query can be opened as a stock / ETF
+  if(/^[a-z]{1,5}([.\-][a-z])?$/.test(q)&&!hits.some(c=>c.yahoo&&c.yahoo.toLowerCase()===q))
+    hits.push({id:'stk-'+q.toUpperCase().replace(/[^A-Z0-9]/g,''),symbol:q.toUpperCase(),name:q.toUpperCase()+' · open as stock / ETF',yahoo:q.toUpperCase(),rank:'ST'});
+  renderResults(hits);
 });
 search.addEventListener('focus',()=>{if(search.value.trim())search.dispatchEvent(new Event('input'))});
 results.addEventListener('click',e=>{
@@ -5023,6 +5085,9 @@ function aryxBackToLanding(){
     if(t.bonds!=null){ if(t.bonds<=-0.6) mStress+=5; if(t.bonds<=-1.2) mStress+=5; } // Treasuries falling = 10Y yields spiking
     if(t.vix!=null){ if(t.vix>=22) mStress+=6; if(t.vix>=30) mStress+=8; }             // equity volatility / fear gauge
 
+    // equity stress matters more for crypto when the two are tightly coupled
+    var link=window.__aryxStockLink;
+    if(link && link.corr90!=null) mStress *= 0.75 + 0.5*Math.max(0, Math.min(1, link.corr90));
     // --- economic-cycle drivers (recession / crisis early-warning score) ---
     var yClamp = cz ? Math.min(Math.round(cz.score*0.3), 30) : 0;
     var cClamp=Math.min(cStress, 100), mClamp=Math.min(mStress, 60);
@@ -5086,6 +5151,7 @@ function aryxBackToLanding(){
       inds.push(ind('Crisis early-warning', cz.score+'/100', -(cz.score-25)));
     }
     if(mt && mt.ratio!=null) inds.push(ind('Gold/silver ratio', mt.ratio.toFixed(1), -(mt.ratio-80)));
+    if(link && link.corr90!=null) inds.push(ind('BTC–Nasdaq correlation (90d)', link.corr90.toFixed(2), 0));
     if(lq){ var lv=lq.v;
       if(lv.net13!=null) inds.push(ind('Fed net liquidity (13w)', pc(lv.net13), lv.net13));
       if(lv.st30!=null) inds.push(ind('Stablecoin supply (30d)', pc(lv.st30), lv.st30));
@@ -5132,6 +5198,8 @@ function aryxBackToLanding(){
     if(cz && cz.prob!=null) k.push(kchip('Recession odds 12m', cz.prob+'%', cz.prob>=50?'bad':cz.prob>=30?'warn':'ok'));
     if(cz) k.push(kchip('Crisis early-warning', cz.score+'/100', cz.score>=55?'bad':cz.score>=35?'warn':'ok'));
     if(t.gold!=null) k.push(kchip('Gold', pc(t.gold), t.gold>=2?'warn':'ok'));
+    var sl=window.__aryxStockLink;
+    if(sl && sl.corr90!=null) k.push(kchip('BTC ↔ Nasdaq', sl.corr90.toFixed(2), sl.corr90>=0.5?'warn':'ok', '90-day correlation of daily returns — high = stock sell-offs hit crypto'));
     if(lq && lq.v.net13!=null) k.push(kchip('Net liquidity 13w', pc(lq.v.net13), lq.v.net13<=-3?'bad':lq.v.net13<=-1?'warn':'ok', 'Fed balance sheet − TGA − reverse repo'));
     if(lq && lq.v.fundAnn!=null) k.push(kchip('BTC funding', lq.v.fundAnn.toFixed(0)+'%/yr', lq.v.fund>=0.0006?'bad':lq.v.fund>=0.0003?'warn':'ok', 'Perpetual-futures funding, 7-day average'));
     $('mbKeys').innerHTML=k.join('');
@@ -5830,6 +5898,8 @@ function aryxBackToLanding(){
     el.textContent='updated '+(mins<1?'just now':mins+'m ago')+(crisisState&&crisisState.asOf?' · econ data to '+crisisState.asOf:'');
   }
   window.aryxLoadMacro = loadMacro;   // called when the Macro tab is opened
+  window.__aryxCharts = { lineChart:lineChart, multiChart:multiChart };   // shared with the Stocks tab
+  window.aryxMacroReapply = function(){ try{ applyRegime(); }catch(e){} };
   var REFRESH_MS=5*60000;
   function macroVisible(){ var c=$('macroCard'); return !!(c && c.offsetParent!==null) && !document.hidden; }
   function init(){
@@ -5838,6 +5908,237 @@ function aryxBackToLanding(){
     // keep the risk read fresh while the Macro tab is on screen
     setInterval(function(){ stamp(); if(!loading && macroVisible() && lastLoad && Date.now()-lastLoad>=REFRESH_MS) loadMacro(true); }, 30000);
     document.addEventListener('visibilitychange', function(){ if(!loading && macroVisible() && lastLoad && Date.now()-lastLoad>=REFRESH_MS) loadMacro(true); });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+
+<!-- ============ Stocks & the crypto link ============ -->
+<script>
+(function () {
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+  var IDX = [['^GSPC','S&P 500'],['^NDX','Nasdaq 100'],['^DJI','Dow Jones'],['^RUT','Russell 2000']];
+  var MEGA = [['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','NVIDIA'],['AMZN','Amazon'],['GOOGL','Alphabet'],['META','Meta'],['TSLA','Tesla']];
+  var CSTK = [['COIN','Coinbase'],['MSTR','Strategy (MSTR)'],['MARA','MARA Holdings'],['RIOT','Riot Platforms'],['HOOD','Robinhood'],['IBIT','iShares Bitcoin ETF']];
+  var CRYPTO = [['BTC-USD','Bitcoin'],['ETH-USD','Ethereum']];
+  var ALL = IDX.concat(MEGA, CSTK, CRYPTO);
+  var C_BTC='#f7931a', C_ETH='#8c8cf7', C_NDX='#3987e5', C_SPX='#26d982', C_COIN='#e66767', C_MSTR='#c98500';
+  var data = {}, stats = {}, link = null, loading = false, loadedAt = 0, group = 'all';
+
+  function pc(v, d){ return v==null||!isFinite(v) ? '—' : (v>=0?'+':'')+(v*100).toFixed(d==null?1:d)+'%'; }
+  function money(v){ if(v==null||!isFinite(v)) return '—'; return v>=1000 ? v.toLocaleString('en-US',{maximumFractionDigits:0}) : v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function ymd(t){ return new Date(t).toISOString().slice(0,10); }
+  function mean(a){ return a.length ? a.reduce(function(x,y){ return x+y; },0)/a.length : null; }
+  function sma(a,n){ return a.length>=n ? mean(a.slice(-n)) : null; }
+  function corr(a,b){
+    var n=Math.min(a.length,b.length); if(n<15) return null;
+    a=a.slice(-n); b=b.slice(-n); var ma=mean(a), mb=mean(b), sab=0, saa=0, sbb=0;
+    for(var i=0;i<n;i++){ var x=a[i]-ma, y=b[i]-mb; sab+=x*y; saa+=x*x; sbb+=y*y; }
+    return saa&&sbb ? sab/Math.sqrt(saa*sbb) : null;
+  }
+  function beta(y,x){
+    var n=Math.min(y.length,x.length); if(n<15) return null;
+    y=y.slice(-n); x=x.slice(-n); var my=mean(y), mx=mean(x), c=0, v=0;
+    for(var i=0;i<n;i++){ c+=(y[i]-my)*(x[i]-mx); v+=(x[i]-mx)*(x[i]-mx); }
+    return v ? c/v : null;
+  }
+  function closeMap(sym){ var m={}, c=data[sym]; if(c) c.forEach(function(k){ m[ymd(k[0])]=k[4]; }); return m; }
+  // daily returns of A and B on the days both traded (crypto trades 7/7, so stock dates lead)
+  function pairReturns(symA, symB){
+    var A=closeMap(symA), B=closeMap(symB);
+    var dates=Object.keys(A).filter(function(d){ return B[d]!=null; }).sort();
+    var ra=[], rb=[], rd=[];
+    for(var i=1;i<dates.length;i++){ ra.push(A[dates[i]]/A[dates[i-1]]-1); rb.push(B[dates[i]]/B[dates[i-1]]-1); rd.push(dates[i]); }
+    return { a:ra, b:rb, d:rd };
+  }
+
+  function statsFor(sym){
+    var c=data[sym]; if(!c || c.length<30) return null;
+    var cl=c.map(function(k){ return k[4]; }), n=cl.length, last=cl[n-1];
+    var ago=function(k){ return n>k ? last/cl[n-1-k]-1 : null; };
+    var yr=new Date(c[n-1][0]).getUTCFullYear(), ytdBase=null;
+    for(var i=n-1;i>=0;i--){ if(new Date(c[i][0]).getUTCFullYear()<yr){ ytdBase=cl[i]; break; } }
+    var s50=sma(cl,50), s200=sma(cl,200);
+    var trend = s50==null ? 'n/a' : (s200!=null && last>s50 && last>s200) ? 'up' : (s200!=null && last<s50 && last<s200) ? 'down' : 'mixed';
+    var r=null; try{ var rs=rsi(cl,14); r=rs[rs.length-1]; }catch(e){}
+    var sig=null;
+    try{
+      var a=analyze({ prices:cl, opens:c.map(function(k){return k[1];}), highs:c.map(function(k){return k[2];}),
+        lows:c.map(function(k){return k[3];}), vols:c.map(function(k){return k[5]||1;}), times:c.map(function(k){return k[0];}) });
+      sig={ verdict:a.verdict, conf:a.conf, lab:a.lab };
+    }catch(e){ sig=null; }
+    return { last:last, d1:ago(1), m1:ago(21), m3:ago(63), y1:ago(252), ytd:ytdBase?last/ytdBase-1:null,
+      s50:s50, s200:s200, trend:trend, rsi:r, sig:sig, spark:cl.slice(-90), date:ymd(c[n-1][0]) };
+  }
+
+  function spark(vals, up){
+    if(!vals || vals.length<2) return '';
+    var w=120, h=34, mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals), rg=(mx-mn)||1;
+    var pts=vals.map(function(v,i){ return (i/(vals.length-1)*w).toFixed(1)+','+(h-2-(v-mn)/rg*(h-4)).toFixed(1); }).join(' ');
+    return '<svg class="stk-spark" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="'+(up?'#26d982':'#ff5c73')+'" stroke-width="1.6"/></svg>';
+  }
+  var TREND = { up:['▲ above 50 & 200d','up'], down:['▼ below 50 & 200d','down'], mixed:['◆ mixed trend',''], 'n/a':['—',''] };
+  var SIG = { buy:['BUY','buy'], sell:['SELL','sell'], neutral:['HOLD','hold'] };
+
+  function renderIndices(){
+    var box=$('stkIdx'); if(!box) return;
+    var html=IDX.map(function(x){
+      var s=stats[x[0]]; if(!s) return '<div class="stk-i"><span>'+x[1]+'</span><div class="macro-empty">unavailable</div></div>';
+      var tr=TREND[s.trend]||TREND['n/a'];
+      return '<div class="stk-i" data-sym="'+x[0]+'" data-name="'+x[1]+'" title="Open in the Terminal"><div class="stk-i-top"><span>'+x[1]+'</span><em class="'+tr[1]+'">'+tr[0]+'</em></div>'+
+        '<b>'+money(s.last)+' <small class="'+(s.d1>=0?'up':'down')+'">'+pc(s.d1,2)+'</small></b>'+spark(s.spark, s.spark[s.spark.length-1]>=s.spark[0])+
+        '<div class="stk-i-sub">1m '+pc(s.m1)+' · YTD '+pc(s.ytd)+' · 1y '+pc(s.y1)+'</div></div>';
+    }).join('');
+    box.innerHTML=html;
+  }
+
+  function renderTable(){
+    var box=$('stkTable'); if(!box) return;
+    var list = group==='mega' ? MEGA : group==='crypto' ? CSTK : MEGA.concat(CSTK);
+    var rows=list.map(function(x){
+      var s=stats[x[0]]; if(!s) return '';
+      var tr=TREND[s.trend]||TREND['n/a'], sg=s.sig?SIG[s.sig.verdict]:null;
+      var cb=link && link.cs && link.cs[x[0]];
+      return '<div class="stk-row" data-sym="'+x[0]+'" data-name="'+x[1]+'">'+
+        '<div class="stk-nm"><b>'+x[0]+'</b><small>'+x[1]+'</small></div>'+
+        '<div class="stk-px">$'+money(s.last)+'<small class="'+(s.d1>=0?'up':'down')+'">'+pc(s.d1,2)+'</small></div>'+
+        '<div class="stk-c"><span>1m</span><b class="'+(s.m1>=0?'up':'down')+'">'+pc(s.m1)+'</b></div>'+
+        '<div class="stk-c"><span>RSI</span><b class="'+(s.rsi>=70?'down':s.rsi<=30?'up':'')+'">'+(s.rsi!=null?s.rsi.toFixed(0):'—')+'</b></div>'+
+        '<div class="stk-c stk-tr"><span>trend</span><b class="'+tr[1]+'">'+tr[0]+'</b></div>'+
+        '<div class="stk-c"><span>↔ BTC 90d</span><b>'+(cb&&cb.c90!=null?cb.c90.toFixed(2):'—')+'</b></div>'+
+        '<div class="stk-sig">'+(sg?'<span class="stk-chip '+sg[1]+'">'+sg[0]+' <small>'+s.sig.conf+'%</small></span>':'—')+'<i>chart →</i></div>'+
+      '</div>';
+    }).join('');
+    box.innerHTML = rows || '<div class="macro-empty">Stock data unavailable right now — try refresh later.</div>';
+  }
+
+  // ---- the crypto ↔ stocks relationship ----
+  function analyzeLink(){
+    var bn=pairReturns('^NDX','BTC-USD'), bs=pairReturns('^GSPC','BTC-USD'), en=pairReturns('^NDX','ETH-USD');
+    if(bn.a.length<60){ link=null; return; }
+    var L={};
+    L.c30=corr(bn.a.slice(-30), bn.b.slice(-30)); L.corr90=corr(bn.a.slice(-90), bn.b.slice(-90)); L.c250=corr(bn.a.slice(-250), bn.b.slice(-250));
+    L.spx90=bs.a.length>=60 ? corr(bs.a.slice(-90), bs.b.slice(-90)) : null;
+    L.eth90=en.a.length>=60 ? corr(en.a.slice(-90), en.b.slice(-90)) : null;
+    L.beta=beta(bn.b.slice(-90), bn.a.slice(-90));
+    // does today's Nasdaq move show up in Bitcoin next session (and vice versa)?
+    var a=bn.a.slice(-251), b=bn.b.slice(-251);
+    L.lead=corr(a.slice(0,-1), b.slice(1)); L.lag=corr(b.slice(0,-1), a.slice(1));
+    // what Bitcoin did on big Nasdaq days over the last year
+    var dn=[], up=[];
+    bn.a.slice(-250).forEach(function(r,i){ var br=bn.b.slice(-250)[i]; if(r<=-0.015) dn.push(br); if(r>=0.015) up.push(br); });
+    L.dnN=dn.length; L.dnAvg=mean(dn); L.dnShare=dn.length?dn.filter(function(x){ return x<0; }).length/dn.length:null;
+    L.upN=up.length; L.upAvg=mean(up);
+    // rolling 60-day correlation for the chart
+    var roll=[]; for(var i=60;i<=bn.a.length;i++){ var c=corr(bn.a.slice(i-60,i), bn.b.slice(i-60,i)); if(c!=null) roll.push([bn.d[i-1], c]); }
+    L.roll=roll.slice(-250);
+    // crypto stocks vs Bitcoin
+    L.cs={};
+    CSTK.concat(MEGA).forEach(function(x){ var pr=pairReturns(x[0],'BTC-USD'); if(pr.a.length<60) return;
+      var s=stats[x[0]], btc=stats['BTC-USD'];
+      L.cs[x[0]]={ c90:corr(pr.a.slice(-90), pr.b.slice(-90)), beta:beta(pr.a.slice(-90), pr.b.slice(-90)),
+        m3:s?s.m3:null, rel:s&&btc&&s.m3!=null&&btc.m3!=null ? s.m3-btc.m3 : null }; });
+    var c=L.corr90;
+    L.label = c>=0.6?['Tightly coupled','bad']:c>=0.35?['Coupled','warn']:c>=0.15?['Loosely linked','']:c>-0.15?['Decoupled','ok']:['Moving opposite','ok'];
+    L.dir = L.c30!=null && L.c30-c>=0.15 ? 'tightening' : L.c30!=null && L.c30-c<=-0.15 ? 'loosening' : 'steady';
+    link=L;
+    try{ window.__aryxStockLink={ corr90:L.corr90, corr30:L.c30, beta:L.beta, label:L.label[0], dir:L.dir }; }catch(e){}
+    if(window.aryxMacroReapply) window.aryxMacroReapply();
+  }
+  function f2(v){ return v==null||!isFinite(v) ? '—' : (v>=0?'+':'')+v.toFixed(2); }
+  function renderLink(){
+    var head=$('stkLinkHead'); if(!head) return;
+    if(!link){ head.innerHTML='<div class="macro-empty">Not enough overlapping history to measure the crypto–stocks link right now.</div>'; $('stkLinkTiles').innerHTML=''; return; }
+    var L=link, betaTxt=L.beta!=null?L.beta.toFixed(1):'—';
+    var means = L.corr90>=0.35
+      ? 'Crypto is trading as a <b>risk asset</b>: stock-market moves are spilling into Bitcoin. A 1% Nasdaq move has come with roughly <b>'+betaTxt+'%</b> in BTC. Watch US equities and the macro calendar (Fed, CPI, big-tech earnings) — they currently move crypto.'
+      : L.corr90>=0.15
+      ? 'There is a <b>partial link</b>: big equity moves still matter for crypto, but crypto-specific flows and news are doing much of the driving.'
+      : 'Crypto is <b>trading on its own drivers</b> right now — equity sell-offs have had little follow-through. Crypto flows, liquidity and news matter more than the stock market.';
+    if(L.dnN>=3) means+=' Over the last year, on the <b>'+L.dnN+'</b> days the Nasdaq fell 1.5% or more, Bitcoin averaged <b class="'+(L.dnAvg>=0?'up':'down')+'">'+pc(L.dnAvg)+'</b> and fell on <b>'+Math.round(L.dnShare*100)+'%</b> of them.';
+    if(L.lead!=null && Math.abs(L.lead)>=0.12) means+=' Nasdaq moves have tended to '+(L.lead>0?'carry into':'reverse in')+' Bitcoin the next day (correlation '+f2(L.lead)+').';
+    head.innerHTML='<div class="stk-verdict '+L.label[1]+'"><span>BTC ↔ stock market</span><b>'+L.label[0]+'</b><small>90-day correlation with the Nasdaq '+f2(L.corr90)+' · '+L.dir+'</small></div><div class="stk-means">'+means+'</div>';
+    function t(label,val,sub,st){ return '<div class="mstat lq-t '+(st||'')+'"><span>'+label+'</span><strong>'+val+' <span style="font-size:11px">'+sub+'</span></strong></div>'; }
+    var cst=function(c){ return c==null?'':c>=0.5?'warn':c<=0.15?'ok':''; };
+    $('stkLinkTiles').innerHTML=
+      t('BTC ↔ Nasdaq 30d', f2(L.c30), 'corr', cst(L.c30))+
+      t('BTC ↔ Nasdaq 90d', f2(L.corr90), 'corr', cst(L.corr90))+
+      t('BTC ↔ S&amp;P 500 90d', f2(L.spx90), 'corr', cst(L.spx90))+
+      t('ETH ↔ Nasdaq 90d', f2(L.eth90), 'corr', cst(L.eth90))+
+      t('BTC beta to Nasdaq', L.beta!=null?L.beta.toFixed(2)+'×':'—', '90d', '')+
+      t('BTC on Nasdaq −1.5% days', pc(L.dnAvg), L.dnN+' days/1y', L.dnAvg!=null&&L.dnAvg<-0.01?'bad':'')+
+      t('BTC on Nasdaq +1.5% days', pc(L.upAvg), L.upN+' days/1y', '')+
+      t('Nasdaq today → BTC tomorrow', f2(L.lead), 'lead corr', '');
+    var CH=window.__aryxCharts;
+    if(CH && L.roll.length>10) CH.lineChart('stkChCorr','BTC ↔ Nasdaq correlation','rolling 60-day, daily returns', L.roll,
+      { lines:[0,0.5], lineCols:['rgba(233,238,252,.5)','#ffc65c'], lineLbl:['0 unrelated','0.5 coupled'], fmt:function(v){ return v.toFixed(2); } });
+    // indexed 1-year performance on Nasdaq trading days
+    if(CH && data['^NDX']){
+      var nd=data['^NDX'].slice(-252).map(function(k){ return ymd(k[0]); });
+      var mk=function(sym,name,col){ var m=closeMap(sym), base=null, prev=null, vals=[];
+        nd.forEach(function(d){ var v=m[d]!=null?m[d]:prev; if(v!=null){ if(base==null) base=v; prev=v; } vals.push(base?v/base*100:100); });
+        return base ? { name:name, col:col, vals:vals } : null; };
+      var ser=[mk('BTC-USD','Bitcoin',C_BTC), mk('ETH-USD','Ethereum',C_ETH), mk('^NDX','Nasdaq 100',C_NDX), mk('^GSPC','S&P 500',C_SPX), mk('COIN','Coinbase',C_COIN), mk('MSTR','MSTR',C_MSTR)].filter(Boolean);
+      CH.multiChart('stkChPerf','1-year performance','indexed: 0% = a year ago · hover to compare', nd, ser);
+    }
+    // crypto stocks: who amplifies Bitcoin?
+    var rows=CSTK.map(function(x){ var c=L.cs[x[0]]; if(!c) return '';
+      var amp=c.beta!=null ? (c.beta>=1.2?'amplifies BTC':c.beta<=0.6?'dampens BTC':'tracks BTC') : '';
+      return '<div class="stk-csr" data-sym="'+x[0]+'" data-name="'+x[1]+'"><b>'+x[0]+'</b><span>'+x[1]+'</span>'+
+        '<em>corr '+f2(c.c90)+'</em><em>beta '+(c.beta!=null?c.beta.toFixed(2)+'×':'—')+' · '+amp+'</em>'+
+        '<em class="'+(c.rel>=0?'up':'down')+'">3m '+pc(c.m3)+' ('+(c.rel>=0?'+':'')+(c.rel!=null?(c.rel*100).toFixed(0):'—')+' pts vs BTC)</em></div>'; }).join('');
+    $('stkCryptoStocks').innerHTML = rows ? '<div class="stk-cs-h">Crypto stocks vs Bitcoin <small>90-day correlation & beta of daily returns</small></div>'+rows : '';
+  }
+
+  function stamp(){
+    var el=$('stkStamp'); if(!el || !loadedAt) return;
+    var m=Math.floor((Date.now()-loadedAt)/60000), d=stats['^GSPC']&&stats['^GSPC'].date;
+    el.textContent='updated '+(m<1?'just now':m+'m ago')+(d?' · last close '+d:'');
+  }
+  function renderAll(){ renderIndices(); renderLink(); renderTable(); stamp(); }
+
+  function binanceDaily(sym){
+    return fetch('https://api.binance.com/api/v3/klines?symbol='+sym+'&interval=1d&limit=520').then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(j){ return j.map(function(k){ return [k[0], +k[1], +k[2], +k[3], +k[4], +k[5]]; }); }).catch(function(){ return null; });
+  }
+  function load(force){
+    if(loading || (!force && loadedAt && Date.now()-loadedAt<10*60000)){ if(loadedAt) renderAll(); return; }
+    loading=true;
+    var btn=$('stkRefresh'); if(btn){ btn.disabled=true; btn.textContent='… loading'; }
+    fetch('/api/stocks?symbols='+encodeURIComponent(ALL.map(function(x){ return x[0]; }).join(','))+'&interval=1d&range=2y', { credentials:'same-origin' })
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return {}; })
+      .then(function(j){
+        var S=(j && j.series) || {};
+        Object.keys(S).forEach(function(k){ if(S[k] && S[k].candles) data[k]=S[k].candles; });
+        // crypto fallback straight from Binance if the proxy had no crypto series
+        return Promise.all([ data['BTC-USD']?null:binanceDaily('BTCUSDT'), data['ETH-USD']?null:binanceDaily('ETHUSDT') ]);
+      })
+      .then(function(r){
+        if(r[0]) data['BTC-USD']=r[0]; if(r[1]) data['ETH-USD']=r[1];
+        ALL.forEach(function(x){ stats[x[0]]=statsFor(x[0]); });
+        if(!Object.keys(data).filter(function(k){ return k.indexOf('-USD')<0; }).length){
+          $('stkIdx').innerHTML='<div class="macro-empty">Stock data unavailable — the /api/stocks function isn’t reachable (works once deployed to Vercel).</div>';
+          $('stkTable').innerHTML=''; $('stkLinkHead').innerHTML=''; return;
+        }
+        loadedAt=Date.now(); analyzeLink(); renderAll();
+      })
+      .catch(function(){ if($('stkIdx')) $('stkIdx').innerHTML='<div class="macro-empty">Stock data unavailable right now — try refresh later.</div>'; })
+      .then(function(){ loading=false; if(btn){ btn.disabled=false; btn.textContent='↻ refresh'; } });
+  }
+  window.aryxLoadStocks=load;
+
+  function init(){
+    if(!$('stocksCard')) return;
+    $('stkRefresh').addEventListener('click', function(){ load(true); });
+    $('stkTabs').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; group=b.dataset.g;
+      $('stkTabs').querySelectorAll('button').forEach(function(x){ x.classList.toggle('is-on', x===b); }); renderTable(); });
+    $('stocksCard').addEventListener('click', function(e){
+      var r=e.target.closest('.stk-row,.stk-i,.stk-csr'); if(!r || !window.aryxOpenStock) return;
+      window.aryxOpenStock(r.dataset.sym, r.dataset.name); });
+    setInterval(function(){ stamp(); var c=$('stocksCard'); if(c && c.offsetParent!==null && !document.hidden && loadedAt && Date.now()-loadedAt>=10*60000) load(true); }, 30000);
+    // warm up in the background so the Macro risk score knows how coupled crypto is to stocks
+    setTimeout(function(){ if(!loadedAt) load(); }, 5000);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
@@ -5969,6 +6270,7 @@ function aryxBackToLanding(){
                  content, document.querySelector('.watch-card')].filter(Boolean),
       movers:   [document.getElementById('moverCard')].filter(Boolean),
       bot:      [document.getElementById('botCard')].filter(Boolean),
+      stocks:   [document.getElementById('stocksCard')].filter(Boolean),
       macro:    [document.getElementById('macroCard')].filter(Boolean)
     };
     var bar = document.createElement('div');
@@ -5978,6 +6280,7 @@ function aryxBackToLanding(){
       '<button data-t="terminal" class="atab">📈 Terminal</button>' +
       '<button data-t="movers" class="atab">🚀 Early Movers</button>' +
       '<button data-t="bot" class="atab">🤖 Auto-Bot</button>' +
+      '<button data-t="stocks" class="atab">📊 Stocks</button>' +
       '<button data-t="macro" class="atab">🌍 Macro</button>';
     var firstEl = (groups.dashboard[0]) || (groups.terminal[0]) || content;
     firstEl.parentNode.insertBefore(bar, firstEl);
@@ -5986,9 +6289,11 @@ function aryxBackToLanding(){
         groups[k].forEach(function(el){ el.style.display = (k===t) ? '' : 'none'; });
       });
       bar.querySelectorAll('.atab').forEach(function(b){ b.classList.toggle('is-active', b.dataset.t===t); });
+      try{ var ab=bar.querySelector('.atab.is-active'); if(ab && bar.scrollWidth>bar.clientWidth) bar.scrollLeft=ab.offsetLeft-(bar.clientWidth-ab.offsetWidth)/2; }catch(e){}
       try{ localStorage.setItem('aryx.tab', t); }catch(e){}
       try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(e){}
       if(t==='macro' && window.aryxLoadMacro){ setTimeout(window.aryxLoadMacro, 30); } // draw once visible
+      if(t==='stocks' && window.aryxLoadStocks){ setTimeout(window.aryxLoadStocks, 30); }
     }
     bar.addEventListener('click', function(e){ var b=e.target.closest('.atab'); if(b) show(b.dataset.t); });
     var saved='dashboard'; try{ saved=localStorage.getItem('aryx.tab')||'dashboard'; }catch(e){}
@@ -6141,6 +6446,49 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .mb-n{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 11px 'JetBrains Mono',monospace;background:rgba(38,217,130,.15);color:#26d982;}
 .mb-item.warn .mb-n{background:rgba(255,92,115,.15);color:#ff5c73;} .mb-item.caution .mb-n{background:rgba(255,198,92,.15);color:#ffc65c;}
 .db-bl{display:block;font-size:11px;font-weight:500;opacity:.75;margin-top:3px;line-height:1.4;}
+.stk-idx{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:6px;}
+.stk-i{background:var(--ax-surface2);border:1px solid var(--ax-line);border-radius:12px;padding:10px 12px;cursor:pointer;}
+.stk-i:hover{border-color:var(--ax-line2);}
+.stk-i-top{display:flex;justify-content:space-between;gap:6px;align-items:center;}
+.stk-i-top span{font-size:11px;color:var(--ax-dim);text-transform:uppercase;letter-spacing:.05em;}
+.stk-i-top em{font-style:normal;font-size:10px;color:var(--ax-dim);} .stk-i-top em.up{color:#26d982;} .stk-i-top em.down{color:#ff5c73;}
+.stk-i b{display:block;font-family:'JetBrains Mono',monospace;font-size:17px;color:var(--ax-text);margin:4px 0 2px;}
+.stk-i b small{font-size:11px;margin-left:4px;} .stk-i b small.up{color:#26d982;} .stk-i b small.down{color:#ff5c73;}
+.stk-spark{display:block;width:100%;height:34px;}
+.stk-i-sub{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ax-dim);margin-top:2px;}
+.stk-head{display:grid;grid-template-columns:minmax(180px,240px) 1fr;gap:14px;align-items:center;margin-bottom:12px;}
+@media (max-width:640px){.stk-head{grid-template-columns:1fr;}}
+.stk-verdict{border:1px solid var(--ax-line2);border-left:3px solid #4d7cff;border-radius:12px;padding:10px 12px;background:var(--ax-surface2);}
+.stk-verdict.bad{border-left-color:#ff5c73;} .stk-verdict.warn{border-left-color:#ffc65c;} .stk-verdict.ok{border-left-color:#26d982;}
+.stk-verdict span{display:block;font-size:10.5px;color:var(--ax-dim);text-transform:uppercase;letter-spacing:.05em;}
+.stk-verdict b{display:block;font-size:19px;color:var(--ax-text);margin:2px 0;}
+.stk-verdict small{font-size:11px;color:var(--ax-muted);}
+.stk-means{font-size:13px;line-height:1.6;color:var(--ax-muted);} .stk-means b{color:var(--ax-text);}
+.stk-means b.up{color:#26d982;} .stk-means b.down{color:#ff5c73;}
+.stk-cs{margin-top:12px;}
+.stk-cs-h{font-size:12px;font-weight:700;color:var(--ax-text);margin-bottom:6px;} .stk-cs-h small{font-weight:500;color:var(--ax-dim);}
+.stk-csr{display:grid;grid-template-columns:60px minmax(110px,1fr) 90px minmax(160px,1.2fr) minmax(150px,1fr);gap:8px;align-items:center;padding:7px 4px;border-top:1px solid var(--ax-line);font-size:12px;cursor:pointer;}
+.stk-csr b{color:var(--ax-text);font-family:'JetBrains Mono',monospace;} .stk-csr span{color:var(--ax-muted);}
+.stk-csr em{font-style:normal;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ax-dim);}
+.stk-csr em.up{color:#26d982;} .stk-csr em.down{color:#ff5c73;}
+@media (max-width:760px){.stk-csr{grid-template-columns:60px 1fr;}.stk-csr em{grid-column:2;}}
+.stk-tabs{display:inline-flex;border:1px solid var(--ax-line2);border-radius:10px;overflow:hidden;margin-bottom:10px;}
+.stk-tabs button{background:transparent;border:0;color:var(--ax-muted);font:600 12px/1 inherit;padding:8px 12px;cursor:pointer;}
+.stk-tabs button.is-on{background:var(--ax-surface2);color:var(--ax-text);box-shadow:inset 0 -2px 0 var(--ax-mint);}
+.stk-row{display:grid;grid-template-columns:minmax(120px,1.4fr) minmax(100px,1fr) 70px 54px minmax(130px,1.2fr) 74px minmax(120px,1fr);gap:8px;align-items:center;
+  padding:9px 10px;border:1px solid var(--ax-line);border-radius:10px;margin-bottom:6px;background:var(--ax-surface2);cursor:pointer;}
+.stk-row:hover{border-color:var(--ax-line2);}
+.stk-nm b{display:block;font-family:'JetBrains Mono',monospace;color:var(--ax-text);font-size:13px;} .stk-nm small{font-size:11px;color:var(--ax-dim);}
+.stk-px{font-family:'JetBrains Mono',monospace;color:var(--ax-text);font-size:13px;} .stk-px small{display:block;font-size:11px;}
+.stk-px small.up,.stk-c b.up{color:#26d982;} .stk-px small.down,.stk-c b.down{color:#ff5c73;}
+.stk-c span{display:block;font-size:9.5px;color:var(--ax-dim);text-transform:uppercase;letter-spacing:.04em;}
+.stk-c b{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ax-text);font-weight:600;}
+.stk-sig{display:flex;align-items:center;justify-content:flex-end;gap:8px;}
+.stk-sig i{font-style:normal;font-size:11px;color:var(--ax-dim);}
+.stk-chip{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:12px;border-radius:8px;padding:4px 8px;border:1px solid var(--ax-line2);}
+.stk-chip small{font-weight:500;opacity:.75;}
+.stk-chip.buy{color:#26d982;border-color:rgba(38,217,130,.4);} .stk-chip.sell{color:#ff5c73;border-color:rgba(255,92,115,.4);} .stk-chip.hold{color:#ffc65c;border-color:rgba(255,198,92,.4);}
+@media (max-width:760px){.stk-row{grid-template-columns:1fr 1fr 1fr;}.stk-tr,.stk-sig i{display:none;}.stk-sig{justify-content:flex-start;}}
 .lq-t{border-top:2px solid transparent;} .lq-t.ok{border-top-color:#26d982;} .lq-t.warn{border-top-color:#ffc65c;} .lq-t.bad{border-top-color:#ff5c73;}
 .mt-src{white-space:nowrap;font-style:normal;font-family:'JetBrains Mono',monospace;font-size:9.5px;opacity:.6;margin-left:4px;}
 .mt-eod{grid-column:1/-1;font-size:11px;color:var(--ax-dim);margin-top:2px;}
@@ -6322,6 +6670,9 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .atab.is-active{background:var(--ax-grad);color:#04241b;box-shadow:0 6px 18px -8px rgba(0,224,164,.5);}
 .aryx-tabs + #content,.mover-card,.bot-card{margin-top:0!important;}
 @media(max-width:520px){ .atab{font-size:12px;padding:10px 8px;} }
+/* six tabs don't fit a phone: let the tab bar scroll sideways instead of widening the page */
+@media(max-width:760px){ .aryx-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;max-width:100%;box-sizing:border-box;}
+  .aryx-tabs::-webkit-scrollbar{display:none;} .atab{flex:0 0 auto;white-space:nowrap;} }
 
 /* Early Movers scanner */
 .mover-card{background:var(--ax-surface)!important;border:1px solid var(--ax-line)!important;border-radius:15px!important;
