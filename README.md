@@ -130,6 +130,10 @@ and VWAP on live candles:
   "sell the news" window), plus news attention from GDELT (`/api/feed/world?part=topic`). Copycat tickers
   and fake "official" tokens are flagged; theme chips and a theme filter also appear in Movers/Gems.
   The GTA 6 date lives in `DEFAULT_THEMES` in `app.html` — update it if Rockstar moves the release.
+  **Emerging trends** are auto-detected with no fixed list: each scan tokenises the names of tokens
+  launched in the last 72h (DexScreener + GeckoTerminal new pools), finds words and two-word phrases shared
+  by 3+ different tokens, weights them by volume, and compares with earlier scans on the device to mark
+  what is new or growing. One tap turns a trend into a tracked theme; custom themes can take an event date.
 - **📊 Scanner track record** (Early Movers) — each top-10 pick is followed for 24h on the device;
   shows % up and median return at 1h/4h/24h. Tokens strengthening across consecutive scans get a
   "Persistent" bonus; ones fading since spotted are penalised.
