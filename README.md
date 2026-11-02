@@ -123,6 +123,13 @@ and VWAP on live candles:
 - **💧 Liquidity & leverage** (Macro tab) — Fed net liquidity (WALCL − TGA − reverse repo), M2, 10Y
   real yield (FRED), total stablecoin supply (DeFiLlama), BTC funding & open interest (Binance, OKX
   fallback). Liquidity drains and overheated leverage add up to 25 points to the risk score.
+- **🔥 Themes** (Early Movers) — tracks narratives that spawn waves of tokens (GTA 6, AI agents, politics,
+  dog/cat/frog memes, gaming, Elon, RWA, holidays, plus your own keyword themes). For each theme: tokens
+  found on DexScreener, launches in the last 24h/7d, volume pace, share rising, and a 0–100 heat score
+  with a 24h heating/cooling trend. Event themes get a countdown and phase (build-up → run-up →
+  "sell the news" window), plus news attention from GDELT (`/api/feed/world?part=topic`). Copycat tickers
+  and fake "official" tokens are flagged; theme chips and a theme filter also appear in Movers/Gems.
+  The GTA 6 date lives in `DEFAULT_THEMES` in `app.html` — update it if Rockstar moves the release.
 - **📊 Scanner track record** (Early Movers) — each top-10 pick is followed for 24h on the device;
   shows % up and median return at 1h/4h/24h. Tokens strengthening across consecutive scans get a
   "Persistent" bonus; ones fading since spotted are penalised.
