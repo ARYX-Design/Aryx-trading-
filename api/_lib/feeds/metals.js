@@ -9,7 +9,7 @@
 
    Responds { gold:{latest,date,hist,source}, silver:{...} } with hist as
    oldest-first [[YYYY-MM-DD, close], ...]. Cached at the edge for 30 min. */
-const { json } = require('./_lib/util');
+const { json } = require('../util');
 
 var HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; AryxMacro/1.0)', 'Accept': 'text/csv,application/json,*/*' };
 var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;

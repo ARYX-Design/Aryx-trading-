@@ -2,6 +2,13 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
+  "rewrites": [
+    { "source": "/api/fred", "destination": "/api/feed/fred" },
+    { "source": "/api/stocks", "destination": "/api/feed/stocks" },
+    { "source": "/api/world", "destination": "/api/feed/world" },
+    { "source": "/api/metals", "destination": "/api/feed/metals" },
+    { "source": "/api/market", "destination": "/api/feed/market" }
+  ],
   "headers": [
     {
       "source": "/(.*)",

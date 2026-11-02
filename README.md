@@ -50,10 +50,17 @@ js/                 main.js (landing) · auth.js (auth client) · app.js (dashbo
 api/                Vercel serverless functions
   init.js           One-time DB setup
   auth/             signup · verify · resend · login · logout · me
+  feed/[name].js    One function for all market-data feeds: /api/feed/fred · stocks ·
+                    world · metals · market (old /api/<name> paths are rewritten to it)
   _lib/             db (Neon) · util (crypto/session) · email (Resend)
+  _lib/feeds/       the feed handlers (FRED, stocks, GDELT world news, metals, Twelve Data)
 db/schema.sql       Database schema
 vercel.json         Static hosting + security/cache headers
 ```
+
+> **Vercel Hobby plan:** at most 12 serverless functions per deployment. The data feeds share one
+> dynamic function (`api/feed/[name].js`) so the project stays at 9 — add new feeds as modules in
+> `api/_lib/feeds/` rather than new files directly under `api/`.
 
 ## Deploy to Vercel + Neon
 
@@ -95,7 +102,7 @@ and VWAP on live candles:
 
 - **Crypto** (BTC, ETH, SOL) — Binance public REST + WebSocket (live, no key needed).
 - **Metals** (gold XAU/USD, silver XAG/USD) and **stocks** (AAPL, NVDA) — Twelve Data via
-  the `/api/market` serverless proxy (set `TWELVEDATA_API_KEY`), polled every 20–30s.
+  the `/api/feed/market` serverless proxy (set `TWELVEDATA_API_KEY`), polled every 20–30s.
 
 - **Traditional markets** (Macro tab) — S&P 500, Nasdaq, VIX, US dollar, 10Y and gold/silver. Intraday via
   Twelve Data when `TWELVEDATA_API_KEY` is set; otherwise each tile falls back to end-of-day FRED data
@@ -120,7 +127,7 @@ and VWAP on live candles:
   shows % up and median return at 1h/4h/24h. Tokens strengthening across consecutive scans get a
   "Persistent" bonus; ones fading since spotted are penalised.
 - **📊 Stocks tab** — S&P 500, Nasdaq 100, Dow and Russell 2000, big tech (AAPL, MSFT, NVDA, AMZN,
-  GOOGL, META, TSLA) and crypto stocks (COIN, MSTR, MARA, RIOT, HOOD, IBIT) via the `/api/stocks`
+  GOOGL, META, TSLA) and crypto stocks (COIN, MSTR, MARA, RIOT, HOOD, IBIT) via the `/api/feed/stocks`
   proxy (Yahoo Finance → Stooq → Twelve Data, no key needed), each with trend, RSI and the same
   composite signal as the Terminal. Tap a stock to chart it in the Terminal, where you can also search
   any ticker.
@@ -138,16 +145,16 @@ and VWAP on live candles:
   - Energy: US retail diesel & gasoline (EIA via FRED), Brent, WTI, ULSD diesel futures, Henry Hub and
     Dutch TTF gas (Yahoo), with diesel and Brent history charts.
   - World crisis monitor: crisis-news intensity vs its 6-month normal and the latest tagged headlines from
-    the GDELT Project (`/api/world`), daily economic policy uncertainty, oil shocks, gold/yen haven flows,
+    the GDELT Project (`/api/feed/world`), daily economic policy uncertainty, oil shocks, gold/yen haven flows,
     EM sell-offs and world-market breakdowns → a 0–100 score. Up to 20 points feed the global risk score.
   - A jump bar at the top of the Macro tab links to every section.
-- **Recession & crisis early-warning** (Macro tab) — FRED (St. Louis Fed) via the `/api/fred`
+- **Recession & crisis early-warning** (Macro tab) — FRED (St. Louis Fed) via the `/api/feed/fred`
   proxy — works with no key (public FRED CSV); `FRED_API_KEY` optional: 10Y−3M / 10Y−2Y yield curves, high-yield credit spreads,
   Sahm rule, initial jobless claims, Chicago Fed NFCI, St. Louis Fed stress index, VIX, housing
   permits, consumer sentiment, and a 12-month recession probability from the NY Fed
   yield-curve model. Combined into a 0–100 early-warning score that also feeds the global
   risk score.
-- **Gold, silver & financial crashes** (Macro tab) — daily gold & silver via `/api/metals`
+- **Gold, silver & financial crashes** (Macro tab) — daily gold & silver via `/api/feed/metals`
   (no key: Stooq, CoinGecko gold/silver tokens; Twelve Data if `TWELVEDATA_API_KEY` is set) vs
   the S&P 500 (FRED): gold/silver "fear" ratio, 1-year indexed performance, 60-day
   correlations, a crash-pattern detector (flight to safety, margin-call squeeze, ratio spikes)

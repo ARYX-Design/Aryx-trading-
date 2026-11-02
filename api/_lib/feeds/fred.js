@@ -11,7 +11,7 @@
    (hist is oldest-first, ~3 years thinned to <=160 points by default;
    ?days= and ?points= override the window). FRED data
    updates at most daily, so responses are cached at the edge for an hour. */
-const { json } = require('./_lib/util');
+const { json } = require('../util');
 
 var ALLOWED = {
   T10Y3M: 1,        // 10-year minus 3-month Treasury spread (NY Fed recession model input)

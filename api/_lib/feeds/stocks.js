@@ -10,7 +10,7 @@
    Responds { series: { SYM: { candles:[[t,o,h,l,c,v],...], source } } }
    with t in ms, oldest-first. Daily data is cached at the edge for 10 min,
    intraday for 1 min. */
-const { json } = require('./_lib/util');
+const { json } = require('../util');
 
 var HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; AryxStocks/1.0)', 'Accept': 'application/json,text/csv,*/*' };
 var SYM_RE = /^[A-Z0-9^=.\-]{1,12}$/;

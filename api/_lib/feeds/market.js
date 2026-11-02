@@ -6,7 +6,7 @@
    If TWELVEDATA_API_KEY is not set, responds { simulate: true } so the
    client falls back to its built-in simulation. Responses are cached
    briefly at the edge to stay within free-tier rate limits. */
-const { json } = require('./_lib/util');
+const { json } = require('../util');
 
 var TD_INTERVAL = { '15m': '15min', '1H': '1h', '4H': '4h', '1D': '1day' };
 var ALLOWED = {

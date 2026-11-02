@@ -1822,9 +1822,9 @@ async function getData(tf){
 // ---------- Yahoo Finance (metals / indices: silver, S&P 500) ----------
 const YH_TF={'15m':{i:'15m',r:'30d'},'1h':{i:'60m',r:'180d'},'4h':{i:'60m',r:'720d',agg:4},
   'day':{i:'1d',r:'5y'},'week':{i:'1wk',r:'10y'},'month':{i:'1mo',r:'max'}};
-// candles [[t,o,h,l,c,v],...] via the /api/stocks proxy (Yahoo → Stooq → Twelve Data, server-side)
+// candles [[t,o,h,l,c,v],...] via the /api/feed/stocks proxy (Yahoo → Stooq → Twelve Data, server-side)
 async function stockCandles(sym,interval,range){
-  const r=await fetch(`/api/stocks?symbols=${encodeURIComponent(sym)}&interval=${interval}&range=${range}`,{credentials:'same-origin'});
+  const r=await fetch(`/api/feed/stocks?symbols=${encodeURIComponent(sym)}&interval=${interval}&range=${range}`,{credentials:'same-origin'});
   if(!r.ok)throw new Error('stocks-proxy');
   const j=await r.json();
   const s=j&&j.series&&j.series[sym.toUpperCase()];
@@ -1921,7 +1921,7 @@ const EXTRA_ASSETS=[
   {id:'silver',symbol:'XAG',name:'Silver',yahoo:'SI=F',rank:'Ag'},
   {id:'sp500',symbol:'SPX',name:'S&P 500 (VUAA)',yahoo:'^GSPC',rank:'SP'}
 ];
-// Stocks & ETFs — searchable in the Terminal (charted via /api/stocks), not added to the coin picker
+// Stocks & ETFs — searchable in the Terminal (charted via /api/feed/stocks), not added to the coin picker
 const STOCK_ASSETS=[['^NDX','Nasdaq 100'],['^DJI','Dow Jones'],['^RUT','Russell 2000'],['AAPL','Apple'],['MSFT','Microsoft'],
   ['NVDA','NVIDIA'],['AMZN','Amazon'],['GOOGL','Alphabet'],['META','Meta Platforms'],['TSLA','Tesla'],['COIN','Coinbase'],
   ['MSTR','MicroStrategy (Strategy)'],['MARA','MARA Holdings'],['RIOT','Riot Platforms'],['HOOD','Robinhood'],['IBIT','iShares Bitcoin ETF'],
@@ -5300,7 +5300,7 @@ function aryxBackToLanding(){
     return '<div class="macro-item"><b>'+label+':</b> <span class="'+col+'" style="font-family:JetBrains Mono,monospace;font-weight:700">'+val+'</span></div>';
   }
 
-  // ---- Crisis & recession early-warning (FRED via /api/fred) ----
+  // ---- Crisis & recession early-warning (FRED via /api/feed/fred) ----
   // Indicators chosen for their historical record ahead of US recessions and
   // market crashes. Each scores 0..max points; the composite is the share of
   // available points in play (0-100).
@@ -5566,7 +5566,7 @@ function aryxBackToLanding(){
   function loadCrisis(){
     var head=$('crisisHead'); if(!head || crisisLoading || Date.now()-crisisAt<30*60000) return;
     crisisLoading=true;
-    fetch('/api/fred?series='+FRED_IDS.join(','), { credentials:'same-origin' })
+    fetch('/api/feed/fred?series='+FRED_IDS.join(','), { credentials:'same-origin' })
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(d){
         if(d && d.missing){ head.innerHTML='<div class="macro-empty">Economic data unavailable right now — try refresh later.</div>'; return; }
@@ -5577,12 +5577,12 @@ function aryxBackToLanding(){
           rows:c.rows.map(function(r){ return { id:r.id, name:r.name, val:r.val, status:r.status, note:r.note, m:r.m }; }) }; }catch(e){}
         renderCrisis(c); applyRegime(); stamp();
       })
-      .catch(function(){ head.innerHTML='<div class="macro-empty">Economic data unavailable (the /api/fred function isn’t reachable).</div>'; })
+      .catch(function(){ head.innerHTML='<div class="macro-empty">Economic data unavailable (the /api/feed/fred function isn’t reachable).</div>'; })
       .then(function(){ crisisLoading=false; });
   }
 
   // ---- Gold, silver & financial crashes ----
-  // Live metals (via /api/metals, CoinGecko fallback) vs the S&P 500 (FRED),
+  // Live metals (via /api/feed/metals, CoinGecko fallback) vs the S&P 500 (FRED),
   // the gold/silver "fear" ratio, correlations, a crash-pattern detector and
   // a history of how both metals behaved in past crashes.
   var C_SPX='#3987e5', C_GOLD='#c98500', C_SILV='#9085e9';
@@ -5746,8 +5746,8 @@ function aryxBackToLanding(){
       .then(function(d){ var h=(d.prices||[]).map(function(p){ return [new Date(p[0]).toISOString().slice(0,10), p[1]]; });
         return h.length>30 ? { latest:h[h.length-1][1], date:h[h.length-1][0], hist:h, source:'coingecko' } : null; }).catch(function(){ return null; }); };
     Promise.all([
-      fetch('/api/metals',{ credentials:'same-origin' }).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return {}; }),
-      fetch('/api/fred?series=SP500&days=400&points=400',{ credentials:'same-origin' }).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return {}; })
+      fetch('/api/feed/metals',{ credentials:'same-origin' }).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return {}; }),
+      fetch('/api/feed/fred?series=SP500&days=400&points=400',{ credentials:'same-origin' }).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return {}; })
     ]).then(function(res){
       var d=res[0]||{}; spxRaw=(res[1]&&res[1].series&&res[1].series.SP500)||null;
       // browser-side fallback if the server couldn't reach any metals source
@@ -5892,7 +5892,7 @@ function aryxBackToLanding(){
       if(ylast('CNY=X')!=null) fx.push(gtile('USD / CNY', ylast('CNY=X').toFixed(3), gp(W.cny1)+' 1m', W.cny1>=0.02?'warn':''));
       if(C.gold1!=null) fx.push(gtile('Gold', '$'+Math.round(ylast('GC=F')).toLocaleString(), gp(C.gold1)+' 1m', C.gold1>=0.06?'warn':''));
       $('wmFx').innerHTML=fx.join('');
-    } else $('wmHead').innerHTML='<div class="macro-empty">World market data unavailable right now (needs the /api/stocks function).</div>';
+    } else $('wmHead').innerHTML='<div class="macro-empty">World market data unavailable right now (needs the /api/feed/stocks function).</div>';
     // energy
     var e=[];
     if(N.diesel!=null) e.push(gtile('US diesel (retail)', '$'+N.diesel.toFixed(3)+'/gal', (N.dieselW!=null?g1(N.dieselW)+'% w/w · ':'')+(N.dieselY!=null?g1(N.dieselY)+'% y/y':''), N.dieselY>=20?'bad':N.dieselY>=8?'warn':N.dieselY<=-8?'ok':''));
@@ -5937,18 +5937,18 @@ function aryxBackToLanding(){
   function loadGlobal(){
     if(!$('gecoTiles') || glLoading || Date.now()-glAt<10*60000) return;
     glLoading=true;
-    var fredP=fetch('/api/fred?series='+GL_FRED.join(',')+'&days=1100&points=400',{ credentials:'same-origin' })
+    var fredP=fetch('/api/feed/fred?series='+GL_FRED.join(',')+'&days=1100&points=400',{ credentials:'same-origin' })
       .then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){ return (d&&d.series)||{}; }).catch(function(){ return {}; });
-    var yP=fetch('/api/stocks?symbols='+encodeURIComponent(GL_YAHOO.join(','))+'&interval=1d&range=1y',{ credentials:'same-origin' })
+    var yP=fetch('/api/feed/stocks?symbols='+encodeURIComponent(GL_YAHOO.join(','))+'&interval=1d&range=1y',{ credentials:'same-origin' })
       .then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){ var o={}, S=(d&&d.series)||{}; Object.keys(S).forEach(function(k){ o[k]=S[k].candles; }); return Object.keys(o).length?o:null; }).catch(function(){ return null; });
-    var newsP=fetch('/api/world?part=news',{ credentials:'same-origin' }).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    var newsP=fetch('/api/feed/world?part=news',{ credentials:'same-origin' }).then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(d){ return d && d.articles ? d.articles : []; }).catch(function(){ return []; });
     Promise.all([fredP, yP, newsP]).then(function(r){
       glRaw.fred=r[0]; glRaw.y=r[1]; glRaw.news=r[2]; glAt=Date.now();
       evalGlobal(); renderGlobal(); applyRegime();
       // GDELT allows ~1 request / 5s: fetch the coverage trend a little later
       setTimeout(function(){
-        fetch('/api/world?part=trend',{ credentials:'same-origin' }).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+        fetch('/api/feed/world?part=trend',{ credentials:'same-origin' }).then(function(r){ if(!r.ok) throw 0; return r.json(); })
           .then(function(d){ if(d && d.trend && d.trend.length){ glRaw.trend=d.trend; evalGlobal(); renderGlobal(); applyRegime(); } }).catch(function(){});
       }, 6000);
     }).catch(function(){}).then(function(){ glLoading=false; });
@@ -6024,7 +6024,7 @@ function aryxBackToLanding(){
   function loadLiquidity(){
     if(!$('lqTiles') || lqLoading || Date.now()-lqAt<10*60000) return;
     lqLoading=true;
-    var fredP=fetch('/api/fred?series='+LQ_IDS.join(',')+'&days=800&points=400',{ credentials:'same-origin' })
+    var fredP=fetch('/api/feed/fred?series='+LQ_IDS.join(',')+'&days=800&points=400',{ credentials:'same-origin' })
       .then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){ return (d&&d.series)||{}; }).catch(function(){ return {}; });
     var stP=getJSON('https://stablecoins.llama.fi/stablecoincharts/all').then(function(a){
       var h=(a||[]).map(function(x){ var u=x.totalCirculatingUSD||{}; var tot=0; for(var k in u) tot+=+u[k]||0;
@@ -6046,7 +6046,7 @@ function aryxBackToLanding(){
       .then(function(){ lqLoading=false; });
   }
 
-  // Traditional markets: intraday via the /api/market proxy (Twelve Data key),
+  // Traditional markets: intraday via the /api/feed/market proxy (Twelve Data key),
   // falling back per symbol to end-of-day FRED series (no key) and the metals
   // feed for gold & silver, so this section always has data.
   var TRAD = [['SPY','S&P 500'],['QQQ','Nasdaq 100'],['VIX','Volatility (VIX)'],['DXY','US Dollar'],['IEF','US 10Y bonds'],['XAU','Gold'],['XAG','Silver']];
@@ -6101,14 +6101,14 @@ function aryxBackToLanding(){
   function loadTrad(){
     var box=$('macroTrad'); if(!box) return;
     Promise.all(TRAD.map(function(t){
-      return fetch('/api/market?symbol='+t[0]+'&interval=1D', { credentials:'same-origin' })
+      return fetch('/api/feed/market?symbol='+t[0]+'&interval=1D', { credentials:'same-origin' })
         .then(function(r){ return r.json(); }).then(function(d){ return { sym:t[0], label:t[1], d:d }; })
         .catch(function(){ return { sym:t[0], label:t[1], d:null }; });
     })).then(function(rows){
       var need=rows.filter(function(r){ return !(r.d && r.d.candles && r.d.candles.length) && TRAD_FRED[r.sym]; })
         .map(function(r){ return TRAD_FRED[r.sym][0]; });
       if(!need.length) return rows;
-      return fetch('/api/fred?series='+need.join(',')+'&days=45&points=60', { credentials:'same-origin' })
+      return fetch('/api/feed/fred?series='+need.join(',')+'&days=45&points=60', { credentials:'same-origin' })
         .then(function(r){ if(!r.ok) throw 0; return r.json(); })
         .then(function(d){ var S=(d && d.series)||{};
           rows.forEach(function(r){ var f=TRAD_FRED[r.sym]; if(f && S[f[0]] && !(r.d && r.d.candles && r.d.candles.length)) r.fred=S[f[0]]; });
@@ -6347,7 +6347,7 @@ function aryxBackToLanding(){
     if(loading || (!force && loadedAt && Date.now()-loadedAt<10*60000)){ if(loadedAt) renderAll(); return; }
     loading=true;
     var btn=$('stkRefresh'); if(btn){ btn.disabled=true; btn.textContent='… loading'; }
-    fetch('/api/stocks?symbols='+encodeURIComponent(ALL.map(function(x){ return x[0]; }).join(','))+'&interval=1d&range=2y', { credentials:'same-origin' })
+    fetch('/api/feed/stocks?symbols='+encodeURIComponent(ALL.map(function(x){ return x[0]; }).join(','))+'&interval=1d&range=2y', { credentials:'same-origin' })
       .then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return {}; })
       .then(function(j){
         var S=(j && j.series) || {};
@@ -6359,7 +6359,7 @@ function aryxBackToLanding(){
         if(r[0]) data['BTC-USD']=r[0]; if(r[1]) data['ETH-USD']=r[1];
         ALL.forEach(function(x){ stats[x[0]]=statsFor(x[0]); });
         if(!Object.keys(data).filter(function(k){ return k.indexOf('-USD')<0; }).length){
-          $('stkIdx').innerHTML='<div class="macro-empty">Stock data unavailable — the /api/stocks function isn’t reachable (works once deployed to Vercel).</div>';
+          $('stkIdx').innerHTML='<div class="macro-empty">Stock data unavailable — the /api/feed/stocks function isn’t reachable (works once deployed to Vercel).</div>';
           $('stkTable').innerHTML=''; $('stkLinkHead').innerHTML=''; return;
         }
         loadedAt=Date.now(); analyzeLink(); renderAll();
