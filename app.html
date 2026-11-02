@@ -1071,9 +1071,11 @@
   <div class="mover-card" id="moverCard">
     <div class="mover-h">
       <div class="chart-title" id="moverTitle">🚀 Early Movers — bullish setups forming</div>
-      <div class="mv-hr"><div class="mv-mode" id="mvMode"><button data-m="movers" class="is-on">🚀 Movers</button><button data-m="gems">💎 Early Gems</button></div><span id="moverStatus" class="mv-status"></span><button id="moverScan" class="ctool">↻ scan</button></div>
+      <div class="mv-hr"><div class="mv-mode" id="mvMode"><button data-m="movers" class="is-on">🚀 Movers</button><button data-m="gems">💎 Early Gems</button><button data-m="themes">🔥 Themes</button></div><span id="moverStatus" class="mv-status"></span><button id="moverScan" class="ctool">↻ scan</button></div>
     </div>
     <div class="mover-note">Scans <b>trending + established DEX tokens</b> (via DexScreener) across market caps for <b>early</b> momentum with real liquidity — rising 1h price, <b>buyers outnumbering sellers</b>, a <b>volume surge</b> vs the 24h pace, high turnover, fresh pairs — and <b>down-ranks anything that already ran or is being sold into</b>. The list re-scans every 5 minutes while this tab is open. Tap a token to chart it in the terminal (supported chains) or open it on DexScreener. These are <b>extremely high-risk, low-cap speculative tokens, not predictions</b> — most go to zero, many are scams/rugs. Verify the contract, liquidity, and holders yourself. Each token is auto-checked for honeypots/high tax/mint &amp; freeze authority via GoPlus (confirmed honeypots are dropped), with one-tap links to Honeypot.is, TokenSniffer &amp; Bubblemaps — but automated checks miss things, so always verify yourself. Turn on <b>🔔 Alerts</b> to get a notification (and a red flag) if a spotted token drops past your threshold since it appeared. Never risk more than you can lose.</div>
+    <div class="mover-note gem-note" id="themeNote" hidden>🔥 <b>Themes</b> <b>auto-detects emerging trends</b> (words suddenly shared by many brand-new tokens — no fixed list) and tracks <b>narratives</b> — events and memes that spawn waves of new tokens (a game launch, an election, an AI craze). For each theme it measures <b>how fast new tokens are being launched</b>, whether <b>volume is accelerating</b>, how many are rising, and (for big events) <b>news attention</b> — so you can see a narrative <b>heating up before it peaks</b>. Event themes get a countdown: event tokens usually make most of their move <b>before</b> the event and often dump on the day ("sell the news"). Most theme tokens are copycats launched by bots in seconds — <b>copycats and fake "official" tokens are flagged</b>. Add your own themes below.</div>
+    <div id="themeView" class="th-view" hidden></div>
     <div class="mover-note gem-note" id="gemNote" hidden>💎 <b>Early Gems</b> looks for <b>brand-new, small-cap tokens</b> (hours to ~2 weeks old, under ~$10M cap) that show the footprints that often come <b>before</b> a big move: steady buying across 5m/1h/6h, buyers outnumbering sellers, activity and volume accelerating, healthy liquidity for the size, a real website/socials — and <b>not already pumped</b>. It also checks <b>holder concentration</b> and whether <b>liquidity is locked/burned</b> where data exists. <b>Nobody can know which token will “blow up.”</b> This ranks the best-looking early setups; the large majority of new tokens still fail or rug. Use tiny position sizes only.</div>
     <div class="mover-filters">
       <select id="mvChain" class="mv-sel" title="Chain">
@@ -1116,6 +1118,7 @@
         <option value="bp">Sort: buy pressure</option>
         <option value="age">Sort: newest</option>
       </select>
+      <select id="mvTheme" class="mv-sel" title="Filter by theme"><option value="">Any theme</option></select>
       <label class="mv-toggle"><input type="checkbox" id="mvSafe" checked> Safe only</label>
       <select id="mvDrop" class="mv-sel" title="Alert if a spotted token drops this much">
         <option value="5">Drop alert −5%</option>
@@ -4535,6 +4538,274 @@ function aryxBackToLanding(){
       (best && best.max > 0 ? '<div class="mvr-sub">Best so far: <b>'+best.sym+'</b> peaked '+(best.max*100).toFixed(0)+'% above its spotted price. Results are measured from the price when the scanner first listed each token — the honest test of whether its picks work.</div>' : '');
   }
 
+
+  // ---- Themes: narratives that spawn waves of tokens (events, memes, sectors) ----
+  // Edit THEME_EVENT dates as announcements change — GTA VI has slipped before.
+  var DEFAULT_THEMES = [
+    { id:'gta6', name:'GTA 6', icon:'🎮', q:['gta 6','gta6','gta vi','vice city','leonida'], rx:'gta ?(6|vi)\\b|gtavi|gta6|vice ?city|leonida|grand ?theft|rockstar',
+      event:{ date:'2026-11-19', label:'GTA VI release (as last announced by Rockstar — verify, it has been delayed before)' },
+      news:'"GTA 6" OR "GTA VI"', warn:'Rockstar Games / Take-Two have not launched a token — anything sold as an “official GTA token” is a scam.' },
+    { id:'ai', name:'AI agents', icon:'🤖', q:['ai agent','agent','gpt'], rx:'\\bai\\b|agent|gpt|neural|\\bllm\\b|virtuals?\\b', news:'crypto "AI agents"' },
+    { id:'politics', name:'Politics', icon:'🏛️', q:['trump','maga','election'], rx:'trump|maga|biden|election|president|melania|vance|kamala', news:'Trump crypto' },
+    { id:'dogs', name:'Dog memes', icon:'🐕', q:['dog','inu','shiba'], rx:'dog|\\binu\\b|shib|doge|puppy|\\bwif\\b' },
+    { id:'cats', name:'Cat memes', icon:'🐈', q:['cat','kitty','meow'], rx:'\\bcat\\b|cats\\b|kitty|meow|popcat|\\bmew\\b' },
+    { id:'frogs', name:'Frogs & Pepe', icon:'🐸', q:['pepe','frog'], rx:'pepe|frog|\\bkek\\b|wojak' },
+    { id:'gaming', name:'Gaming', icon:'🕹️', q:['game','gaming'], rx:'\\bgame|gaming|\\bplay|quest|arena|pixel|metaverse' },
+    { id:'elon', name:'Elon & X', icon:'🚀', q:['elon','musk','grok'], rx:'elon|musk|spacex|grok|\\bmars\\b', news:'Elon Musk crypto' },
+    { id:'rwa', name:'RWA & tokenized', icon:'🏦', q:['rwa','tokenized'], rx:'\\brwa\\b|tokeniz|treasur|real ?world' },
+    { id:'holiday', name:'Holidays', icon:'🎄', q:['christmas','santa','thanksgiving'], rx:'christmas|xmas|santa|thanksgiving|turkey|halloween|pumpkin|new ?year' }
+  ];
+  var THEME_KEY = 'aryx.mvThemes', THIST_KEY = 'aryx.themeHist';
+  var customThemes = [], themeData = {}, themeSel = 'gta6', themeAt = 0, themeScanning = false, lastPairs = {}, topicCache = {};
+  try{ customThemes = JSON.parse(localStorage.getItem(THEME_KEY)) || []; }catch(e){ customThemes = []; }
+  function allThemes(){ return DEFAULT_THEMES.concat(customThemes); }
+  function themeRx(t){ if(!t._rx){ try{ t._rx = new RegExp(t.rx, 'i'); }catch(e){ t._rx = /$^/; } } return t._rx; }
+  function themesOf(text){ var out = []; allThemes().forEach(function(t){ if(themeRx(t).test(text)) out.push(t); }); return out; }
+  function escH(t){ return String(t==null?'':t).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function escRx(w){ return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  // token row for a theme list (looser than the mover/gem gates: themes include tiny new launches)
+  function themeToken(p){
+    var liq = (p.liquidity && p.liquidity.usd) || 0, vol = (p.volume && p.volume.h24) || 0;
+    if(liq < 5000 || vol < 5000) return null;
+    var ch = p.priceChange || {}, h1 = +ch.h1 || 0, h6 = +ch.h6 || 0, h24 = +ch.h24 || 0;
+    var tx = (p.txns && p.txns.h1) || {}, buys = +tx.buys || 0, sells = +tx.sells || 0, bp = buys+sells ? buys/(buys+sells) : null;
+    var vh1 = (p.volume && +p.volume.h1) || 0, accel = vol > 0 ? vh1/(vol/24) : 0;
+    var ageH = p.pairCreatedAt ? (Date.now() - p.pairCreatedAt)/3600000 : 9999;
+    var s = 0, tags = [];
+    if(h1 > 0){ s += 1.5; tags.push(['H1 ↑ '+h1.toFixed(0)+'%', 0]); }
+    if(buys+sells >= 15 && bp >= 0.6){ s += 1.2; tags.push(['Buy pressure', 0]); }
+    if(buys+sells >= 15 && bp <= 0.4){ s -= 1.5; tags.push(['Sell pressure', 1]); }
+    if(accel >= 2 && h1 > 0){ s += 1.2; tags.push(['Vol surge ×'+accel.toFixed(1), 0]); }
+    if(liq >= 50000){ s += 1; tags.push(['Liquid', 0]); }
+    if(ageH < 24){ s += 0.8; tags.push(['New '+fmtAge(ageH), 0]); } else if(ageH < 72) s += 0.5;
+    if(h24 > 150){ s -= 1.5; tags.push(['Already ran', 1]); }
+    var name = (p.baseToken && p.baseToken.name) || '';
+    if(/official|\breal\b|original|verified|\bv2\b/i.test(name)) { s -= 1; tags.push(['Claims official', 1]); }
+    return { sym:(p.baseToken && p.baseToken.symbol) || '?', name:name, chain:p.chainId, addr:(p.baseToken && p.baseToken.address), pair:p.pairAddress, url:p.url,
+      price:+p.priceUsd, liq:liq, vol:vol, vh1:vh1, mcap:(+p.marketCap || +p.fdv || 0), h1:h1, h6:h6, h24:h24, s:s, pct:Math.max(0, Math.min(100, Math.round(s/6.2*100))),
+      tags:tags, buys:buys, sells:sells, bp:bp, accel:accel, ageH:ageH };
+  }
+  function themeHeat(list){
+    var n = list.length, new24 = 0, new7 = 0, vol24 = 0, vol1h = 0, up = 0, act = 0;
+    list.forEach(function(m){ if(m.ageH < 24) new24++; if(m.ageH < 168) new7++; vol24 += m.vol; vol1h += m.vh1; if(m.vh1 > 0){ act++; if(m.h1 > 0) up++; } });
+    var accel = vol24 > 0 ? vol1h*24/vol24 : 0, upShare = act ? up/act : 0;
+    var lg = function(x, full){ return Math.min(1, Math.log10(1+x)/Math.log10(1+full)); };
+    var heat = Math.round(30*lg(new24, 25) + 25*Math.min(1, Math.max(0, accel-0.6)/1.9) + 20*upShare + 25*lg(vol24/1e5, 100));
+    return { n:n, new24:new24, new7:new7, vol24:vol24, vol1h:vol1h, accel:accel, upShare:upShare, heat:Math.max(0, Math.min(100, heat)) };
+  }
+  function heatBand(h){ return h>=70?['🔥 Hot','hot']:h>=45?['Warming','warm']:h>=25?['Active','act']:['Quiet','quiet']; }
+  function recordHeat(){
+    var hist = {}; try{ hist = JSON.parse(localStorage.getItem(THIST_KEY)) || {}; }catch(e){}
+    var now = Date.now();
+    Object.keys(themeData).forEach(function(id){ var d = themeData[id], h = hist[id] || (hist[id] = []);
+      if(!h.length || now - h[h.length-1].t > 10*60000) h.push({ t:now, heat:d.heat, vol:d.vol24, n:d.n }); else h[h.length-1] = { t:now, heat:d.heat, vol:d.vol24, n:d.n };
+      hist[id] = h.filter(function(x){ return now - x.t < 3*86400000; }).slice(-60);
+      var day = hist[id].filter(function(x){ return now - x.t <= 26*3600000; });
+      d.trend = day.length >= 2 ? d.heat - day[0].heat : null; d.trendN = day.length; });
+    try{ localStorage.setItem(THIST_KEY, JSON.stringify(hist)); }catch(e){}
+  }
+  function eventPhase(ev){
+    if(!ev || !ev.date) return null;
+    var days = Math.ceil((Date.parse(ev.date+'T00:00:00Z') - Date.now())/86400000);
+    if(days > 30) return { days:days, cls:'', txt:'Build-up — attention usually grows into the event; theme tokens are early but thin.' };
+    if(days > 7) return { days:days, cls:'warm', txt:'Hype run-up — historically when event tokens make most of their move. Take profits into strength.' };
+    if(days >= 0) return { days:days, cls:'hot', txt:'⚠ Peak-risk window — event tokens often top before or on the day ("buy the rumour, sell the news").' };
+    return { days:days, cls:'quiet', txt:'Post-event — most event tokens fade after the event; only a few with real communities survive.' };
+  }
+  var safetyCache = {};
+  function cachedSafety(m){ var k = m.chain+':'+m.addr; return safetyCache[k] || (safetyCache[k] = checkSafety(m)); }
+
+
+  // ---- Emerging trends: words/phrases suddenly shared by many fresh launches ----
+  // No fixed list: every scan tokenises the names of tokens launched in the last
+  // 72h, finds words used by several *different* tokens, weights them by volume,
+  // and compares with earlier scans on this device to spot what is NEW or GROWING.
+  var TREND_HIST_KEY = 'aryx.trendHist', trends = [];
+  var STOP = {};
+  ('the of and for with from this that you your our are was its it is in on to by at as or not all one two new old real official '+
+   'coin coins token tokens meme memes crypto cto community takeover sol solana eth ethereum base bnb bsc arb avax matic poly '+
+   'usd usdc usdt dai wsol weth wbnb wbtc wrapped bridged pool pair swap finance protocol dao network chain labs capital fund '+
+   'inu fun pump moon super mega mini baby king queen lord mr mrs dr big little first last best good bad money cash gold '+
+   'world global life love time day year man boy girl just get got lets let www com io xyz app bot')
+    .split(' ').forEach(function(w){ STOP[w] = 1; });
+  function words(name, sym){
+    var txt = String(name||'').replace(/([a-z])([A-Z])/g, '$1 $2')+' '+String(sym||'');
+    var ws = txt.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter(function(w){ return w.length >= 3 && w.length <= 18 && !STOP[w] && !/^\d+$/.test(w); });
+    var uniq = {}, out = [];
+    ws.forEach(function(w){ if(!uniq[w]){ uniq[w] = 1; out.push(w); } });
+    // two-word phrases from the name ("vice city", "baby shark")
+    var nm = String(name||'').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter(Boolean);
+    for(var i=0;i<nm.length-1;i++){ var a = nm[i], b = nm[i+1]; if(a.length < 2 || b.length < 2 || (STOP[a] && STOP[b])) continue; var bg = a+' '+b; if(!uniq[bg]){ uniq[bg] = 1; out.push(bg); } }
+    return out;
+  }
+  function mineTrends(pairs){
+    var agg = {};
+    Object.keys(pairs).forEach(function(k){
+      var p = pairs[k], ageH = p.pairCreatedAt ? (Date.now()-p.pairCreatedAt)/3600000 : 9999;
+      if(ageH > 72) return;
+      var vol = (p.volume && p.volume.h24) || 0, liq = (p.liquidity && p.liquidity.usd) || 0;
+      if(liq < 3000 && vol < 3000) return;
+      var w8 = 1 + Math.log10(1 + vol/10000);
+      words((p.baseToken||{}).name, (p.baseToken||{}).symbol).forEach(function(w){
+        var a = agg[w] || (agg[w] = { word:w, n:0, new24:0, vol:0, w:0, keys:[], syms:{} });
+        a.n++; a.w += w8; a.vol += vol; if(ageH < 24) a.new24++; a.keys.push(k); a.syms[((p.baseToken||{}).symbol||'?').toUpperCase()] = 1;
+      });
+    });
+    var list = Object.keys(agg).map(function(w){ return agg[w]; }).filter(function(a){ return a.n >= 3; });
+    // drop a single word when a phrase containing it covers (almost) the same tokens
+    list = list.filter(function(a){ if(a.word.indexOf(' ') >= 0) return true;
+      return !list.some(function(b){ return b.word.indexOf(' ') >= 0 && (' '+b.word+' ').indexOf(' '+a.word+' ') >= 0 && b.n >= a.n*0.8; }); });
+    // compare with earlier scans on this device
+    var hist = {}; try{ hist = JSON.parse(localStorage.getItem(TREND_HIST_KEY)) || {}; }catch(e){}
+    var now = Date.now();
+    list.forEach(function(a){
+      var h = (hist[a.word] || []).filter(function(x){ return now - x[0] >= 3*3600000; });   // readings at least 3h old
+      a.base = h.length ? h.reduce(function(s,x){ return s + x[1]; }, 0)/h.length : null;
+      a.growth = a.base ? a.n/a.base - 1 : null;
+      a.isNew = !hist[a.word] || !hist[a.word].length;
+      a.theme = themesOf(a.word)[0] || null;
+      a.score = a.w * (1 + a.new24/a.n) * (a.isNew ? 1.4 : a.growth != null ? Math.max(0.6, Math.min(2.5, 1 + a.growth)) : 1);
+    });
+    list.sort(function(x,y){ return y.score - x.score; });
+    // remember this scan (one reading per word per 15 min, 3 days kept)
+    list.slice(0, 120).forEach(function(a){ var h = hist[a.word] || (hist[a.word] = []);
+      if(!h.length || now - h[h.length-1][0] > 15*60000) h.push([now, a.n]); });
+    Object.keys(hist).forEach(function(w){ hist[w] = hist[w].filter(function(x){ return now - x[0] < 3*86400000; }); if(!hist[w].length) delete hist[w]; });
+    var keys = Object.keys(hist); if(keys.length > 400) keys.sort(function(a,b){ return hist[a].length - hist[b].length; }).slice(0, keys.length-400).forEach(function(w){ delete hist[w]; });
+    try{ localStorage.setItem(TREND_HIST_KEY, JSON.stringify(hist)); }catch(e){}
+    trends = list.slice(0, 12);
+    trends.forEach(function(a){
+      var toks = a.keys.map(function(k){ return themeToken(pairs[k]); }).filter(Boolean);
+      var bySym = {}; toks.forEach(function(m){ var u = m.sym.toUpperCase(); bySym[u] = (bySym[u] || 0) + 1; });
+      toks.forEach(function(m){ var c = bySym[m.sym.toUpperCase()]; if(c > 1){ m.tags.unshift(['Copycat ×'+c, 1]); m.s -= 0.5; } });
+      toks.sort(function(x,y){ return y.s - x.s || y.vol - x.vol; });
+      themeData['auto:'+a.word] = Object.assign({ tokens:toks }, themeHeat(toks));
+    });
+  }
+
+  function scanThemes(force){
+    if(themeScanning || (!force && themeAt && Date.now()-themeAt < RESCAN_MS)){ renderThemes(); return; }
+    themeScanning = true;
+    var view = document.getElementById('themeView'); if(view && !themeAt) view.innerHTML = '<div class="mover-loading">measuring theme activity across DEX markets…</div>';
+    var themes = allThemes(), calls = [];
+    themes.forEach(function(t){ (t.q || []).slice(0, 5).forEach(function(q){
+      calls.push(getJSON(SEARCH + encodeURIComponent(q)).then(function(r){ return { id:t.id, pairs:(r && r.pairs) || [] }; }).catch(function(){ return { id:t.id, pairs:[] }; })); }); });
+    Promise.all(calls).then(function(res){
+      var pool = {}, seenAll = {};   // theme id -> token key -> best pair; every pair seen
+      Object.keys(lastPairs).forEach(function(k){ seenAll[k] = lastPairs[k]; });
+      res.forEach(function(r){ r.pairs.forEach(function(p){ if(p && p.baseToken){ var k = p.chainId+':'+p.baseToken.address, c = seenAll[k];
+        if(!c || ((p.liquidity&&p.liquidity.usd)||0) > ((c.liquidity&&c.liquidity.usd)||0)) seenAll[k] = p; } }); });
+      function put(id, p){ if(!p || !p.baseToken) return; var k = p.chainId+':'+p.baseToken.address, m = pool[id] || (pool[id] = {});
+        var liq = (p.liquidity && p.liquidity.usd) || 0, cur = m[k]; if(!cur || liq > ((cur.liquidity && cur.liquidity.usd) || 0)) m[k] = p; }
+      res.forEach(function(r){ var t = themes.filter(function(x){ return x.id === r.id; })[0]; if(!t) return;
+        r.pairs.forEach(function(p){ var txt = ((p.baseToken && p.baseToken.name) || '')+' '+((p.baseToken && p.baseToken.symbol) || ''); if(themeRx(t).test(txt)) put(t.id, p); }); });
+      // tokens from the main scan that match a theme count too
+      Object.keys(lastPairs).forEach(function(k){ var p = lastPairs[k], txt = ((p.baseToken && p.baseToken.name) || '')+' '+((p.baseToken && p.baseToken.symbol) || '');
+        themes.forEach(function(t){ if(themeRx(t).test(txt)) put(t.id, p); }); });
+      themeData = {};
+      themes.forEach(function(t){
+        var list = Object.keys(pool[t.id] || {}).map(function(k){ return themeToken(pool[t.id][k]); }).filter(Boolean);
+        var bySym = {}; list.forEach(function(m){ var u = m.sym.toUpperCase(); bySym[u] = (bySym[u] || 0) + 1; });
+        list.forEach(function(m){ var c = bySym[m.sym.toUpperCase()]; if(c > 1){ m.tags.unshift(['Copycat ×'+c, 1]); m.s -= 0.5; m.pct = Math.max(0, Math.round(m.s/6.2*100)); } });
+        list.sort(function(a,b){ return b.s - a.s || b.vol - a.vol; });
+        themeData[t.id] = Object.assign({ tokens:list }, themeHeat(list));
+      });
+      recordHeat(); mineTrends(seenAll); themeAt = Date.now();
+      return checkThemeSafety();
+    }).catch(function(){}).then(function(){ themeScanning = false; renderThemes(); if(mode === 'themes'){ applyFilters(); updateStatus(); } });
+  }
+  function checkThemeSafety(){
+    var d = themeData[themeSel]; if(!d) return Promise.resolve();
+    return Promise.all(d.tokens.slice(0, 20).map(function(m){ return cachedSafety(m).then(function(sf){ m.safety = sf; }); })).then(function(){
+      d.tokens = d.tokens.filter(function(m){ return !(m.safety && m.safety.v === 'danger' && /honeypot|cannot sell|non-transferable|freeze/.test(m.safety.why)); }); });
+  }
+  function loadTopic(t){
+    if(!t || !t.news) return;
+    var c = topicCache[t.id]; if(c && (c.loading || Date.now()-c.at < 3600000)) return;
+    topicCache[t.id] = { loading:true, at:Date.now() };
+    fetch('/api/feed/world?part=topic&q='+encodeURIComponent(t.news), { credentials:'same-origin' }).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(d){ topicCache[t.id] = { at:Date.now(), trend:(d && d.trend) || [] }; }).catch(function(){ topicCache[t.id] = { at:Date.now(), trend:[] }; })
+      .then(function(){ if(mode === 'themes') renderThemes(); });
+  }
+  function spark(vals, col){
+    if(!vals || vals.length < 2) return '';
+    var w = 140, h = 30, mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals), rg = (mx-mn) || 1;
+    return '<svg class="th-spark" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" aria-hidden="true"><polyline fill="none" stroke="'+col+'" stroke-width="1.6" points="'+
+      vals.map(function(v,i){ return (i/(vals.length-1)*w).toFixed(1)+','+(h-2-(v-mn)/rg*(h-4)).toFixed(1); }).join(' ')+'"/></svg>';
+  }
+  function renderThemes(){
+    var view = document.getElementById('themeView'); if(!view || mode !== 'themes') return;
+    var themes = allThemes();
+    if(!themeAt){ view.innerHTML = '<div class="mover-loading">measuring theme activity across DEX markets…</div>'; return; }
+    var ranked = themes.slice().sort(function(a,b){ return ((themeData[b.id]||{}).heat||0) - ((themeData[a.id]||{}).heat||0); });
+    var cards = ranked.map(function(t){ var d = themeData[t.id] || { heat:0, n:0, new24:0, vol24:0, upShare:0 }, hb = heatBand(d.heat), ev = eventPhase(t.event);
+      var tr = d.trend==null ? '' : d.trend >= 8 ? '<em class="up">▲ heating</em>' : d.trend <= -8 ? '<em class="down">▼ cooling</em>' : '<em>▬ steady</em>';
+      return '<button class="th-card '+hb[1]+(t.id===themeSel?' is-sel':'')+'" data-th="'+escH(t.id)+'">'+
+        '<div class="th-top"><span>'+escH(t.icon||'🏷️')+' '+escH(t.name)+'</span>'+(t.custom?'<i class="th-del" data-del="'+escH(t.id)+'" title="Remove theme">×</i>':'')+'</div>'+
+        '<div class="th-heat"><div class="th-bar"><span style="width:'+d.heat+'%"></span></div><b>'+d.heat+'</b></div>'+
+        '<div class="th-meta"><span class="th-band">'+hb[0]+'</span>'+tr+'</div>'+
+        '<div class="th-sub">'+d.n+' tokens · <b>'+d.new24+'</b> new 24h · vol '+fmtUsd(d.vol24)+'</div>'+
+        (ev ? '<div class="th-ev '+ev.cls+'">'+(ev.days>=0?'⏳ '+ev.days+'d to event':'event passed')+'</div>' : '')+'</button>'; }).join('');
+    var emerging = '<div class="th-em-h">🆕 Emerging trends <small>auto-detected from tokens launched in the last 72h — words suddenly shared by many new tokens</small></div>'+
+      (trends.length ? '<div class="th-grid th-em">'+trends.map(function(a){
+        var gl = a.isNew ? '<em class="new">🆕 new</em>' : a.growth != null ? (a.growth >= 0.25 ? '<em class="up">▲ +'+Math.round(a.growth*100)+'%</em>' : a.growth <= -0.25 ? '<em class="down">▼ '+Math.round(a.growth*100)+'%</em>' : '<em>▬ steady</em>') : '<em>first readings</em>';
+        var tracked = allThemes().some(function(t){ return t.custom && t.rx === escRx(a.word); });
+        return '<button class="th-card th-auto'+('auto:'+a.word===themeSel?' is-sel':'')+'" data-th="auto:'+escH(a.word)+'">'+
+          '<div class="th-top"><span>“'+escH(a.word)+'”</span>'+gl+'</div>'+
+          '<div class="th-sub"><b>'+a.n+'</b> tokens · <b>'+a.new24+'</b> new 24h · vol '+fmtUsd(a.vol)+'</div>'+
+          '<div class="th-syms">'+Object.keys(a.syms).slice(0, 4).map(escH).join(' · ')+'</div>'+
+          (a.theme ? '<div class="th-ev">part of '+escH(a.theme.icon||'')+' '+escH(a.theme.name)+'</div>' : tracked ? '<div class="th-ev">tracking ✓</div>' : '<i class="th-track" data-track="'+escH(a.word)+'">+ track as theme</i>')+
+        '</button>'; }).join('')+'</div>'
+      : '<div class="mover-empty" style="margin-bottom:12px">No clusters yet — needs at least 3 fresh tokens sharing a word. It fills in as scans run.</div>');
+    var autoSel = themeSel.indexOf('auto:') === 0 ? trends.filter(function(a){ return 'auto:'+a.word === themeSel; })[0] : null;
+    if(themeSel.indexOf('auto:') === 0 && !autoSel) themeSel = 'gta6';
+    var t = autoSel ? { id:themeSel, name:'“'+autoSel.word+'”', icon:'🆕', auto:autoSel }
+                    : (themes.filter(function(x){ return x.id === themeSel; })[0] || themes[0]); if(t) themeSel = t.id;
+    var d = themeData[t.id] || { heat:0, n:0, new24:0, new7:0, vol24:0, accel:0, upShare:0 }, ev = eventPhase(t.event), tc = topicCache[t.id];
+    if(t.news) loadTopic(t);
+    var news = '';
+    if(t.news){
+      if(tc && tc.trend && tc.trend.length > 7){ var v = tc.trend.map(function(x){ return x[1]; }), l7 = v.slice(-7), pr = v.slice(0, -7);
+        var a7 = l7.reduce(function(x,y){ return x+y; },0)/l7.length, ap = pr.length ? pr.reduce(function(x,y){ return x+y; },0)/pr.length : 0, chg = ap ? a7/ap-1 : null;
+        news = '<div class="th-news">'+spark(v, '#8fb0ff')+'<span>📰 News attention (GDELT, 30d): <b class="'+(chg>=0?'up':'down')+'">'+(chg==null?'—':(chg>=0?'+':'')+Math.round(chg*100)+'%')+'</b> last 7 days vs the 3 weeks before</span></div>'; }
+      else if(tc && tc.loading) news = '<div class="th-news"><span>📰 Loading news attention…</span></div>';
+    }
+    var detail = '<div class="th-detail">'+
+      '<div class="th-dh"><b>'+escH(t.icon||'🏷️')+' '+escH(t.name)+'</b><span>heat '+d.heat+'/100 · '+d.n+' tokens tracked · '+d.new24+' launched in 24h · '+d.new7+' in 7d · volume '+fmtUsd(d.vol24)+
+        ' · 1h volume pace ×'+d.accel.toFixed(1)+' · '+Math.round(d.upShare*100)+'% rising in the last hour</span></div>'+
+      (ev ? '<div class="th-evbox '+ev.cls+'"><b>'+(ev.days>=0?'⏳ '+ev.days+' days':'Event passed')+'</b> — '+escH(t.event.label)+' · '+escH(t.event.date)+'<br>'+ev.txt+'</div>' : '')+
+      (t.warn ? '<div class="th-warn">⚠ '+escH(t.warn)+'</div>' : '')+news+
+      (t.auto ? '<div class="th-evbox">Auto-detected cluster: <b>'+t.auto.n+'</b> tokens launched in the last 72h share this word'+(t.auto.isNew?' — <b>not seen in earlier scans on this device</b>':t.auto.growth!=null?' — '+(t.auto.growth>=0?'+':'')+Math.round(t.auto.growth*100)+'% vs earlier scans':'')+
+        '. Clusters like this are how new narratives show up first — but many are just bots spamming a word. Look for real volume, buyers and liquidity, not just token count.</div>' : '')+
+      '<div class="th-sub2">Tokens in this theme are listed below, best setups first. Copycats (same ticker, many contracts) and fake “official” tokens are flagged — always check the contract.</div></div>';
+    var add = '<form class="th-add" id="thAdd"><span>➕ Track your own theme</span><input id="thName" maxlength="24" placeholder="Name (e.g. World Cup)">'+
+      '<input id="thWords" maxlength="80" placeholder="Keywords, comma-separated (e.g. worldcup, fifa, messi)">'+
+      '<input id="thDate" type="date" title="Optional event date — adds a countdown"><button type="submit" class="ctool">Add</button></form>';
+    view.innerHTML = emerging+'<div class="th-em-h">🏷️ Tracked themes <small>ranked by heat</small></div><div class="th-grid">'+cards+'</div>'+detail+add;
+  }
+  function addTheme(name, words, date){
+    var kw = String(words||'').split(',').map(function(w){ return w.trim().toLowerCase().replace(/[^a-z0-9 .\-]/g, ''); }).filter(function(w){ return w.length >= 2; }).slice(0, 6);
+    name = String(name||'').trim().slice(0, 24);
+    if(!name || !kw.length) return false;
+    var id = 'c_'+name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16)+'_'+Date.now().toString(36);
+    var th = { id:id, name:name, icon:'🏷️', custom:true, q:kw.slice(0, 4), rx:kw.map(escRx).join('|') };
+    if(/^\d{4}-\d{2}-\d{2}$/.test(date||'')) th.event = { date:date, label:name+' (your date)' };
+    customThemes.push(th);
+    try{ localStorage.setItem(THEME_KEY, JSON.stringify(customThemes.map(function(t){ return { id:t.id, name:t.name, icon:t.icon, custom:true, q:t.q, rx:t.rx, event:t.event }; }))); }catch(e){}
+    themeSel = id; fillThemeFilter(); scanThemes(true); return true;
+  }
+  function removeTheme(id){
+    customThemes = customThemes.filter(function(t){ return t.id !== id; });
+    try{ localStorage.setItem(THEME_KEY, JSON.stringify(customThemes.map(function(t){ return { id:t.id, name:t.name, icon:t.icon, custom:true, q:t.q, rx:t.rx, event:t.event }; }))); }catch(e){}
+    delete themeData[id]; if(themeSel === id) themeSel = 'gta6'; fillThemeFilter(); renderThemes(); applyFilters();
+  }
+  function fillThemeFilter(){
+    var sel = document.getElementById('mvTheme'); if(!sel) return; var cur = sel.value;
+    sel.innerHTML = '<option value="">Any theme</option>'+allThemes().map(function(t){ return '<option value="'+escH(t.id)+'">'+escH(t.icon||'🏷️')+' '+escH(t.name)+'</option>'; }).join('');
+    sel.value = allThemes().some(function(t){ return t.id === cur; }) ? cur : '';
+  }
+
   function fmtAge(h){ if(h==null||h>=9999) return '—'; if(h<1) return Math.max(1,Math.round(h*60))+'m'; if(h<48) return Math.round(h)+'h'; if(h<24*60) return Math.round(h/24)+'d'; return Math.round(h/24/30)+'mo'; }
   function flowBar(m){
     var n=(m.buys||0)+(m.sells||0); if(!n) return '';
@@ -4548,7 +4819,9 @@ function aryxBackToLanding(){
 
   function render(rows){
     if(mode === 'movers'){ try{ window.__aryxTopMover = rows && rows[0] ? rows[0] : null; }catch(e){} }
-    if(!rows.length){ listEl.innerHTML = '<div class="mover-empty">'+(mode==='gems'
+    if(!rows.length){ listEl.innerHTML = '<div class="mover-empty">'+(mode==='themes'
+      ? (themeAt ? 'No tokens in this theme pass the filters — loosen min liquidity, the chain filter, or turn off “Safe only” (theme tokens are often too new to check).' : 'Measuring theme activity…')
+      : mode==='gems'
       ? 'No early gems pass the filters right now — fresh launches are either too thin, already pumped, or being sold into. New tokens appear constantly; the scan repeats every 5 minutes.'
       : 'No clean early setups right now — trending tokens are either too illiquid or already ran. Try again shortly.')+'</div>'; return; }
     var SAFE = { ok:['✓ safe-ish','ok'], caution:['⚠ caution','caution'], danger:['⛔ danger','danger'], '?':['? unchecked','unk'] };
@@ -4558,11 +4831,12 @@ function aryxBackToLanding(){
       var sv = (m.safety && m.safety.v) || '?';
       var sl = SAFE[sv] || SAFE['?'];
       var pill = '<span class="mv-safe '+sl[1]+'" title="'+((m.safety&&m.safety.why)||'')+'">'+sl[0]+'</span>';
+      var thm = themesOf((m.name||'')+' '+m.sym).slice(0, 2).map(function(t){ return '<span class="mover-tag th-chip">'+escH(t.icon||'🏷️')+' '+escH(t.name)+'</span>'; }).join('');
       return '<div class="mover-row" data-chain="'+m.chain+'" data-addr="'+(m.addr||'')+'" data-url="'+(m.url||'')+'">'+
-        '<div class="mover-top"><span class="mover-sym">'+m.sym+'<small> · '+m.chain+'</small></span>'+
+        '<div class="mover-top"><span class="mover-sym">'+escH(m.sym)+'<small> · '+escH(m.chain)+'</small></span>'+
         '<span class="mover-chg '+cls+'">'+(m.h1>=0?'+':'')+m.h1.toFixed(1)+'% <small style="opacity:.6">1h</small></span></div>'+
         '<div class="mover-score"><div class="mover-bar"><span style="width:'+m.pct+'%"></span></div><span class="mover-pct">'+m.pct+'</span></div>'+
-        '<div class="mover-tags">'+pill+tags+'</div>'+
+        '<div class="mover-tags">'+pill+thm+tags+'</div>'+
         flowBar(m)+holderLine(m)+
         '<div class="mover-price">'+fmtPrice(m.price)+' · '+(m.mcap?'mc '+fmtUsd(m.mcap)+' · ':'')+'liq '+fmtUsd(m.liq)+' · vol '+fmtUsd(m.vol)+' · 24h '+(m.h24>=0?'+':'')+m.h24.toFixed(0)+'%</div>'+
         '<div class="mv-links" onclick="event.stopPropagation()">'+safetyLinks(m)+'</div></div>';
@@ -4578,7 +4852,7 @@ function aryxBackToLanding(){
     // 1) collect trending / boosted token addresses (both endpoints), dedupe
     Promise.all([ getJSON(BOOSTS).catch(function(){return [];}), getJSON(LATEST).catch(function(){return [];}),
                   getJSON(PROFILES).catch(function(){return [];}),
-                  Promise.all([1,2,3].map(function(pg){ return getJSON(GT_NEW+pg).catch(function(){ return {}; }); })) ])
+                  Promise.all([1,2,3,4,5].map(function(pg){ return getJSON(GT_NEW+pg).catch(function(){ return {}; }); })) ])
     .then(function(res){
       var items = [].concat(res[0]||[], res[1]||[]);
       var boosted = {};
@@ -4624,13 +4898,13 @@ function aryxBackToLanding(){
           });
         });
         var out = [];
-        nTokens = Object.keys(bestByToken).length;
-        Object.keys(bestByToken).forEach(function(k){ var m = score(bestByToken[k]); if(m){ persist(m,'mv'); if(m.s >= 3) out.push(m); } });
+        nTokens = Object.keys(bestByToken).length; lastPairs = bestByToken;
+        Object.keys(bestByToken).forEach(function(k){ var m = score(bestByToken[k]); if(m){ m.name = (bestByToken[k].baseToken||{}).name || ''; persist(m,'mv'); if(m.s >= 3) out.push(m); } });
         Object.keys(bestByToken).forEach(function(k){ var p = bestByToken[k]; observe(k, +p.priceUsd); });
         out.sort(function(a,b){ return b.s - a.s; });
         var pool = out.slice(0, 40);
         var gems = [];
-        Object.keys(bestByToken).forEach(function(k){ var g = gemScore(bestByToken[k]); if(g){ persist(g,'gem'); if(g.s >= 4) gems.push(g); } });
+        Object.keys(bestByToken).forEach(function(k){ var g = gemScore(bestByToken[k]); if(g){ g.name = (bestByToken[k].baseToken||{}).name || ''; persist(g,'gem'); if(g.s >= 4) gems.push(g); } });
         gems.sort(function(a,b){ return b.s - a.s; });
         var gemPool = gems.slice(0, 30);
         // 3) run rug/honeypot safety checks on both shortlists (one call per token)
@@ -4649,6 +4923,7 @@ function aryxBackToLanding(){
             remember(allMovers, 'mv'); remember(allGems, 'gem');
             logPicks(allMovers, 'mv'); logPicks(allGems, 'gem'); saveRec(); renderRecord();
             lastScan = Date.now(); lastSeen = nTokens; updateStatus();
+            if(mode === 'themes') scanThemes(true);
             scanning = false;
             if(scanBtn) scanBtn.textContent = '↻ scan';
           });
@@ -4668,8 +4943,11 @@ function aryxBackToLanding(){
     var capBand = ((document.getElementById('mvMcap')||{}).value) || '0';
     var capLo = 0, capHi = Infinity;
     if(capBand !== '0'){ var pr = capBand.split('-'); capLo = +pr[0] || 0; capHi = pr[1] ? +pr[1] : Infinity; }
-    var src = mode === 'gems' ? allGems : allMovers;
+    var src = mode === 'themes' ? ((themeData[themeSel] || {}).tokens || []) : mode === 'gems' ? allGems : allMovers;
+    var thF = mode === 'themes' ? '' : ((document.getElementById('mvTheme')||{}).value || '');
+    var thObj = thF ? allThemes().filter(function(t){ return t.id === thF; })[0] : null;
     var rows = src.filter(function(m){
+      if(thObj && !themeRx(thObj).test((m.name||'')+' '+m.sym)) return false;
       if(chain && m.chain !== chain) return false;
       if(m.liq < minLiq) return false;
       if(m.vol < minVol) return false;
@@ -4683,7 +4961,10 @@ function aryxBackToLanding(){
                 bp:function(m){ return m.bp==null?-1:m.bp; }, age:function(m){ return -(m.ageH==null?9999:m.ageH); } }[sortBy] || function(m){ return m.s; };
     rows.sort(function(a,b){ return key(b) - key(a) || b.s - a.s; });
     if(!rows.length){
-      listEl.innerHTML = '<div class="mover-empty">No tokens match these filters. Loosen the chain / cap band, lower min liquidity, or turn off “Safe only”.</div>';
+      var hiddenBySafe = safeOnly ? src.filter(function(m){ return !(m.safety && m.safety.v === 'ok'); }).length : 0;
+      listEl.innerHTML = '<div class="mover-empty">'+(mode==='themes' && hiddenBySafe
+        ? hiddenBySafe+' token'+(hiddenBySafe>1?'s':'')+' in this theme '+(hiddenBySafe>1?'are':'is')+' hidden by “Safe only” — theme tokens are often too new for the automated safety scan, or got flagged. Turn it off to see them, then check each contract yourself.'
+        : 'No tokens match these filters. Loosen the chain / cap band, lower min liquidity, or turn off “Safe only”.')+'</div>';
       return;
     }
     render(rows.slice(0, 40));
@@ -4745,6 +5026,8 @@ function aryxBackToLanding(){
   function updateStatus(){
     if(!statusEl || !lastScan) return;
     var mins = Math.floor((Date.now()-lastScan)/60000);
+    if(mode==='themes'){ var tm = themeAt ? Math.floor((Date.now()-themeAt)/60000) : null; var tot = 0; Object.keys(themeData).forEach(function(k){ tot += themeData[k].n; });
+      statusEl.textContent = allThemes().length+' themes · '+tot+' tokens · '+(tm==null?'scanning…':tm<1?'just now':tm+'m ago'); return; }
     statusEl.textContent = (mode==='gems' ? allGems.length+' gems' : allMovers.length+' setups')+' from '+lastSeen+' tokens · '+(mins<1?'just now':mins+'m ago');
   }
   function visible(){ var c=document.getElementById('moverCard'); return !!(c && c.offsetParent !== null) && !document.hidden; }
@@ -4770,21 +5053,39 @@ function aryxBackToLanding(){
       if(m === mode) return; mode = m;
       modeEl.querySelectorAll('button').forEach(function(b){ b.classList.toggle('is-on', b.dataset.m === m); });
       var t = document.getElementById('moverTitle');
-      if(t) t.textContent = m === 'gems' ? '💎 Early Gems — fresh small caps before the move' : '🚀 Early Movers — bullish setups forming';
+      if(t) t.textContent = m === 'gems' ? '💎 Early Gems — fresh small caps before the move' : m === 'themes' ? '🔥 Themes — narratives heating up' : '🚀 Early Movers — bullish setups forming';
       var gn = document.getElementById('gemNote'); if(gn) gn.hidden = m !== 'gems';
-      // gems are small by definition: loosen the liquidity floor while in gem mode
-      if(liqEl){ if(m === 'gems'){ moverLiq = liqEl.value; if(+liqEl.value > 25000) liqEl.value = '25000'; }
-                 else if(moverLiq != null) liqEl.value = moverLiq; }
+      var tn = document.getElementById('themeNote'); if(tn) tn.hidden = m !== 'themes';
+      var tv = document.getElementById('themeView'); if(tv) tv.hidden = m !== 'themes';
+      var rb = document.getElementById('moverRecord'); if(rb) rb.hidden = m === 'themes';
+      var tf = document.getElementById('mvTheme'); if(tf) tf.style.display = m === 'themes' ? 'none' : '';
+      // gems and theme tokens are small by definition: loosen the liquidity floor in those modes
+      if(liqEl){ if(m !== 'movers'){ if(moverLiq == null) moverLiq = liqEl.value; if(+liqEl.value > 25000) liqEl.value = '25000'; }
+                 else if(moverLiq != null){ liqEl.value = moverLiq; moverLiq = null; } }
+      if(m === 'themes') scanThemes();
       try{ localStorage.setItem('aryx.mvMode', m); }catch(e){}
       applyFilters(); updateStatus(); renderRecord();
     }
     if(modeEl) modeEl.addEventListener('click', function(e){ var b = e.target.closest('button'); if(b) setMode(b.dataset.m); });
-    try{ if(localStorage.getItem('aryx.mvMode') === 'gems') setMode('gems'); }catch(e){}
+    fillThemeFilter();
+    try{ var sm = localStorage.getItem('aryx.mvMode'); if(sm === 'gems' || sm === 'themes') setMode(sm); }catch(e){}
+    var tvEl = document.getElementById('themeView');
+    if(tvEl){
+      tvEl.addEventListener('click', function(e){
+        var del = e.target.closest('.th-del'); if(del){ e.stopPropagation(); if(confirm('Remove this theme?')) removeTheme(del.dataset.del); return; }
+        var trk = e.target.closest('.th-track'); if(trk){ e.stopPropagation(); var w = trk.dataset.track; addTheme(w.replace(/\b\w/g, function(c){ return c.toUpperCase(); }), w); return; }
+        var c = e.target.closest('.th-card'); if(!c) return;
+        themeSel = c.dataset.th; renderThemes(); listEl.innerHTML = '<div class="mover-loading">checking safety…</div>';
+        checkThemeSafety().then(function(){ applyFilters(); });
+      });
+      tvEl.addEventListener('submit', function(e){ if(e.target.id !== 'thAdd') return; e.preventDefault();
+        if(!addTheme(document.getElementById('thName').value, document.getElementById('thWords').value, (document.getElementById('thDate')||{}).value)) alert('Give the theme a name and at least one keyword (2+ letters).'); });
+    }
     window.aryxMoverMode = setMode;
     renderRecord();
     var recBox = document.getElementById('moverRecord');
     if(recBox) recBox.addEventListener('click', function(e){ if(e.target.closest('.mvr-reset') && confirm('Clear the scanner track record on this device?')){ record = {}; saveRec(); renderRecord(); } });
-    ['mvChain','mvLiq','mvVol','mvMcap','mvSafe','mvSort'].forEach(function(id){
+    ['mvChain','mvLiq','mvVol','mvMcap','mvSafe','mvSort','mvTheme'].forEach(function(id){
       var el = document.getElementById(id); if(el) el.addEventListener('change', applyFilters);
     });
     var alertEl = document.getElementById('mvAlert');
@@ -4800,7 +5101,7 @@ function aryxBackToLanding(){
     window.aryxScanMovers = scan;
     setTimeout(scan, 2200);
     // auto re-scan while the Early Movers tab is on screen (or on return to it once stale)
-    setInterval(function(){ updateStatus(); if(!scanning && visible() && Date.now()-lastScan >= RESCAN_MS) scan(); }, 30000);
+    setInterval(function(){ updateStatus(); if(!scanning && visible() && Date.now()-lastScan >= RESCAN_MS) scan(); else if(mode === 'themes' && visible() && !themeScanning && themeAt && Date.now()-themeAt >= RESCAN_MS) scanThemes(true); }, 30000);
     document.addEventListener('visibilitychange', function(){ if(!scanning && visible() && lastScan && Date.now()-lastScan >= RESCAN_MS) scan(); });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);
@@ -6945,6 +7246,40 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .mover-note{font-size:12px;color:var(--ax-muted);line-height:1.6;margin-bottom:14px;}
 .mv-hr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
 .mv-status{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ax-dim);}
+.th-view{margin:0 0 14px;}
+.th-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:12px;}
+.th-card{text-align:left;background:var(--ax-surface2);border:1px solid var(--ax-line);border-radius:12px;padding:10px 11px;cursor:pointer;color:var(--ax-text);font:inherit;}
+.th-card:hover{border-color:var(--ax-line2);} .th-card.is-sel{border-color:var(--ax-mint);box-shadow:0 0 0 1px var(--ax-mint) inset;}
+.th-top{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;}
+.th-del{font-style:normal;color:var(--ax-dim);padding:0 4px;border-radius:5px;} .th-del:hover{color:#ff5c73;background:rgba(255,92,115,.12);}
+.th-heat{display:flex;align-items:center;gap:8px;margin:7px 0 4px;} .th-heat b{font-family:'JetBrains Mono',monospace;font-size:13px;}
+.th-bar{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden;}
+.th-bar span{display:block;height:100%;background:#4d7cff;}
+.th-card.act .th-bar span{background:#9ed36a;} .th-card.warm .th-bar span{background:#ffc65c;} .th-card.hot .th-bar span{background:#ff5c73;}
+.th-meta{display:flex;gap:8px;align-items:center;font-size:11px;} .th-band{font-weight:700;color:var(--ax-muted);}
+.th-meta em{font-style:normal;color:var(--ax-dim);} .th-meta em.up{color:#ff8a5c;} .th-meta em.down{color:#8fb0ff;}
+.th-sub{font-size:10.5px;color:var(--ax-dim);margin-top:4px;font-family:'JetBrains Mono',monospace;} .th-sub b{color:var(--ax-text);}
+.th-ev{margin-top:6px;font-size:10.5px;font-weight:700;color:#8fb0ff;} .th-ev.warm{color:#ffc65c;} .th-ev.hot{color:#ff5c73;} .th-ev.quiet{color:var(--ax-dim);}
+.th-detail{border:1px solid var(--ax-line2);border-radius:12px;padding:12px 14px;margin-bottom:10px;}
+.th-dh b{display:block;font-size:15px;color:var(--ax-text);margin-bottom:3px;} .th-dh span{font-size:12px;color:var(--ax-muted);line-height:1.5;}
+.th-evbox{margin-top:10px;padding:9px 11px;border-radius:10px;background:rgba(77,124,255,.08);border-left:3px solid #4d7cff;font-size:12.5px;line-height:1.55;color:var(--ax-muted);}
+.th-evbox.warm{background:rgba(255,198,92,.08);border-left-color:#ffc65c;} .th-evbox.hot{background:rgba(255,92,115,.08);border-left-color:#ff5c73;}
+.th-evbox b{color:var(--ax-text);}
+.th-warn{margin-top:8px;font-size:12px;color:#ffd27a;}
+.th-news{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:12px;color:var(--ax-muted);flex-wrap:wrap;}
+.th-news b.up{color:#26d982;} .th-news b.down{color:#ff5c73;} .th-spark{flex:none;}
+.th-sub2{margin-top:8px;font-size:11.5px;color:var(--ax-dim);}
+.th-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px;}
+.th-add span{font-size:12px;font-weight:700;color:var(--ax-muted);}
+.th-add input{flex:1;min-width:150px;background:var(--ax-surface2);border:1px solid var(--ax-line2);color:var(--ax-text);border-radius:9px;padding:8px 10px;font:inherit;font-size:12.5px;}
+.mover-tag.th-chip{background:rgba(77,124,255,.14);color:#8fb0ff;}
+.th-em-h{font-size:12.5px;font-weight:700;color:var(--ax-text);margin:4px 0 8px;} .th-em-h small{font-weight:500;color:var(--ax-dim);font-size:11px;}
+.th-card.th-auto{border-style:dashed;}
+.th-top em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--ax-dim);} .th-top em.new{color:#26d982;} .th-top em.up{color:#ff8a5c;} .th-top em.down{color:#8fb0ff;}
+.th-syms{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ax-muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.th-track{display:inline-block;margin-top:6px;font-style:normal;font-size:10.5px;font-weight:700;color:var(--ax-mint);border:1px solid rgba(0,224,164,.35);border-radius:6px;padding:2px 6px;}
+.th-track:hover{background:rgba(0,224,164,.1);}
+@media(max-width:640px){.th-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}.th-card{padding:8px 9px;}.th-top{font-size:12px;}.th-sub{font-size:9.5px;}.th-add input{min-width:0;flex-basis:100%;}}
 .mv-record{border:1px solid var(--ax-line2);border-radius:12px;padding:12px 14px;margin:0 0 14px;}
 .mvr-h{font-size:13px;font-weight:700;color:var(--ax-text);display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
 .mvr-h small{font-weight:500;color:var(--ax-dim);font-size:11px;}

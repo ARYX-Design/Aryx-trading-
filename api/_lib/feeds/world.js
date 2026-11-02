@@ -9,6 +9,8 @@
      part=trend → daily "crisis coverage intensity": the share of all
                   monitored English-language news matching crisis terms,
                   over the last 6 months
+     part=topic&q=… → daily news-attention for one theme (e.g. "GTA 6"),
+                  last month — used by the Early Movers "Themes" mode
 
    GDELT asks for at most one request every ~5 seconds, so each part is a
    single upstream call and responses are cached at the edge for 30 min. */
@@ -68,12 +70,25 @@ async function trend() {
   return { trend: series };
 }
 
+// news attention for a single theme; GDELT only allows parentheses around OR'd terms
+async function topic(q) {
+  var clean = String(q || '').replace(/[^A-Za-z0-9 "'.\-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+  if (clean.replace(/[^A-Za-z0-9]/g, '').length < 3) throw new Error('bad_topic');
+  var query = (/ OR /.test(clean) ? '(' + clean + ')' : clean) + ' sourcelang:english';
+  var d = await getJson('https://api.gdeltproject.org/api/v2/doc/doc?format=json&mode=timelinevol&timespan=1m&query=' + encodeURIComponent(query));
+  var tl = d && d.timeline && d.timeline[0] && d.timeline[0].data || [], byDay = {};
+  tl.forEach(function (p) { var iso = gdeltDate(p.date); if (iso && isFinite(+p.value)) { var day = iso.slice(0, 10); (byDay[day] = byDay[day] || []).push(+p.value); } });
+  return { q: clean, trend: Object.keys(byDay).sort().map(function (day) {
+    var v = byDay[day]; return [day, Math.round(v.reduce(function (a, b) { return a + b; }, 0) / v.length * 100000) / 100000]; }) };
+}
+
 module.exports = async function handler(req, res) {
-  var part = (req.query && req.query.part) === 'trend' ? 'trend' : 'news';
+  var qp = (req.query && req.query.part) || '';
+  var part = qp === 'trend' || qp === 'topic' ? qp : 'news';
   try {
-    var out = part === 'trend' ? await trend() : await news();
-    var ok = part === 'trend' ? out.trend.length > 10 : out.articles.length > 0;
-    if (ok) res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=7200');
+    var out = part === 'trend' ? await trend() : part === 'topic' ? await topic(req.query.q) : await news();
+    var ok = part === 'news' ? out.articles.length > 0 : out.trend.length > (part === 'topic' ? 5 : 10);
+    if (ok) res.setHeader('Cache-Control', part === 'topic' ? 's-maxage=3600, stale-while-revalidate=10800' : 's-maxage=1800, stale-while-revalidate=7200');
     return json(res, 200, Object.assign({ part: part, asOf: new Date().toISOString() }, out));
   } catch (e) {
     console.error('[aryx] world', part, e && e.message);
