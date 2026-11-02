@@ -12,7 +12,7 @@
 
    GDELT asks for at most one request every ~5 seconds, so each part is a
    single upstream call and responses are cached at the edge for 30 min. */
-const { json } = require('./_lib/util');
+const { json } = require('../util');
 
 var HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; AryxMacro/1.0)', 'Accept': 'application/json,*/*' };
 var QUERY = '(war OR invasion OR airstrike OR missile OR "military escalation" OR sanctions OR tariffs OR "trade war" ' +

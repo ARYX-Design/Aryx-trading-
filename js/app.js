@@ -76,7 +76,7 @@
      `binance` pairs stream real live data; others fall back to simulation.
      Sim params (base/vol/dec/seed) are also used if a live fetch fails. */
   //  binance -> live Binance REST + WebSocket
-  //  proxy   -> live stocks/metals via /api/market (Twelve Data), polled
+  //  proxy   -> live stocks/metals via /api/feed/market (Twelve Data), polled
   //  neither -> built-in simulation (also the fallback for any live failure)
   var SYMBOLS = {
     BTC:  { label: 'BTC/USDT', binance: 'BTCUSDT', base: 63500, vol: 0.011, dec: 2, seed: 11 },
@@ -528,9 +528,9 @@
     requestAnimationFrame(function () { rafPending = false; renderAll(); });
   }
 
-  /* ---- stocks & metals via /api/market proxy (Twelve Data), polled ---- */
+  /* ---- stocks & metals via /api/feed/market proxy (Twelve Data), polled ---- */
   function fetchProxy(sym, tf) {
-    return fetch('/api/market?symbol=' + sym + '&interval=' + tf, { credentials: 'same-origin' })
+    return fetch('/api/feed/market?symbol=' + sym + '&interval=' + tf, { credentials: 'same-origin' })
       .then(function (r) { return r.json(); });
   }
   function startPoll(proxySym, tf, token) {
