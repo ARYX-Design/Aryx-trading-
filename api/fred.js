@@ -33,7 +33,20 @@ var ALLOWED = {
   WTREGEN: 1,       // Treasury General Account (weekly avg, $M) — net-liquidity input
   RRPONTSYD: 1,     // Overnight reverse repo (daily, $B) — net-liquidity input
   M2SL: 1,          // M2 money supply (monthly, $B)
-  DFII10: 1         // 10-year TIPS real yield (daily, %)
+  DFII10: 1,        // 10-year TIPS real yield (daily, %)
+  // global economy, energy & uncertainty (Macro tab)
+  GASDESW: 1,       // US No. 2 diesel retail price (weekly, $/gal)
+  GASREGW: 1,       // US regular gasoline retail price (weekly, $/gal)
+  DCOILBRENTEU: 1,  // Brent crude spot (daily, $/bbl)
+  DHOILNYH: 1,      // NY Harbor No. 2 heating oil / diesel spot (daily, $/gal)
+  DHHNGSP: 1,       // Henry Hub natural gas spot (daily, $/MMBtu)
+  CPIAUCSL: 1,      // US CPI, all items (monthly index)
+  UNRATE: 1,        // US unemployment rate (monthly, %)
+  DFF: 1,           // Effective federal funds rate (daily, %)
+  A191RL1Q225SBEA: 1, // US real GDP growth (quarterly, % annualised)
+  USEPUINDXD: 1,    // US economic policy uncertainty, news-based (daily)
+  GEPUCURRENT: 1,   // Global economic policy uncertainty (monthly)
+  CP0000EZ19M086NEST: 1 // Euro-area HICP inflation (monthly index)
 };
 var MAX_SERIES = 12, MAX_POINTS = 160;
 var HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; AryxMacro/1.0)', 'Accept': 'text/csv,application/json,*/*' };

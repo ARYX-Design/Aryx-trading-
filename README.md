@@ -119,6 +119,28 @@ and VWAP on live candles:
 - **📊 Scanner track record** (Early Movers) — each top-10 pick is followed for 24h on the device;
   shows % up and median return at 1h/4h/24h. Tokens strengthening across consecutive scans get a
   "Persistent" bonus; ones fading since spotted are penalised.
+- **📊 Stocks tab** — S&P 500, Nasdaq 100, Dow and Russell 2000, big tech (AAPL, MSFT, NVDA, AMZN,
+  GOOGL, META, TSLA) and crypto stocks (COIN, MSTR, MARA, RIOT, HOOD, IBIT) via the `/api/stocks`
+  proxy (Yahoo Finance → Stooq → Twelve Data, no key needed), each with trend, RSI and the same
+  composite signal as the Terminal. Tap a stock to chart it in the Terminal, where you can also search
+  any ticker.
+- **🔗 Crypto ↔ stocks relationship** (Stocks tab) — BTC/ETH correlation with the Nasdaq and S&P 500
+  (30d/90d, rolling 60d chart), BTC's beta to the Nasdaq, what BTC did on big Nasdaq up/down days,
+  next-day lead/lag, and which crypto stocks amplify Bitcoin. The 90-day BTC–Nasdaq correlation also
+  scales how much equity stress counts in the Macro risk score.
+- **🌐 Global economy · 🌍 world markets · ⛽ energy & diesel · 🚨 world crisis monitor** (Macro tab) — all
+  automatic, no keys:
+  - Economy: US CPI, euro-area HICP, US unemployment trend, Fed funds path, US real GDP, global
+    economic policy uncertainty (FRED) and copper (Yahoo) → an Expanding / Slowing / Stagflation /
+    Contraction read.
+  - World markets: Euro Stoxx 50, DAX, FTSE 100, CAC 40, Nikkei, Hang Seng, Shanghai, Nifty, Bovespa,
+    EM ETF, plus USD/JPY, EUR/USD, USD/CNY and gold, with global breadth (share above the 50-day average).
+  - Energy: US retail diesel & gasoline (EIA via FRED), Brent, WTI, ULSD diesel futures, Henry Hub and
+    Dutch TTF gas (Yahoo), with diesel and Brent history charts.
+  - World crisis monitor: crisis-news intensity vs its 6-month normal and the latest tagged headlines from
+    the GDELT Project (`/api/world`), daily economic policy uncertainty, oil shocks, gold/yen haven flows,
+    EM sell-offs and world-market breakdowns → a 0–100 score. Up to 20 points feed the global risk score.
+  - A jump bar at the top of the Macro tab links to every section.
 - **Recession & crisis early-warning** (Macro tab) — FRED (St. Louis Fed) via the `/api/fred`
   proxy — works with no key (public FRED CSV); `FRED_API_KEY` optional: 10Y−3M / 10Y−2Y yield curves, high-yield credit spreads,
   Sahm rule, initial jobless claims, Chicago Fed NFCI, St. Louis Fed stress index, VIX, housing
