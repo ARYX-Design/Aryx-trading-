@@ -19,7 +19,9 @@ var INTERVALS = { '15m': 1, '60m': 1, '1d': 1, '1wk': 1, '1mo': 1 };
 var RANGES = { '5d': 1, '1mo': 1, '3mo': 1, '6mo': 1, '30d': 1, '60d': 1, '180d': 1, '1y': 1, '2y': 1, '5y': 1, '10y': 1, 'max': 1, '720d': 1 };
 var RANGE_DAYS = { '5d': 5, '1mo': 31, '3mo': 92, '6mo': 183, '30d': 30, '60d': 60, '180d': 180, '1y': 366, '2y': 731, '5y': 1827, '10y': 3653, 'max': 20000, '720d': 720 };
 // Stooq uses its own tickers for indices / futures; US stocks & ETFs are "<sym>.us"
-var STOOQ_MAP = { '^GSPC': '^spx', '^NDX': '^ndx', '^DJI': '^dji', '^IXIC': '^ndq', '^RUT': '^rut', '^VIX': '^vix', 'SI=F': 'si.f', 'GC=F': 'gc.f', 'BTC-USD': 'btcusd', 'ETH-USD': 'ethusd' };
+var STOOQ_MAP = { '^GSPC': '^spx', '^NDX': '^ndx', '^DJI': '^dji', '^IXIC': '^ndq', '^RUT': '^rut', '^VIX': '^vix', 'SI=F': 'si.f', 'GC=F': 'gc.f', 'BTC-USD': 'btcusd', 'ETH-USD': 'ethusd',
+  '^GDAXI': '^dax', '^FTSE': '^ukx', '^FCHI': '^cac', '^N225': '^nkx', '^HSI': '^hsi', '^STOXX50E': '^stx', '^BVSP': '^bvp', '000001.SS': '^shc',
+  'CL=F': 'cl.f', 'BZ=F': 'cb.f', 'HO=F': 'ho.f', 'NG=F': 'ng.f', 'HG=F': 'hg.f', 'EURUSD=X': 'eurusd', 'JPY=X': 'usdjpy', 'CNY=X': 'usdcny' };
 var TD_MAP = { '^GSPC': 'SPX', '^NDX': 'NDX', '^DJI': 'DJI', '^IXIC': 'IXIC', '^VIX': 'VIX', 'BTC-USD': 'BTC/USD', 'ETH-USD': 'ETH/USD' };
 
 function r6(v) { return Math.round(v * 1e6) / 1e6; }

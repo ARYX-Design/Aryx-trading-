@@ -1218,8 +1218,9 @@
       <div class="chart-title">🌍 Global Macro &amp; Risk Radar</div>
       <div class="mv-hr"><span id="macroStamp" class="mv-status"></span><button id="macroRefresh" class="ctool">↻ refresh</button></div>
     </div>
-    <div class="mover-note">The <b>📌 briefing</b> at the top sums up what matters most right now; the sections below have the detail. A live global-risk read — crypto Fear &amp; Greed, total market cap, BTC &amp; stablecoin dominance, BTC drawdown, plus <b>traditional markets</b> (S&amp;P 500, Nasdaq, VIX, US Dollar, bonds, gold &amp; silver) and <b>recession / crisis early-warning</b> indicators. Refreshes every 5 minutes while open; traditional markets fall back to end-of-day FRED data when no market-data key is set. <b>Educational context, not economic forecasting or investment advice.</b></div>
+    <div class="mover-note">The <b>📌 briefing</b> at the top sums up what matters most right now; the sections below have the detail. Now also covers the <b>world economy, world stock markets, energy &amp; diesel prices and a live world-crisis monitor</b> — all pulled automatically. A live global-risk read — crypto Fear &amp; Greed, total market cap, BTC &amp; stablecoin dominance, BTC drawdown, plus <b>traditional markets</b> (S&amp;P 500, Nasdaq, VIX, US Dollar, bonds, gold &amp; silver) and <b>recession / crisis early-warning</b> indicators. Refreshes every 5 minutes while open; traditional markets fall back to end-of-day FRED data when no market-data key is set. <b>Educational context, not economic forecasting or investment advice.</b></div>
 
+    <div class="mc-nav" id="mcNav"><span>Jump to</span><button data-go="macroBrief">📌 Briefing</button><button data-go="msGlobal">🌐 Economy</button><button data-go="msWorld">🌍 World markets</button><button data-go="msEnergy">⛽ Energy</button><button data-go="msCrisis">🚨 World crisis</button><button data-go="lqCard">💧 Liquidity</button><button data-go="crisisCard">📉 Recession</button><button data-go="metalsCard">🥇 Gold</button></div>
     <div id="macroRegime" class="macro-regime">Loading global risk read…</div>
     <div id="macroTrend" class="macro-trend"></div>
 
@@ -1260,6 +1261,38 @@
 
     <div class="macro-section">🏛 Traditional &amp; global markets</div>
     <div class="macro-stats" id="macroTrad" style="margin-bottom:6px"><div class="macro-empty">Loading equities, metals, the dollar, bonds &amp; VIX…</div></div>
+
+    <div class="macro-section" id="msGlobal">🌐 Global economy</div>
+    <div class="crisis-wrap" id="gecoCard">
+      <div class="stk-head" id="gecoHead"><div class="macro-empty">Loading inflation, jobs, rates, GDP, copper &amp; policy uncertainty…</div></div>
+      <div class="macro-stats" id="gecoTiles"></div>
+      <div class="crisis-note">Where the world economy is in its cycle: <b>inflation</b> (US CPI, euro-area HICP), <b>jobs</b> (US unemployment trend), the <b>Fed's rate path</b>, <b>US GDP growth</b>, <b>copper</b> (“Dr. Copper” — industrial demand) and <b>global policy uncertainty</b> (news-based index of 20+ economies). Sources: FRED / BLS / BEA / Eurostat, Yahoo Finance, policyuncertainty.com.</div>
+    </div>
+
+    <div class="macro-section" id="msWorld">🌍 World stock markets &amp; currencies</div>
+    <div class="crisis-wrap" id="wmCard">
+      <div class="stk-head" id="wmHead"><div class="macro-empty">Loading Europe, Asia &amp; emerging markets…</div></div>
+      <div class="wm-grid" id="wmGrid"></div>
+      <div class="macro-stats" id="wmFx" style="margin-top:10px"></div>
+    </div>
+
+    <div class="macro-section" id="msEnergy">⛽ Energy &amp; diesel</div>
+    <div class="crisis-wrap" id="enCard">
+      <div class="macro-stats" id="enTiles"><div class="macro-empty">Loading diesel, gasoline, crude &amp; natural-gas prices…</div></div>
+      <div class="crisis-charts"><div class="cz-chart" id="enChDiesel"></div><div class="cz-chart" id="enChBrent"></div></div>
+      <div class="crisis-note"><b>Diesel</b> moves goods — trucking, shipping, farming — so a diesel spike feeds straight into inflation and squeezes growth. <b>Oil shocks</b> (+15% in a month) have preceded several recessions and often come with geopolitical crises. <b>European gas (TTF)</b> is the pressure gauge for Europe's economy. Sources: EIA via FRED (retail &amp; spot), NYMEX/ICE futures via Yahoo Finance.</div>
+    </div>
+
+    <div class="macro-section" id="msCrisis">🚨 World crisis monitor</div>
+    <div class="crisis-wrap" id="wcCard">
+      <div class="stk-head" id="wcHead"><div class="macro-empty">Scanning world news &amp; crisis signals…</div></div>
+      <div class="macro-stats" id="wcTiles"></div>
+      <div class="crisis-charts"><div class="cz-chart" id="wcChNews"></div><div class="cz-chart" id="wcChEpu"></div></div>
+      <div class="wc-news-h">📰 Latest crisis headlines <small>last 48h · auto-tagged · from GDELT's global news monitor</small></div>
+      <div class="wc-tabs" id="wcTabs"><button data-t="all" class="is-on">All</button><button data-t="conflict">⚔️ Conflict</button><button data-t="trade">🚫 Sanctions &amp; trade</button><button data-t="finance">🏦 Financial</button><button data-t="energy">⛽ Energy</button><button data-t="unrest">📢 Unrest</button></div>
+      <div class="wc-news" id="wcNews"><div class="macro-empty">Loading headlines…</div></div>
+      <div class="crisis-note">The crisis score blends <b>how much of the world's news is about war, sanctions, coups and financial crises</b> versus its own 6-month normal (GDELT), <b>economic policy uncertainty</b>, and the market's own alarm bells — oil shocks, gold and yen safe-haven bids, emerging-market sell-offs and how many world markets are breaking down. Headlines are machine-selected and link to the original publishers; read them critically.</div>
+    </div>
 
     <div class="macro-section">💧 Liquidity &amp; leverage</div>
     <div class="crisis-wrap" id="lqCard">
@@ -5092,10 +5125,11 @@ function aryxBackToLanding(){
     var yClamp = cz ? Math.min(Math.round(cz.score*0.3), 30) : 0;
     var cClamp=Math.min(cStress, 100), mClamp=Math.min(mStress, 60);
     var lq=lqState, lClamp = lq ? lq.pts : 0;                       // liquidity drain & leverage overheating
-    var stress=Math.max(0, Math.min(100, Math.round(cClamp + mClamp + yClamp + lClamp)));
+    var gl=glState, gClamp = gl ? gl.pts : 0;                       // world economy, energy shocks & geopolitics
+    var stress=Math.max(0, Math.min(100, Math.round(cClamp + mClamp + yClamp + lClamp + gClamp)));
     var _bandFor = stress<20?['calm','🟢 Risk-ON — calm']:stress<40?['neutral','🔵 Neutral']:stress<60?['elevated','🟡 Elevated risk']:stress<80?['riskoff','🟠 Risk-OFF']:['crisis','🔴 Crisis conditions'];
     try{ window.__aryxStress={ score:stress, band:_bandFor[0], label:_bandFor[1],
-      parts:{ crypto:Math.round(cClamp), markets:hasTrad?Math.round(mClamp):null, cycle:cz?yClamp:null, liquidity:lq?lClamp:null } }; }catch(e){}
+      parts:{ crypto:Math.round(cClamp), markets:hasTrad?Math.round(mClamp):null, cycle:cz?yClamp:null, liquidity:lq?lClamp:null, global:gl?gClamp:null } }; }catch(e){}
     renderTrend(recordStress(stress));   // log + show whether risk is rising/falling
     var band = stress<20?['calm','🟢 Risk-ON — calm']:stress<40?['neutral','🔵 Neutral']:stress<60?['elevated','🟡 Elevated risk']:stress<80?['riskoff','🟠 Risk-OFF']:['crisis','🔴 Crisis conditions'];
     // (cycle part is computed below; store the full breakdown once known)
@@ -5103,8 +5137,8 @@ function aryxBackToLanding(){
     if(rg){ rg.className='macro-regime '+band[0];
       var bk = ' <span class="rg-bk">crypto '+Math.round(cClamp)+
                (hasTrad ? ' + markets '+Math.round(mClamp) : '')+
-               (cz ? ' + cycle '+yClamp : '')+(lq ? ' + liquidity '+lClamp : '')+'</span>';
-      rg.innerHTML=band[1]+' · stress '+stress+'/100'+bk+'<span class="rg-sub">Blends crypto drawdown, sentiment &amp; safe-haven flow with the S&amp;P 500, VIX, the dollar, 10Y bonds and gold'+(cz?', plus recession early-warning indicators (yield curve, credit spreads, jobs, financial stress)':'')+(lq?', and liquidity &amp; leverage (Fed net liquidity, stablecoins, funding)':'')+'.</span>'; }
+               (cz ? ' + cycle '+yClamp : '')+(lq ? ' + liquidity '+lClamp : '')+(gl ? ' + global '+gClamp : '')+'</span>';
+      rg.innerHTML=band[1]+' · stress '+stress+'/100'+bk+'<span class="rg-sub">Blends crypto drawdown, sentiment &amp; safe-haven flow with the S&amp;P 500, VIX, the dollar, 10Y bonds and gold'+(cz?', plus recession early-warning indicators (yield curve, credit spreads, jobs, financial stress)':'')+(lq?', liquidity &amp; leverage (Fed net liquidity, stablecoins, funding)':'')+(gl?', and the world economy, energy prices &amp; geopolitical news':'')+'.</span>'; }
 
     // warnings (crypto + traditional)
     var warns=[];
@@ -5132,6 +5166,7 @@ function aryxBackToLanding(){
     }
     if(mt) mt.flags.forEach(function(f){ warns.push([f[0]==='bad'?'warn':'caution','<b>🥇 '+f[1]+':</b> '+f[2]]); });
     if(lq) lq.flags.forEach(function(f){ warns.push([f[0]==='bad'?'warn':'caution','<b>💧 '+f[1]+':</b> '+f[2]]); });
+    if(gl) gl.flags.forEach(function(f){ warns.push([f[0]==='bad'?'warn':'caution','<b>🌍 '+f[1]+':</b> '+f[2]]); });
     if(!warns.length) warns.push(['','<b>No major stress flags</b> — conditions look orderly. Regimes change fast.']);
     if($('macroWarn')) $('macroWarn').innerHTML = warns.map(function(x){ return '<div class="macro-item'+(x[0]?' '+x[0]:'')+'">'+x[1]+'</div>'; }).join('');
 
@@ -5152,13 +5187,17 @@ function aryxBackToLanding(){
     }
     if(mt && mt.ratio!=null) inds.push(ind('Gold/silver ratio', mt.ratio.toFixed(1), -(mt.ratio-80)));
     if(link && link.corr90!=null) inds.push(ind('BTC–Nasdaq correlation (90d)', link.corr90.toFixed(2), 0));
+    if(gl){ inds.push(ind('World crisis monitor', gl.crisis.score+'/100', -(gl.crisis.score-30)));
+      if(gl.energy.brentM!=null) inds.push(ind('Brent crude (1m)', pc(gl.energy.brentM*100), -gl.energy.brentM));
+      if(gl.energy.dieselY!=null) inds.push(ind('US diesel (y/y)', pc(gl.energy.dieselY), -gl.energy.dieselY));
+      if(gl.world.breadth!=null) inds.push(ind('World markets in uptrends', gl.world.ups+'/'+gl.world.tot, gl.world.breadth-0.5)); }
     if(lq){ var lv=lq.v;
       if(lv.net13!=null) inds.push(ind('Fed net liquidity (13w)', pc(lv.net13), lv.net13));
       if(lv.st30!=null) inds.push(ind('Stablecoin supply (30d)', pc(lv.st30), lv.st30));
       if(lv.fundAnn!=null) inds.push(ind('BTC funding (ann.)', lv.fundAnn.toFixed(1)+'%', -(lv.fundAnn-10)));
       if(lv.oi7!=null) inds.push(ind('BTC open interest (7d)', pc(lv.oi7), 0)); }
     if($('macroInd')) $('macroInd').innerHTML = inds.join('');
-    renderBrief(stress, band[0], { crypto:cClamp, markets:hasTrad?mClamp:null, cycle:cz?yClamp:null, liquidity:lq?lClamp:null }, warns, s, t, cz, mt, lq);
+    renderBrief(stress, band[0], { crypto:cClamp, markets:hasTrad?mClamp:null, cycle:cz?yClamp:null, liquidity:lq?lClamp:null, global:gl?gClamp:null }, warns, s, t, cz, mt, lq, gl);
   }
 
   // ---- "Most important right now": bottom line, key numbers, top 3 flags ----
@@ -5169,11 +5208,11 @@ function aryxBackToLanding(){
     riskoff:  ['Risk-off conditions.', 'Defensive posture: smaller positions, more cash/stablecoins, avoid illiquid tokens and leverage.'],
     crisis:   ['Crisis conditions.', 'Capital preservation first — liquidity can vanish and moves overshoot in both directions.']
   };
-  var DRIVER = { crypto:'crypto itself (drawdown, sentiment, stablecoin flows)', markets:'traditional markets (stocks, VIX, dollar, yields)', cycle:'the economic cycle (recession early-warning)', liquidity:'liquidity &amp; leverage (Fed liquidity, stablecoins, funding)' };
+  var DRIVER = { crypto:'crypto itself (drawdown, sentiment, stablecoin flows)', markets:'traditional markets (stocks, VIX, dollar, yields)', cycle:'the economic cycle (recession early-warning)', liquidity:'liquidity &amp; leverage (Fed liquidity, stablecoins, funding)', global:'the world economy, energy prices &amp; geopolitics' };
   function kchip(label, val, st, hint){
     return '<div class="mb-k '+(st||'')+'"'+(hint?' title="'+hint+'"':'')+'><span>'+label+'</span><b>'+val+'</b></div>';
   }
-  function renderBrief(stress, band, parts, warns, s, t, cz, mt, lq){
+  function renderBrief(stress, band, parts, warns, s, t, cz, mt, lq, gl){
     if(!$('macroBrief')) return;
     // trend from the stress history
     var hist=[]; try{ hist=JSON.parse(localStorage.getItem('aryx.stress'))||[]; }catch(e){}
@@ -5200,6 +5239,10 @@ function aryxBackToLanding(){
     if(t.gold!=null) k.push(kchip('Gold', pc(t.gold), t.gold>=2?'warn':'ok'));
     var sl=window.__aryxStockLink;
     if(sl && sl.corr90!=null) k.push(kchip('BTC ↔ Nasdaq', sl.corr90.toFixed(2), sl.corr90>=0.5?'warn':'ok', '90-day correlation of daily returns — high = stock sell-offs hit crypto'));
+    if(gl) k.push(kchip('World crisis', gl.crisis.score+'/100', gl.crisis.score>=60?'bad':gl.crisis.score>=40?'warn':'ok', gl.crisis.band[0]));
+    if(gl && gl.energy.brentM!=null) k.push(kchip('Brent 1m', pc(gl.energy.brentM*100), gl.energy.brentM>=0.15?'bad':gl.energy.brentM>=0.08?'warn':'ok', gl.energy.brent!=null?'$'+gl.energy.brent.toFixed(2)+'/bbl':''));
+    if(gl && gl.energy.diesel!=null) k.push(kchip('US diesel', '$'+gl.energy.diesel.toFixed(2), gl.energy.dieselY>=20?'bad':gl.energy.dieselY>=8?'warn':'ok', (gl.energy.dieselY!=null?pc(gl.energy.dieselY)+' y/y':'')));
+    if(gl && gl.econ.phase) k.push(kchip('Economy', gl.econ.phase[0], gl.econ.phase[1]));
     if(lq && lq.v.net13!=null) k.push(kchip('Net liquidity 13w', pc(lq.v.net13), lq.v.net13<=-3?'bad':lq.v.net13<=-1?'warn':'ok', 'Fed balance sheet − TGA − reverse repo'));
     if(lq && lq.v.fundAnn!=null) k.push(kchip('BTC funding', lq.v.fundAnn.toFixed(0)+'%/yr', lq.v.fund>=0.0006?'bad':lq.v.fund>=0.0003?'warn':'ok', 'Perpetual-futures funding, 7-day average'));
     $('mbKeys').innerHTML=k.join('');
@@ -5217,6 +5260,7 @@ function aryxBackToLanding(){
       if(t.vix!=null && t.vix<20) good.push('Equity volatility low (VIX '+t.vix.toFixed(1)+').');
       if(cz && cz.red===0) good.push('No recession indicator in the red zone.');
       if(lq) good=lq.good.concat(good);
+      if(gl) good=gl.good.concat(good);
       $('mbTop').innerHTML='<div class="mb-sub">No major stress flags</div>'+
         (good.length?good.slice(0,3):['Conditions look orderly.']).map(function(g){ return '<div class="mb-item ok"><span class="mb-n">✓</span><div>'+g+'</div></div>'; }).join('');
     }
@@ -5717,6 +5761,199 @@ function aryxBackToLanding(){
   }
 
 
+
+  // ---- Global economy · world markets · energy & diesel · world crisis ----
+  var GL_FRED=['GASDESW','GASREGW','DCOILBRENTEU','DHOILNYH','DHHNGSP','CPIAUCSL','UNRATE','DFF','A191RL1Q225SBEA','USEPUINDXD','GEPUCURRENT','CP0000EZ19M086NEST'];
+  var WORLD_IDX=[['^STOXX50E','Euro Stoxx 50','🇪🇺'],['^GDAXI','DAX','🇩🇪'],['^FTSE','FTSE 100','🇬🇧'],['^FCHI','CAC 40','🇫🇷'],['^N225','Nikkei 225','🇯🇵'],
+    ['^HSI','Hang Seng','🇭🇰'],['000001.SS','Shanghai','🇨🇳'],['^NSEI','Nifty 50','🇮🇳'],['^BVSP','Bovespa','🇧🇷'],['EEM','Emerging mkts','🌏']];
+  var GL_YAHOO=WORLD_IDX.map(function(x){ return x[0]; }).concat(['BZ=F','CL=F','HO=F','NG=F','TTF=F','HG=F','GC=F','EURUSD=X','JPY=X','CNY=X']);
+  var glRaw={ fred:null, y:null, news:null, trend:null }, glState=null, glLoading=false, glAt=0, newsTopic='all';
+  function yser(sym){ var c=glRaw.y && glRaw.y[sym]; return c && c.length>5 ? c : null; }
+  function ychg(sym, bars){ var c=yser(sym); if(!c || c.length<=bars) return null; return c[c.length-1][4]/c[c.length-1-bars][4]-1; }
+  function ylast(sym){ var c=yser(sym); return c ? c[c.length-1][4] : null; }
+  function yAbove50(sym){ var c=yser(sym); if(!c || c.length<50) return null; var a=0; for(var i=c.length-50;i<c.length;i++) a+=c[i][4]; return c[c.length-1][4] > a/50; }
+  function pctRank(hist, v){ if(!hist||!hist.length||v==null) return null; var n=0; hist.forEach(function(p){ if(p[1]<=v) n++; }); return n/hist.length; }
+  function escTxt(t){ return String(t==null?'':t).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function ago(iso){ if(!iso) return ''; var m=Math.max(0, Math.round((Date.now()-new Date(iso).getTime())/60000)); return m<60 ? m+'m ago' : m<2880 ? Math.round(m/60)+'h ago' : Math.round(m/1440)+'d ago'; }
+  function g1(v,d){ return v==null||!isFinite(v) ? '—' : (v>=0?'+':'')+(+v).toFixed(d==null?1:d); }
+  function gp(v,d){ return v==null||!isFinite(v) ? '—' : (v>=0?'+':'')+(v*100).toFixed(d==null?1:d)+'%'; }
+  function ord(p){ var n=Math.round(p*100), t=n%100; return n+((t>=11&&t<=13)?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th')); }
+
+  function evalGlobal(){
+    var S=glRaw.fred||{}, g={ econ:{}, energy:{}, world:{}, crisis:{} }, flags=[], good=[];
+    // --- economy ---
+    var E=g.econ;
+    if(S.CPIAUCSL) E.cpi=chgPct(S.CPIAUCSL.hist,365);
+    if(S.CP0000EZ19M086NEST) E.ezcpi=chgPct(S.CP0000EZ19M086NEST.hist,365);
+    if(S.UNRATE){ E.un=S.UNRATE.latest; var u12=histAgo(S.UNRATE.hist,365); E.un12=u12!=null?E.un-u12:null; var lo=minOf(since(S.UNRATE,365)); E.unLo=lo!=null?E.un-lo:null; }
+    if(S.DFF){ E.ff=S.DFF.latest; var f6=histAgo(S.DFF.hist,182); E.ff6=f6!=null?E.ff-f6:null; }
+    if(S.A191RL1Q225SBEA) E.gdp=S.A191RL1Q225SBEA.latest;
+    E.cu3=ychg('HG=F',63);
+    if(S.GEPUCURRENT){ E.gepu=S.GEPUCURRENT.latest; E.gepuPct=pctRank(S.GEPUCURRENT.hist,E.gepu); }
+    var contraction = (E.gdp!=null && E.gdp<0) || (E.unLo!=null && E.unLo>=0.5);
+    var stag = E.cpi!=null && E.cpi>3.5 && ((E.gdp!=null && E.gdp<1) || (E.un12!=null && E.un12>=0.3));
+    var slowing = (E.cu3!=null && E.cu3<-0.08) || (E.gdp!=null && E.gdp<1.5) || (E.un12!=null && E.un12>=0.3);
+    E.phase = contraction ? ['Contraction risk','bad','Output is shrinking or unemployment has jumped 0.5 pts off its low — classic recession signs.']
+            : stag ? ['Stagflation risk','bad','Inflation is still hot while growth or jobs weaken — the hardest mix for central banks and risk assets.']
+            : slowing ? ['Slowing','warn','Growth momentum is fading (soft GDP, rising unemployment or falling copper).']
+            : (E.cpi!=null||E.gdp!=null) ? ['Expanding','ok','Growth and jobs are holding up.'] : null;
+    if(contraction) flags.push(['bad','Economy contracting', E.phase[2]]);
+    else if(stag) flags.push(['bad','Stagflation risk', 'US CPI '+g1(E.cpi)+'% with weakening growth/jobs.']);
+    if(E.cpi!=null && E.cpi>=4) flags.push(['warn','Inflation hot','US CPI '+g1(E.cpi)+'% y/y — keeps rates high.']);
+    if(E.ff6!=null && E.ff6<=-0.5) good.push('Fed in a cutting cycle ('+g1(E.ff6,2)+' pts in 6 months) — easier money.');
+    if(E.ff6!=null && E.ff6>=0.5) flags.push(['warn','Fed hiking','Fed funds '+g1(E.ff6,2)+' pts in 6 months — tightening.']);
+    // --- world markets ---
+    var W=g.world, ups=0, tot=0;
+    W.rows=WORLD_IDX.map(function(x){ var a=yAbove50(x[0]); if(a!=null){ tot++; if(a) ups++; }
+      return { sym:x[0], name:x[1], flag:x[2], last:ylast(x[0]), d1:ychg(x[0],1), m1:ychg(x[0],21), up:a }; });
+    W.breadth=tot?ups/tot:null; W.tot=tot; W.ups=ups; W.em1=ychg('EEM',21);
+    W.jpy1=ychg('JPY=X',21); W.eur1=ychg('EURUSD=X',21); W.cny1=ychg('CNY=X',21);
+    if(W.breadth!=null && W.breadth<=0.3 && tot>=5) flags.push(['bad','Global sell-off', ups+' of '+tot+' world markets are below their 50-day average.']);
+    else if(W.breadth!=null && W.breadth>=0.7 && tot>=5) good.push(ups+' of '+tot+' world stock markets in uptrends — broad global risk appetite.');
+    if(W.em1!=null && W.em1<=-0.08) flags.push(['warn','Emerging markets falling','EM stocks '+gp(W.em1)+' in a month — capital fleeing riskier economies.']);
+    if(W.jpy1!=null && W.jpy1<=-0.04) flags.push(['warn','Yen surging','USD/JPY '+gp(W.jpy1)+' in a month — yen carry-trade unwind risk (it hit crypto hard in Aug 2024).']);
+    // --- energy ---
+    var N=g.energy;
+    if(S.GASDESW){ N.diesel=S.GASDESW.latest; N.dieselW=chgPct(S.GASDESW.hist,7); N.dieselY=chgPct(S.GASDESW.hist,365); N.dieselHist=S.GASDESW.hist; N.dieselDate=S.GASDESW.date; }
+    if(S.GASREGW){ N.gas=S.GASREGW.latest; N.gasY=chgPct(S.GASREGW.hist,365); }
+    N.brent=ylast('BZ=F') || (S.DCOILBRENTEU && S.DCOILBRENTEU.latest); N.brent1=ychg('BZ=F',1); N.brentM=ychg('BZ=F',21);
+    if(N.brentM==null && S.DCOILBRENTEU){ var b30=chgPct(S.DCOILBRENTEU.hist,30); N.brentM=b30!=null?b30/100:null; }
+    N.brentHist=S.DCOILBRENTEU ? S.DCOILBRENTEU.hist : null;
+    N.wti=ylast('CL=F'); N.wti1=ychg('CL=F',1);
+    N.ho=ylast('HO=F') || (S.DHOILNYH && S.DHOILNYH.latest); N.hoM=ychg('HO=F',21);
+    N.ng=ylast('NG=F') || (S.DHHNGSP && S.DHHNGSP.latest); N.ngM=ychg('NG=F',21);
+    N.ttf=ylast('TTF=F'); N.ttfM=ychg('TTF=F',21);
+    if(N.brentM!=null && N.brentM>=0.15) flags.push(['bad','Oil shock','Brent '+gp(N.brentM)+' in a month — inflation &amp; growth shock, often geopolitical.']);
+    else if(N.brentM!=null && N.brentM>=0.08) flags.push(['warn','Oil rising fast','Brent '+gp(N.brentM)+' in a month.']);
+    if(N.dieselY!=null && N.dieselY>=20) flags.push(['warn','Diesel spike','US diesel $'+N.diesel.toFixed(2)+'/gal, '+g1(N.dieselY)+'% y/y — transport &amp; food costs rising.']);
+    if(N.ttfM!=null && N.ttfM>=0.25) flags.push(['warn','European gas spike','TTF '+gp(N.ttfM)+' in a month — pressure on Europe\'s economy.']);
+    if(N.brentM!=null && N.brentM<=-0.15) good.push('Oil down '+gp(N.brentM)+' in a month — easing inflation pressure.');
+    // --- world crisis score ---
+    var C=g.crisis, pts=0, drv=[];
+    function add(p, label){ if(p>0){ pts+=p; drv.push([p,label]); } }
+    var tr=glRaw.trend;
+    if(tr && tr.length>40){
+      var vals=tr.map(function(p){ return p[1]; }), last7=avg(vals.slice(-7)), base=vals.slice(0,-7), mu=avg(base);
+      var sd=Math.sqrt(avg(base.map(function(v){ return (v-mu)*(v-mu); })))||1e-9;
+      C.newsZ=(last7-mu)/sd; C.newsVs=mu?last7/mu-1:null; C.newsHist=tr;
+      add(Math.max(0, Math.min(25, Math.round(C.newsZ*9))), 'crisis news '+(C.newsVs!=null?gp(C.newsVs,0):'')+' vs normal');
+    }
+    if(S.USEPUINDXD){ var ep=since(S.USEPUINDXD,30); C.epu=avg(ep); C.epuPct=pctRank(S.USEPUINDXD.hist, C.epu); C.epuHist=S.USEPUINDXD.hist;
+      if(C.epuPct!=null) add(C.epuPct>=0.9?12:C.epuPct>=0.75?6:0, 'policy uncertainty at '+ord(C.epuPct)+' pct'); }
+    if(E.gepuPct!=null) add(E.gepuPct>=0.9?8:E.gepuPct>=0.75?4:0, 'global uncertainty high');
+    if(N.brentM!=null) add(N.brentM>=0.15?15:N.brentM>=0.08?7:0, 'oil '+gp(N.brentM)+' 1m');
+    var gold1=ychg('GC=F',21); C.gold1=gold1; if(gold1!=null) add(gold1>=0.06?8:gold1>=0.03?3:0, 'gold safe-haven bid');
+    if(W.jpy1!=null) add(W.jpy1<=-0.04?6:0, 'yen surge');
+    if(W.em1!=null) add(W.em1<=-0.08?8:W.em1<=-0.04?3:0, 'EM sell-off');
+    if(W.breadth!=null && W.tot>=5) add(W.breadth<=0.3?8:W.breadth<=0.5?3:0, 'world markets breaking down');
+    var vix=(tradData && tradData.vix!=null) ? tradData.vix : (crisisState && crisisState.vix);
+    if(vix!=null) add(vix>=30?10:vix>=22?4:0, 'VIX '+vix.toFixed(0));
+    C.score=Math.min(100, pts); C.drivers=drv.sort(function(a,b){ return b[0]-a[0]; });
+    C.band = C.score<20?['Calm','ok']:C.score<40?['Watchful','']:C.score<60?['Elevated tension','warn']:C.score<80?['High tension','bad']:['Crisis','bad'];
+    if(C.score>=60) flags.unshift(['bad','World crisis monitor '+C.score+'/100', C.band[0]+' — driven by '+drv.slice(0,3).map(function(d){ return d[1]; }).join(', ')+'.']);
+    else if(C.score>=40) flags.unshift(['warn','Geopolitical tension rising', 'Crisis monitor '+C.score+'/100 — '+drv.slice(0,2).map(function(d){ return d[1]; }).join(', ')+'.']);
+    // contribution to the global risk score (VIX already counted under markets)
+    var worldPts = C.score - (vix!=null ? (vix>=30?10:vix>=22?4:0) : 0);
+    g.pts = Math.min(20, Math.round(worldPts*0.3) + (contraction?5:stag?4:slowing?2:0));
+    g.flags=flags; g.good=good; g.any = !!(glRaw.fred && Object.keys(glRaw.fred).length) || !!glRaw.y;
+    glState=g;
+    try{ window.__aryxGlobal={ pts:g.pts, crisis:C.score, crisisBand:C.band[0], phase:E.phase?E.phase[0]:null, brent:N.brent, brentM:N.brentM, diesel:N.diesel, dieselY:N.dieselY }; }catch(e){}
+  }
+
+  function gtile(label, val, sub, st){ return '<div class="mstat lq-t '+(st||'')+'"><span>'+label+'</span><strong>'+val+' <span style="font-size:11px">'+(sub||'')+'</span></strong></div>'; }
+  function renderGlobal(){
+    var g=glState; if(!g || !$('gecoTiles')) return;
+    var E=g.econ, W=g.world, N=g.energy, C=g.crisis, CH={ lineChart:lineChart };
+    // economy
+    $('gecoHead').innerHTML = E.phase ? '<div class="stk-verdict '+E.phase[1]+'"><span>World economy</span><b>'+E.phase[0]+'</b><small>US data · euro-area inflation · copper</small></div><div class="stk-means">'+E.phase[2]+
+      (E.ff6!=null ? ' The Fed has '+(E.ff6<=-0.25?'<b>cut</b>':E.ff6>=0.25?'<b>raised</b>':'held')+' rates '+(Math.abs(E.ff6)>=0.25?g1(E.ff6,2)+' pts ':'')+'over 6 months.' : '')+
+      (E.gepuPct!=null ? ' Global policy uncertainty is at the <b>'+ord(E.gepuPct)+' percentile</b> of the last 3 years.' : '')+'</div>' : '<div class="macro-empty">Economic data unavailable right now.</div>';
+    var t=[];
+    if(E.cpi!=null) t.push(gtile('US inflation (CPI)', g1(E.cpi)+'%', 'y/y', E.cpi>=4?'bad':E.cpi>=3?'warn':'ok'));
+    if(E.ezcpi!=null) t.push(gtile('Euro-area inflation', g1(E.ezcpi)+'%', 'y/y', E.ezcpi>=4?'bad':E.ezcpi>=3?'warn':'ok'));
+    if(E.un!=null) t.push(gtile('US unemployment', E.un.toFixed(1)+'%', E.un12!=null?g1(E.un12)+' pts 12m':'', E.unLo>=0.5?'bad':E.un12>=0.3?'warn':'ok'));
+    if(E.ff!=null) t.push(gtile('Fed funds rate', E.ff.toFixed(2)+'%', E.ff6!=null?g1(E.ff6,2)+' 6m':'', E.ff6>=0.5?'warn':E.ff6<=-0.5?'ok':''));
+    if(E.gdp!=null) t.push(gtile('US real GDP growth', g1(E.gdp)+'%', 'last qtr, ann.', E.gdp<0?'bad':E.gdp<1.5?'warn':'ok'));
+    if(E.cu3!=null) t.push(gtile('Copper (growth proxy)', '$'+(ylast('HG=F')||0).toFixed(2)+'/lb', gp(E.cu3)+' 3m', E.cu3<-0.08?'warn':E.cu3>0.08?'ok':''));
+    if(E.gepu!=null) t.push(gtile('Global policy uncertainty', Math.round(E.gepu), E.gepuPct!=null?ord(E.gepuPct)+' pct':'', E.gepuPct>=0.9?'bad':E.gepuPct>=0.75?'warn':''));
+    $('gecoTiles').innerHTML=t.join('');
+    // world markets
+    if(W.tot){
+      var bst = W.breadth>=0.7?'ok':W.breadth<=0.3?'bad':W.breadth<=0.5?'warn':'';
+      $('wmHead').innerHTML='<div class="stk-verdict '+bst+'"><span>Global breadth</span><b>'+W.ups+' / '+W.tot+' rising</b><small>markets above their 50-day average</small></div><div class="stk-means">'+
+        (W.breadth>=0.7?'Risk appetite is <b>broad and global</b> — a supportive backdrop for crypto.':W.breadth<=0.3?'Most world markets are <b>breaking down</b> — global risk-off, which usually drags crypto too.':'World markets are <b>mixed</b> — no clear global trend.')+
+        (W.em1!=null?' Emerging markets '+gp(W.em1)+' over a month.':'')+'</div>';
+      $('wmGrid').innerHTML=W.rows.map(function(r){ if(r.last==null) return '';
+        return '<div class="wm-t '+(r.up===true?'up':r.up===false?'down':'')+'"><span>'+r.flag+' '+r.name+'</span><b>'+(r.last>=1000?Math.round(r.last).toLocaleString():r.last.toFixed(2))+'</b>'+
+          '<small class="'+(r.d1>=0?'up':'down')+'">'+gp(r.d1,2)+' 1d</small><small class="'+(r.m1>=0?'up':'down')+'">'+gp(r.m1)+' 1m</small></div>'; }).join('');
+      var fx=[];
+      if(ylast('JPY=X')!=null) fx.push(gtile('USD / JPY', ylast('JPY=X').toFixed(2), gp(W.jpy1)+' 1m', W.jpy1<=-0.04?'warn':''));
+      if(ylast('EURUSD=X')!=null) fx.push(gtile('EUR / USD', ylast('EURUSD=X').toFixed(4), gp(W.eur1)+' 1m', ''));
+      if(ylast('CNY=X')!=null) fx.push(gtile('USD / CNY', ylast('CNY=X').toFixed(3), gp(W.cny1)+' 1m', W.cny1>=0.02?'warn':''));
+      if(C.gold1!=null) fx.push(gtile('Gold', '$'+Math.round(ylast('GC=F')).toLocaleString(), gp(C.gold1)+' 1m', C.gold1>=0.06?'warn':''));
+      $('wmFx').innerHTML=fx.join('');
+    } else $('wmHead').innerHTML='<div class="macro-empty">World market data unavailable right now (needs the /api/stocks function).</div>';
+    // energy
+    var e=[];
+    if(N.diesel!=null) e.push(gtile('US diesel (retail)', '$'+N.diesel.toFixed(3)+'/gal', (N.dieselW!=null?g1(N.dieselW)+'% w/w · ':'')+(N.dieselY!=null?g1(N.dieselY)+'% y/y':''), N.dieselY>=20?'bad':N.dieselY>=8?'warn':N.dieselY<=-8?'ok':''));
+    if(N.gas!=null) e.push(gtile('US gasoline (retail)', '$'+N.gas.toFixed(3)+'/gal', N.gasY!=null?g1(N.gasY)+'% y/y':'', N.gasY>=15?'warn':''));
+    if(N.ho!=null) e.push(gtile('Diesel futures (ULSD)', '$'+N.ho.toFixed(3)+'/gal', N.hoM!=null?gp(N.hoM)+' 1m':'NY Harbor', N.hoM>=0.15?'warn':''));
+    if(N.brent!=null) e.push(gtile('Brent crude', '$'+N.brent.toFixed(2), (N.brent1!=null?gp(N.brent1,2)+' 1d · ':'')+(N.brentM!=null?gp(N.brentM)+' 1m':''), N.brentM>=0.15?'bad':N.brentM>=0.08?'warn':''));
+    if(N.wti!=null) e.push(gtile('WTI crude', '$'+N.wti.toFixed(2), N.wti1!=null?gp(N.wti1,2)+' 1d':'', ''));
+    if(N.ng!=null) e.push(gtile('US natural gas', '$'+N.ng.toFixed(2)+'/MMBtu', N.ngM!=null?gp(N.ngM)+' 1m':'Henry Hub', N.ngM>=0.25?'warn':''));
+    if(N.ttf!=null) e.push(gtile('EU natural gas (TTF)', '€'+N.ttf.toFixed(1)+'/MWh', N.ttfM!=null?gp(N.ttfM)+' 1m':'', N.ttfM>=0.25?'warn':''));
+    $('enTiles').innerHTML = e.length ? e.join('') : '<div class="macro-empty">Energy data unavailable right now.</div>';
+    if(N.dieselHist) CH.lineChart('enChDiesel','US diesel retail price','weekly average, $ per gallon (EIA)', N.dieselHist.slice(-110), { fmt:function(v){ return '$'+v.toFixed(2); } });
+    if(N.brentHist) CH.lineChart('enChBrent','Brent crude','daily spot, $/bbl (EIA, published weekly — tile above is live futures)', N.brentHist.slice(-160), { fmt:function(v){ return '$'+v.toFixed(0); } });
+    // world crisis
+    var drvTxt=C.drivers.length ? C.drivers.slice(0,4).map(function(d){ return d[1]; }).join(' · ') : 'no stress signals firing';
+    $('wcHead').innerHTML='<div class="stk-verdict '+C.band[1]+'"><span>World crisis monitor</span><b>'+C.score+'/100 · '+C.band[0]+'</b><small>news + uncertainty + market alarm bells</small></div>'+
+      '<div class="stk-means">'+(C.score>=60?'<b>Serious global tension.</b> Expect headline-driven volatility; crypto has tended to sell off first in sudden geopolitical shocks before safe-haven narratives kick in.':
+        C.score>=40?'<b>Tension is building.</b> Keep an eye on the headlines below and on oil, gold and the yen.':
+        'No broad world crisis showing in news flow or markets right now.')+' Drivers: '+drvTxt+'.</div>';
+    var w=[];
+    if(C.newsVs!=null) w.push(gtile('Crisis news coverage', gp(C.newsVs,0), 'vs 6-month normal', C.newsZ>=2?'bad':C.newsZ>=1?'warn':'ok'));
+    if(C.epu!=null) w.push(gtile('US policy uncertainty', Math.round(C.epu), C.epuPct!=null?ord(C.epuPct)+' pct (30d avg)':'', C.epuPct>=0.9?'bad':C.epuPct>=0.75?'warn':''));
+    if(N.brentM!=null) w.push(gtile('Oil (shock gauge)', gp(N.brentM), 'Brent 1m', N.brentM>=0.15?'bad':N.brentM>=0.08?'warn':''));
+    if(C.gold1!=null) w.push(gtile('Gold (fear gauge)', gp(C.gold1), '1m', C.gold1>=0.06?'warn':''));
+    if(W.jpy1!=null) w.push(gtile('Yen (haven flows)', gp(-W.jpy1), 'yen vs USD 1m', W.jpy1<=-0.04?'warn':''));
+    $('wcTiles').innerHTML=w.join('');
+    if(C.newsHist) CH.lineChart('wcChNews','Crisis news intensity','share of world news about war, sanctions, coups & crises (GDELT)', C.newsHist, { fmt:function(v){ return v.toFixed(2)+'%'; } });
+    if(C.epuHist) CH.lineChart('wcChEpu','Economic policy uncertainty','US news-based index, daily (policyuncertainty.com)', C.epuHist.slice(-200), { lines:[100], lineCols:['rgba(233,238,252,.5)'], lineLbl:['100 = long-run avg'], fmt:function(v){ return Math.round(v); } });
+    renderNews();
+  }
+  var TOPIC_LBL={ conflict:['⚔️','Conflict'], trade:['🚫','Sanctions & trade'], finance:['🏦','Financial'], energy:['⛽','Energy'], unrest:['📢','Unrest'], other:['🌐','World'] };
+  function renderNews(){
+    var box=$('wcNews'); if(!box) return;
+    var A=glRaw.news;
+    if(A==null){ box.innerHTML='<div class="macro-empty">Loading headlines…</div>'; return; }
+    if(!A.length){ box.innerHTML='<div class="macro-empty">Headlines unavailable right now (GDELT may be rate-limiting) — they refresh automatically.</div>'; return; }
+    var list=A.filter(function(a){ return newsTopic==='all' || a.topic===newsTopic; }).slice(0,14);
+    box.innerHTML = list.length ? list.map(function(a){ var tl=TOPIC_LBL[a.topic]||TOPIC_LBL.other;
+      return '<a class="wc-item" href="'+escTxt(a.url)+'" target="_blank" rel="noopener noreferrer"><span class="wc-tag '+escTxt(a.topic)+'">'+tl[0]+' '+tl[1]+'</span>'+
+        '<b>'+escTxt(a.title)+'</b><small>'+escTxt(a.domain)+(a.country?' · '+escTxt(a.country):'')+(a.seen?' · '+ago(a.seen):'')+'</small></a>'; }).join('')
+      : '<div class="macro-empty">No recent headlines in this category.</div>';
+  }
+  function loadGlobal(){
+    if(!$('gecoTiles') || glLoading || Date.now()-glAt<10*60000) return;
+    glLoading=true;
+    var fredP=fetch('/api/fred?series='+GL_FRED.join(',')+'&days=1100&points=400',{ credentials:'same-origin' })
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){ return (d&&d.series)||{}; }).catch(function(){ return {}; });
+    var yP=fetch('/api/stocks?symbols='+encodeURIComponent(GL_YAHOO.join(','))+'&interval=1d&range=1y',{ credentials:'same-origin' })
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){ var o={}, S=(d&&d.series)||{}; Object.keys(S).forEach(function(k){ o[k]=S[k].candles; }); return Object.keys(o).length?o:null; }).catch(function(){ return null; });
+    var newsP=fetch('/api/world?part=news',{ credentials:'same-origin' }).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(d){ return d && d.articles ? d.articles : []; }).catch(function(){ return []; });
+    Promise.all([fredP, yP, newsP]).then(function(r){
+      glRaw.fred=r[0]; glRaw.y=r[1]; glRaw.news=r[2]; glAt=Date.now();
+      evalGlobal(); renderGlobal(); applyRegime();
+      // GDELT allows ~1 request / 5s: fetch the coverage trend a little later
+      setTimeout(function(){
+        fetch('/api/world?part=trend',{ credentials:'same-origin' }).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+          .then(function(d){ if(d && d.trend && d.trend.length){ glRaw.trend=d.trend; evalGlobal(); renderGlobal(); applyRegime(); } }).catch(function(){});
+      }, 6000);
+    }).catch(function(){}).then(function(){ glLoading=false; });
+  }
+
   // ---- Liquidity & leverage: Fed net liquidity, M2, real yields, stablecoins, funding & OI ----
   var LQ_IDS=['WALCL','WTREGEN','RRPONTSYD','M2SL','DFII10'];
   var lqRaw=null, lqState=null, lqLoading=false, lqAt=0;
@@ -5884,8 +6121,8 @@ function aryxBackToLanding(){
   var loading=false, cache=null, lastLoad=0;
   function loadMacro(force){
     if(loading) return;
-    if(!force && cache && Date.now()-lastLoad < 60000){ render(cache[0], cache[1], cache[2]); if(crisisState) renderCrisis(crisisState); if(metalsState) renderMetals(); if(lqState) renderLiquidity(); return; } // redraw from cache
-    loading=true; loadTrad(); loadCrisis(); loadMetals(); loadLiquidity();
+    if(!force && cache && Date.now()-lastLoad < 60000){ render(cache[0], cache[1], cache[2]); if(crisisState) renderCrisis(crisisState); if(metalsState) renderMetals(); if(lqState) renderLiquidity(); if(glState) renderGlobal(); return; } // redraw from cache
+    loading=true; loadTrad(); loadCrisis(); loadMetals(); loadLiquidity(); loadGlobal();
     var btn=$('macroRefresh'); if(btn){ btn.disabled=true; btn.textContent='… loading'; }
     Promise.all([ getJSON(FNG).catch(function(){return null;}), getJSON(GLOBAL).catch(function(){return null;}), getJSON(BTCHART).catch(function(){return null;}) ])
       .then(function(res){ cache=res; lastLoad=Date.now(); render(res[0], res[1], res[2]); stamp(); })
@@ -5905,6 +6142,10 @@ function aryxBackToLanding(){
   function init(){
     if(!$('macroCard')) return;
     if($('macroRefresh')) $('macroRefresh').addEventListener('click', function(){ loadMacro(true); });
+    if($('mcNav')) $('mcNav').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; var el=$(b.dataset.go); if(!el) return;
+      var y=el.getBoundingClientRect().top+window.scrollY-80; window.scrollTo({ top:y, behavior:'smooth' }); });
+    if($('wcTabs')) $('wcTabs').addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return; newsTopic=b.dataset.t;
+      $('wcTabs').querySelectorAll('button').forEach(function(x){ x.classList.toggle('is-on', x===b); }); renderNews(); });
     // keep the risk read fresh while the Macro tab is on screen
     setInterval(function(){ stamp(); if(!loading && macroVisible() && lastLoad && Date.now()-lastLoad>=REFRESH_MS) loadMacro(true); }, 30000);
     document.addEventListener('visibilitychange', function(){ if(!loading && macroVisible() && lastLoad && Date.now()-lastLoad>=REFRESH_MS) loadMacro(true); });
@@ -6180,7 +6421,7 @@ function aryxBackToLanding(){
       html('dRiskV', r.score+'<small>/100</small>');
       html('dRiskS', r.label+(r.bottom?'<small class="db-bl">'+r.bottom+'</small>':''));
       var p=r.parts||{};
-      html('dRiskC', cnt('', 'crypto '+(p.crypto!=null?p.crypto:'—'))+(p.markets!=null?cnt('', 'markets '+p.markets):'')+(p.cycle!=null?cnt('', 'cycle '+p.cycle):'')+(p.liquidity!=null?cnt('', 'liquidity '+p.liquidity):''));
+      html('dRiskC', cnt('', 'crypto '+(p.crypto!=null?p.crypto:'—'))+(p.markets!=null?cnt('', 'markets '+p.markets):'')+(p.cycle!=null?cnt('', 'cycle '+p.cycle):'')+(p.liquidity!=null?cnt('', 'liquidity '+p.liquidity):'')+(p.global!=null?cnt('', 'global '+p.global):''));
       cls('dRisk', r.score>=80?'severe':r.score>=60?'high':r.score>=40?'elevated':'low');
       var RB={calm:'Risk calm',neutral:'Risk neutral',elevated:'Risk elevated',riskoff:'Risk-off',crisis:'Crisis conditions'};
       strip.push(pill(r.score>=60?'bad':r.score>=40?'warn':'ok', RB[r.band]||'Risk '+r.score));
@@ -6489,6 +6730,29 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .stk-chip small{font-weight:500;opacity:.75;}
 .stk-chip.buy{color:#26d982;border-color:rgba(38,217,130,.4);} .stk-chip.sell{color:#ff5c73;border-color:rgba(255,92,115,.4);} .stk-chip.hold{color:#ffc65c;border-color:rgba(255,198,92,.4);}
 @media (max-width:760px){.stk-row{grid-template-columns:1fr 1fr 1fr;}.stk-tr,.stk-sig i{display:none;}.stk-sig{justify-content:flex-start;}}
+.mc-nav{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 12px;}
+.mc-nav span{font-size:11px;color:var(--ax-dim);text-transform:uppercase;letter-spacing:.05em;margin-right:2px;}
+.mc-nav button{background:var(--ax-surface2);border:1px solid var(--ax-line);color:var(--ax-muted);border-radius:999px;font:600 11.5px/1 inherit;padding:6px 10px;cursor:pointer;}
+.mc-nav button:hover{color:var(--ax-text);border-color:var(--ax-line2);}
+@media(max-width:640px){.mc-nav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}.mc-nav::-webkit-scrollbar{display:none;}.mc-nav button{flex:0 0 auto;}}
+.wm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}
+.wm-t{background:var(--ax-surface2);border:1px solid var(--ax-line);border-left:3px solid var(--ax-line2);border-radius:10px;padding:8px 10px;}
+.wm-t.up{border-left-color:#26d982;} .wm-t.down{border-left-color:#ff5c73;}
+.wm-t span{display:block;font-size:11px;color:var(--ax-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wm-t b{display:block;font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--ax-text);margin:2px 0;}
+.wm-t small{font-family:'JetBrains Mono',monospace;font-size:10.5px;margin-right:8px;} .wm-t small.up{color:#26d982;} .wm-t small.down{color:#ff5c73;}
+.wc-news-h{font-size:13px;font-weight:700;color:var(--ax-text);margin:14px 0 8px;} .wc-news-h small{font-weight:500;color:var(--ax-dim);font-size:11px;}
+.wc-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.wc-tabs button{background:transparent;border:1px solid var(--ax-line2);color:var(--ax-muted);border-radius:999px;font:600 11.5px/1 inherit;padding:6px 10px;cursor:pointer;}
+.wc-tabs button.is-on{background:var(--ax-surface2);color:var(--ax-text);border-color:var(--ax-mint);}
+.wc-news{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;}
+.wc-item{display:block;background:var(--ax-surface2);border:1px solid var(--ax-line);border-radius:10px;padding:9px 11px;text-decoration:none;}
+.wc-item:hover{border-color:var(--ax-line2);}
+.wc-item b{display:block;font-size:13px;line-height:1.4;color:var(--ax-text);font-weight:600;margin:5px 0 4px;}
+.wc-item small{font-size:11px;color:var(--ax-dim);}
+.wc-tag{display:inline-block;font-size:10px;font-weight:700;border-radius:6px;padding:2px 6px;background:rgba(77,124,255,.15);color:#8fb0ff;}
+.wc-tag.conflict{background:rgba(255,92,115,.14);color:#ff8a9b;} .wc-tag.trade{background:rgba(255,198,92,.14);color:#ffd27a;}
+.wc-tag.finance{background:rgba(38,217,130,.12);color:#5ee6a5;} .wc-tag.energy{background:rgba(255,140,90,.14);color:#ffaa80;} .wc-tag.unrest{background:rgba(200,120,255,.14);color:#d6a6ff;}
 .lq-t{border-top:2px solid transparent;} .lq-t.ok{border-top-color:#26d982;} .lq-t.warn{border-top-color:#ffc65c;} .lq-t.bad{border-top-color:#ff5c73;}
 .mt-src{white-space:nowrap;font-style:normal;font-family:'JetBrains Mono',monospace;font-size:9.5px;opacity:.6;margin-left:4px;}
 .mt-eod{grid-column:1/-1;font-size:11px;color:var(--ax-dim);margin-top:2px;}
