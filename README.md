@@ -116,10 +116,21 @@ and VWAP on live candles:
   buying, buyers > sellers, rising activity & volume), liquidity depth and socials, and penalised
   if already pumped. GoPlus holder concentration and LP-lock data adjust the score; concentrated or
   unlocked tokens are marked caution. A ranking of early setups — not a prediction.
-- **🎯 Signal Lab** (Terminal) — grades all 19 indicator votes on the loaded chart (500 candles) against
-  what price did over the next 5 candles, learns weights on the older 60% and tests on the newer 40%
-  out-of-sample, versus the fixed formula and a same-mix coin-flip baseline. The adaptive model only
-  gets a 50% say in the verdict when it beats the fixed formula out-of-sample.
+- **🎯 Signal Core v3** (Terminal) — rebuilt from a bar-by-bar replay of the engine on real Binance candles
+  (12 major coins; daily 2018–2026, 4h from 2022, 1h from 2023, 15m from 2025). Findings it is built on:
+  the previous composite was right 47–49% of the time on every timeframe (below a coin flip); on daily
+  candles trend-following rules have a real edge (portfolio t≈3.3) while "fade" votes (RSI midline,
+  Bollinger half, MFI/Stochastic extremes) lose; on 15m/1h/4h the chart's own fast signals have no edge and
+  only the daily trend does. So:
+  - **Direction** = consensus of seven trend votes (EMA 12/26, price vs EMA50, 20-candle momentum, price vs
+    20-candle average, 20-candle breakout state, MFI > 50, Chaikin flow); net ≥ 4 of 7 for BUY/SELL. On
+    intraday charts the votes are read from the **daily candles** (last closed day).
+  - **Entry timing** = RSI + Stochastic + Bollinger position on the chart: stretched against the trend =
+    "good entry" (≈54% right over the next 5 candles in testing), stretched with it on an intraday chart =
+    HOLD/"wait" (≈46%).
+  - A **track-record card** shows how the same read did on the loaded candles (hit rate, average move,
+    edge vs a same-mix coin flip). The Signal Lab's adaptive blend was removed: it did not hold up out of sample.
+  - Stochastic now uses true highs/lows; Binance falls back to its public mirror where the main API is refused.
 - **💧 Liquidity & leverage** (Macro tab) — Fed net liquidity (WALCL − TGA − reverse repo), M2, 10Y
   real yield (FRED), total stablecoin supply (DeFiLlama), BTC funding & open interest (Binance, OKX
   fallback). Liquidity drains and overheated leverage add up to 25 points to the risk score.
@@ -134,6 +145,14 @@ and VWAP on live candles:
   launched in the last 72h (DexScreener + GeckoTerminal new pools), finds words and two-word phrases shared
   by 3+ different tokens, weights them by volume, and compares with earlier scans on the device to mark
   what is new or growing. One tap turns a trend into a tracked theme; custom themes can take an event date.
+- **Scanner safety & scoring fixes** (Early Movers / Gems / Themes) — safety checks now call the real GoPlus
+  host (`api.gopluslabs.io`; the old address did not exist, so every token was "unchecked" and the default
+  "Safe only" filter hid everything), paced to its ~30 lookups/minute keyless limit, remembered for 6 hours,
+  and rendered as they arrive. Parsers follow the real response shapes (Solana LP burn, pool accounts excluded
+  from "top holders", unsimulated sells = caution). Token lookups use `/tokens/v1` (the old endpoint silently
+  dropped tokens). Scoring is age-aware: tokens under 6 hours old are excluded from Movers and Gems (in a live
+  forward test they lost a median 18–61% within the hour), volume surge is measured against the previous six
+  hours, copycat tickers are flagged, and emerging trends are mined only from genuine discovery feeds.
 - **📊 Scanner track record** (Early Movers) — each top-10 pick is followed for 24h on the device;
   shows % up and median return at 1h/4h/24h. Tokens strengthening across consecutive scans get a
   "Persistent" bonus; ones fading since spotted are penalised.

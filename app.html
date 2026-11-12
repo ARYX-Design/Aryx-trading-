@@ -98,6 +98,9 @@
   .price.flash-down{color:var(--sell)!important;text-shadow:0 0 22px rgba(255,61,94,.6);transition:.2s}
   .lvl-line{animation:lvlIn 1s ease}
   @keyframes lvlIn{from{opacity:0}to{opacity:.85}}
+  .core-votes{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 2px}
+  .core-v{font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:4px 9px;opacity:.85}
+  .core-v.buy{color:var(--buy);border-color:rgba(0,224,138,.35)} .core-v.sell{color:var(--sell);border-color:rgba(255,61,94,.35)}
   .lab-card{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:14px 0;background:linear-gradient(180deg,rgba(77,124,255,.06),transparent)}
   .lab-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
   .lab-h{font-weight:800;font-size:14px;margin-bottom:4px}
@@ -1073,10 +1076,10 @@
       <div class="chart-title" id="moverTitle">🚀 Early Movers — bullish setups forming</div>
       <div class="mv-hr"><div class="mv-mode" id="mvMode"><button data-m="movers" class="is-on">🚀 Movers</button><button data-m="gems">💎 Early Gems</button><button data-m="themes">🔥 Themes</button></div><span id="moverStatus" class="mv-status"></span><button id="moverScan" class="ctool">↻ scan</button></div>
     </div>
-    <div class="mover-note">Scans <b>trending + established DEX tokens</b> (via DexScreener) across market caps for <b>early</b> momentum with real liquidity — rising 1h price, <b>buyers outnumbering sellers</b>, a <b>volume surge</b> vs the 24h pace, high turnover, fresh pairs — and <b>down-ranks anything that already ran or is being sold into</b>. The list re-scans every 5 minutes while this tab is open. Tap a token to chart it in the terminal (supported chains) or open it on DexScreener. These are <b>extremely high-risk, low-cap speculative tokens, not predictions</b> — most go to zero, many are scams/rugs. Verify the contract, liquidity, and holders yourself. Each token is auto-checked for honeypots/high tax/mint &amp; freeze authority via GoPlus (confirmed honeypots are dropped), with one-tap links to Honeypot.is, TokenSniffer &amp; Bubblemaps — but automated checks miss things, so always verify yourself. Turn on <b>🔔 Alerts</b> to get a notification (and a red flag) if a spotted token drops past your threshold since it appeared. Never risk more than you can lose.</div>
+    <div class="mover-note">Scans <b>trending + established DEX tokens</b> (via DexScreener) across market caps for <b>early</b> momentum with real liquidity — rising 1h price, <b>buyers outnumbering sellers</b>, a <b>volume surge</b> vs the previous six hours, high turnover, fresh pairs — and <b>down-ranks anything that already ran or is being sold into</b>. Tokens under 6 hours old are left out: in a live test most of them fell sharply within the hour. The list re-scans every 5 minutes while this tab is open. Tap a token to chart it in the terminal (supported chains) or open it on DexScreener. These are <b>extremely high-risk, low-cap speculative tokens, not predictions</b> — most go to zero, many are scams/rugs. Verify the contract, liquidity, and holders yourself. Each token is auto-checked for honeypots/high tax/mint &amp; freeze authority via GoPlus (confirmed honeypots are dropped), with one-tap links to Honeypot.is, TokenSniffer &amp; Bubblemaps — but automated checks miss things, so always verify yourself. Turn on <b>🔔 Alerts</b> to get a notification (and a red flag) if a spotted token drops past your threshold since it appeared. Never risk more than you can lose.</div>
     <div class="mover-note gem-note" id="themeNote" hidden>🔥 <b>Themes</b> <b>auto-detects emerging trends</b> (words suddenly shared by many brand-new tokens — no fixed list) and tracks <b>narratives</b> — events and memes that spawn waves of new tokens (a game launch, an election, an AI craze). For each theme it measures <b>how fast new tokens are being launched</b>, whether <b>volume is accelerating</b>, how many are rising, and (for big events) <b>news attention</b> — so you can see a narrative <b>heating up before it peaks</b>. Event themes get a countdown: event tokens usually make most of their move <b>before</b> the event and often dump on the day ("sell the news"). Most theme tokens are copycats launched by bots in seconds — <b>copycats and fake "official" tokens are flagged</b>. Add your own themes below.</div>
     <div id="themeView" class="th-view" hidden></div>
-    <div class="mover-note gem-note" id="gemNote" hidden>💎 <b>Early Gems</b> looks for <b>brand-new, small-cap tokens</b> (hours to ~2 weeks old, under ~$10M cap) that show the footprints that often come <b>before</b> a big move: steady buying across 5m/1h/6h, buyers outnumbering sellers, activity and volume accelerating, healthy liquidity for the size, a real website/socials — and <b>not already pumped</b>. It also checks <b>holder concentration</b> and whether <b>liquidity is locked/burned</b> where data exists. <b>Nobody can know which token will “blow up.”</b> This ranks the best-looking early setups; the large majority of new tokens still fail or rug. Use tiny position sizes only.</div>
+    <div class="mover-note gem-note" id="gemNote" hidden>💎 <b>Early Gems</b> looks for <b>brand-new, small-cap tokens</b> (6 hours to ~2 weeks old, under ~$10M cap) that show the footprints that often come <b>before</b> a big move: steady buying across 5m/1h/6h, buyers outnumbering sellers, activity and volume accelerating, healthy liquidity for the size, a real website/socials — and <b>not already pumped</b>. It also checks <b>holder concentration</b> and whether <b>liquidity is locked/burned</b> where data exists. Tokens <b>under 6 hours old are left out on purpose</b>: in a live test of everything this scanner saw, tokens 1–6 hours old lost a median 18% within the next hour and those 10–60 minutes old lost 61%, while tokens that had survived their first day held up far better. <b>Nobody can know which token will “blow up.”</b> This ranks the best-looking early setups; the large majority of new tokens still fail or rug. Use tiny position sizes only.</div>
     <div class="mover-filters">
       <select id="mvChain" class="mv-sel" title="Chain">
         <option value="">All chains</option>
@@ -1486,9 +1489,10 @@ function macd(arr,f=12,s=26,sig=9){
   return{line,signal,hist};
 }
 // Stochastic %K/%D — fast reaction at extremes
-function stoch(arr,p=14,d=3){
+function stoch(arr,p=14,d=3,highs,lows){
+  const H=highs||arr,L=lows||arr;      // standard %K uses the highest high / lowest low
   const k=[];for(let i=0;i<arr.length;i++){if(i<p-1){k.push(null);continue}
-    let hi=-Infinity,lo=Infinity;for(let j=i-p+1;j<=i;j++){hi=Math.max(hi,arr[j]);lo=Math.min(lo,arr[j])}
+    let hi=-Infinity,lo=Infinity;for(let j=i-p+1;j<=i;j++){hi=Math.max(hi,H[j]);lo=Math.min(lo,L[j])}
     k.push((arr[i]-lo)/((hi-lo)||1e-9)*100)}
   const kc=k.map(v=>v==null?0:v);const dl=sma(kc,d).map((v,i)=>k[i]==null?null:v);
   return{k,d:dl};
@@ -1784,8 +1788,9 @@ const BINANCE_TF={'15m':'15m','1h':'1h','4h':'4h','day':'1d','week':'1w','month'
 async function fetchBinance(tf){
   const interval=BINANCE_TF[tf];
   const sym=(current.binance||(current.symbol+'USDT'));
-  const url=`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${interval}&limit=500`;
-  const r=await fetch(url);
+  const q=`/api/v3/klines?symbol=${sym}&interval=${interval}&limit=500`;
+  let r=await fetch('https://api.binance.com'+q).catch(()=>null);
+  if(!r||!r.ok)r=await fetch('https://data-api.binance.vision'+q);     // public market-data mirror
   if(!r.ok)throw new Error('binance-miss');
   const j=await r.json();
   if(!Array.isArray(j)||!j.length)throw new Error('binance-empty');
@@ -1949,103 +1954,95 @@ async function loadCoins(){
 
 // ---------- signal engine ----------
 
-// ===== SIGNAL LAB — measure which indicators actually work on THIS chart =====
-// Every indicator's historical votes are scored against what price did over the
-// next LAB_H candles. Weights are learned on the older 60% of the chart and the
-// resulting adaptive model is graded on the newer 40% it never saw (out-of-sample),
-// against the fixed category formula and against the market's own base rate.
-// Only if the adaptive model wins out-of-sample does it get a say in the verdict.
-const LAB_H=5, LAB_WARM=60;
-const LAB_CAT={SUPER:'trend',EMA:'trend',EMA50:'trend',PSAR:'trend',DONCH:'trend',SPEED:'trend',
-  MACD:'mom',RSI_MR:'mom',RSI_MOM:'mom',STOCH:'mom',SRSI:'mom',ROC:'mom',
-  MFI:'flow',CMF:'flow',OBV:'flow',VWAP:'flow',VOLUME:'flow',BOLL:'vol',SQUEEZE:'vol'};
-const LAB_NAME={SUPER:'Supertrend',EMA:'EMA 12/26',EMA50:'Price vs EMA50',PSAR:'Parabolic SAR',DONCH:'Donchian breakout',
-  SPEED:'Trend Speed',MACD:'MACD histogram',RSI_MR:'RSI dip-buy (<30/>70)',RSI_MOM:'RSI momentum (>50)',STOCH:'Stochastic',
-  SRSI:'StochRSI cross',ROC:'ROC-9',MFI:'Money Flow',CMF:'Chaikin flow',OBV:'OBV trend',VWAP:'VWAP-20',VOLUME:'Volume surge',
-  BOLL:'Bollinger fade',SQUEEZE:'Squeeze release'};
-function labVotes(d){
+// ===== SIGNAL CORE (v3) — built from a backtest on real candles =====
+// Tested on 12 major coins (Binance data): daily 2018–2026, 4h 2022–2026, 1h 2023–2026, 15m 2025–2026.
+// What held up, in both the older 70% and the most recent 30% of the data:
+//  • DAILY horizon: trend-following works. A consensus of seven "follow" votes had positive
+//    expectancy (portfolio t≈3.3; long-only it roughly halved the worst drawdown of buy-and-hold).
+//    It is right about HALF the time candle-to-candle — the edge is big winners, small losers.
+//  • "Fade" votes (RSI above/below the midline, upper/lower half of the Bollinger band, MFI and
+//    Stochastic extremes) LOSE on daily candles. They are no longer direction votes.
+//  • INTRADAY (15m/1h/4h): the chart's own fast trend signals have no edge (negative after fees).
+//    The only thing with positive results is the DAILY trend. Given that direction, the next 5
+//    candles went its way ~54% of the time when the chart was stretched AGAINST it (a pullback),
+//    ~50% when neutral, and only ~46% when stretched WITH it (extended).
+// So: direction = daily-horizon trend consensus; the chart's oversold/overbought state = entry timing.
+const CORE_TH=0.57, CORE_H=5;            // net ≥4 of 7 votes to call a trend; track record looks 5 candles ahead
+const CORE_VOTES=['EMA 12 vs 26','Price vs EMA 50','20-candle momentum','Price vs 20-candle average','20-candle breakout state','Money Flow above 50','Chaikin money flow'];
+function coreSeries(d){
   const P=d.prices,H=d.highs||P,L=d.lows||P,V=d.vols,n=P.length;
   const sg=x=>x>0?1:x<0?-1:0;
-  const r=rsi(P),e12=ema(P,12),e26=ema(P,26),e50=ema(P,50),b=boll(P),m=macd(P),st=stoch(P),sr=stochRsi(P);
-  const su=supertrend(H,L,P,10,3),ps=psar(H,L),dn=donchian(H,L,20),mf=mfi(H,L,P,V,14),cm=cmf(H,L,P,V,20);
-  const vw=vwap(H,L,P,V,20),ob=obv(P,V),rc=roc(P,9),ts=trendSpeed(P),sq=squeezeState(H,L,P),va=sma(V,20);
-  const out={};Object.keys(LAB_CAT).forEach(k=>out[k]=new Array(n).fill(0));
-  for(let i=1;i<n;i++){
-    const p=P[i];
-    out.SUPER[i]=su.dir[i]||0;
-    out.EMA[i]=sg(e12[i]-e26[i]);
-    out.EMA50[i]=i>=50?sg(p-e50[i]):0;
-    out.PSAR[i]=ps.dir[i]||0;
-    out.DONCH[i]=dn.up[i]==null?0:p>dn.up[i]?1:p<dn.lo[i]?-1:0;
-    out.SPEED[i]=ts.vel[i]>0&&ts.acc[i]>0?1:ts.vel[i]<0&&ts.acc[i]<0?-1:0;
-    out.MACD[i]=sg(m.hist[i]);
-    out.RSI_MR[i]=r[i]==null?0:r[i]<30?1:r[i]>70?-1:0;
-    out.RSI_MOM[i]=r[i]==null?0:sg(r[i]-50);
-    out.STOCH[i]=st.k[i]==null?0:st.k[i]<20?1:st.k[i]>80?-1:0;
-    out.SRSI[i]=sr.k[i]==null||sr.d[i]==null?0:sr.k[i]<20&&sr.k[i]>sr.d[i]?1:sr.k[i]>80&&sr.k[i]<sr.d[i]?-1:0;
-    out.ROC[i]=rc[i]==null?0:sg(rc[i]);
-    out.MFI[i]=mf[i]==null?0:mf[i]<=20?1:mf[i]>=80?-1:0;
-    out.CMF[i]=cm[i]==null?0:cm[i]>0.05?1:cm[i]<-0.05?-1:0;
-    out.OBV[i]=i>=10?sg(ob[i]-ob[i-10]):0;
-    out.VWAP[i]=vw[i]==null?0:sg(p-vw[i]);
-    out.VOLUME[i]=va[i]&&V[i]>1.3*va[i]?sg(p-P[i-1]):0;
-    out.BOLL[i]=b.lo[i]==null?0:p<=b.lo[i]?1:p>=b.up[i]?-1:0;
-    out.SQUEEZE[i]=sq.on[i-1]===1&&sq.on[i]!==1?sg(sq.mom[i]):0;
+  const e12=ema(P,12),e26=ema(P,26),e50=ema(P,50),s20=sma(P,20),mf=mfi(H,L,P,V,14),cm=cmf(H,L,P,V,20),dn=donchian(H,L,20);
+  const r=rsi(P),st=stoch(P,14,3,H,L),b=boll(P);
+  // breakout state: +1 after a close above the prior 20-candle high, until a close below the prior 20-candle low
+  const state=new Array(n).fill(0);
+  for(let i=1;i<n;i++)state[i]=dn.up[i]==null?0:P[i]>dn.up[i]?1:P[i]<dn.lo[i]?-1:state[i-1];
+  const votesAt=i=>[sg(e12[i]-e26[i]), i>=50?sg(P[i]-e50[i]):0, i>=20?sg(P[i]/P[i-20]-1):0, s20[i]==null?0:sg(P[i]-s20[i]), state[i],
+    mf[i]==null?0:sg(mf[i]-50), cm[i]==null?0:cm[i]>0.05?1:cm[i]<-0.05?-1:0];
+  const T=new Array(n).fill(0),stretch=new Array(n).fill(0);
+  for(let i=0;i<n;i++){
+    if(i>=50)T[i]=votesAt(i).reduce((a,x)=>a+x,0)/7;
+    if(r[i]==null||st.k[i]==null||b.lo[i]==null)continue;
+    const bp=(P[i]-b.lo[i])/((b.up[i]-b.lo[i])||1);
+    const lo=(r[i]<=35)+(st.k[i]<=20)+(bp<=0.15), hi=(r[i]>=65)+(st.k[i]>=80)+(bp>=0.85);
+    stretch[i]=lo>=2?-1:hi>=2?1:0;       // −1 oversold, +1 overbought (two of three gauges agree)
   }
-  return out;
+  return{T,stretch,votesAt};
 }
-function labFit(votes,fwd,from,to){
-  const w={},stats={};
-  Object.keys(votes).forEach(k=>{
-    let n=0,hit=0,ret=0;
-    for(let i=from;i<to;i++){const v=votes[k][i];if(!v||fwd[i]===0)continue;n++;if(v*fwd[i]>0)hit++;ret+=v*fwd[i];}
-    const pr=n?hit/n:0.5;
-    // shrink toward "no edge" when the sample is small; only positive edges vote
-    const edge=(pr-0.5)*n/(n+30);
-    w[k]=n>=8&&edge>0?edge:0;
-    stats[k]={n,acc:pr,avgRet:n?ret/n*100:0,edge};
-  });
-  return{w,stats};
+// Daily anchor for intraday charts: the trend consensus of the last fully CLOSED daily candle.
+function buildAnchor(day){
+  if(!day||!day.prices||day.prices.length<60)return null;
+  const cs=coreSeries(day),n=day.prices.length;
+  const j=(day.times&&day.times[n-1]+864e5>Date.now())?n-2:n-1;
+  return{tf:'day',T:cs.T[j],votes:cs.votesAt(j),times:day.times,Ts:cs.T.slice(0,j+1)};
 }
-function labCombine(votes,i,w){
-  let s=0,t=0;for(const k in w){if(!w[k])continue;s+=w[k]*votes[k][i];t+=w[k];}
-  return t?s/t:0;
+// How this exact read has done on the loaded chart: each past candle's call vs the move over the next CORE_H candles.
+function coreTrack(d,cs,anc,tfMs,mode){
+  const P=d.prices,n=P.length,h=CORE_H;
+  if(n<130||!d.times)return null;
+  const g={buy:[0,0,0],sell:[0,0,0],pull:[0,0,0],up:0,tot:0};
+  let k=0;
+  for(let i=60;i+h<n;i++){
+    let A;
+    if(anc){const ct=d.times[i]+tfMs;while(k+1<anc.Ts.length&&anc.times[k+1]+864e5<=ct)k++;if(anc.times[k]+864e5>ct)continue;A=anc.Ts[k];}
+    else A=cs.T[i];
+    const f=P[i+h]/P[i]-1;if(f===0)continue;
+    g.tot++;if(f>0)g.up++;
+    const dir=A>=CORE_TH?1:A<=-CORE_TH?-1:0;if(!dir)continue;
+    const sx=cs.stretch[i]*dir;
+    if(mode!=='chart'&&sx>0)continue;                 // "extended" on an intraday chart = no call
+    const t=dir>0?g.buy:g.sell;t[0]++;if(f*dir>0)t[1]++;t[2]+=f*dir;
+    if(sx<0){g.pull[0]++;if(f*dir>0)g.pull[1]++;g.pull[2]+=f*dir;}
+  }
+  const pk=a=>({n:a[0],acc:a[0]?a[1]/a[0]:null,avg:a[0]?a[2]/a[0]:null});
+  const nb=g.buy[0],ns=g.sell[0],nAll=nb+ns,base=g.tot?g.up/g.tot:0.5;
+  const chance=nAll?(nb/nAll)*base+(ns/nAll)*(1-base):null;      // a coin-flip with the same buy/sell mix
+  const acc=nAll?(g.buy[1]+g.sell[1])/nAll:null;
+  return{h,bars:g.tot,baseUp:base,buy:pk(g.buy),sell:pk(g.sell),pull:pk(g.pull),n:nAll,acc,edge:acc==null?null:acc-chance};
 }
-function labStatic(votes,i){
-  const cat={trend:[],mom:[],flow:[],vol:[]};
-  for(const k in LAB_CAT)cat[LAB_CAT[k]].push(votes[k][i]);
-  const avg=a=>a.reduce((x,y)=>x+y,0)/(a.length||1);
-  return .36*avg(cat.trend)+.24*avg(cat.mom)+.24*avg(cat.flow)+.16*avg(cat.vol);
-}
-function labGrade(fn,fwd,from,to){
-  let n=0,hit=0,ret=0,longs=0;
-  for(let i=from;i<to;i++){const c=fn(i);if(Math.abs(c)<0.15||fwd[i]===0)continue;const v=c>0?1:-1;n++;if(v>0)longs++;if(v*fwd[i]>0)hit++;ret+=v*fwd[i];}
-  return{n,acc:n?hit/n:null,avgRet:n?ret/n*100:0,longShare:n?longs/n:0};
-}
-function signalLab(d){
-  const P=d.prices,n=P.length,h=LAB_H;
-  if(n<LAB_WARM+h+60)return null;
-  const votes=labVotes(d);
-  const fwd=P.map((p,i)=>i+h<n?P[i+h]/p-1:0);
-  const end=n-h, split=LAB_WARM+Math.floor(0.6*(end-LAB_WARM));
-  const train=labFit(votes,fwd,LAB_WARM,split-h);   // stop h candles early so no training label peeks into the test window
-  const adaptive=labGrade(i=>labCombine(votes,i,train.w),fwd,split,end);
-  const fixed=labGrade(i=>labStatic(votes,i),fwd,split,end);
-  // base rate on the test window: how often price simply rose over h candles
-  let up=0,tot=0;for(let i=split;i<end;i++){if(fwd[i]===0)continue;tot++;if(fwd[i]>0)up++;}
-  const baseUp=tot?up/tot:0.5;
-  const expect=g=>g.n?g.longShare*baseUp+(1-g.longShare)*(1-baseUp):null;   // coin-flip with the same long/short mix
-  adaptive.edge=adaptive.acc!=null?adaptive.acc-expect(adaptive):null;
-  fixed.edge=fixed.acc!=null?fixed.acc-expect(fixed):null;
-  // refit on all closed history for the live read (walk-forward: validate, then refit)
-  const full=labFit(votes,fwd,LAB_WARM,end);
-  const live=labCombine(votes,n-1,full.w);
-  const ranked=Object.keys(full.stats).filter(k=>full.stats[k].n>=8)
-    .map(k=>Object.assign({k,name:LAB_NAME[k],w:full.w[k],now:votes[k][n-1]},full.stats[k]))
-    .sort((a,b)=>b.edge-a.edge);
-  const wins=adaptive.n>=15&&adaptive.acc!=null&&fixed.acc!=null&&adaptive.edge>0.02&&adaptive.acc>=fixed.acc+0.02;
-  return{h,adaptive,fixed,baseUp,live,ranked,wins,trainN:split-LAB_WARM,testN:end-split,
-    active:Object.keys(full.w).filter(k=>full.w[k]>0).length};
+function coreRead(d){
+  const cs=coreSeries(d),n=d.prices.length,i=n-1;
+  const tfMs={'15m':9e5,'1h':36e5,'4h':144e5}[d.tfKey]||0;
+  const anc=tfMs&&d.anchor&&d.anchor.Ts&&d.anchor.Ts.length>=60?d.anchor:null;
+  const mode=!tfMs?'chart':anc?'daily':'chart-fallback';
+  const A=anc?anc.T:cs.T[i], votes=anc?anc.votes:cs.votesAt(i);
+  const dir=A>=CORE_TH?1:A<=-CORE_TH?-1:0;
+  const st=cs.stretch[i], sx=st*dir;
+  const timing=!dir?(st<0?'oversold':st>0?'overbought':'none'):sx<0?'pullback':sx>0?'extended':'neutral';
+  const strength=Math.max(0,Math.min(1,(Math.abs(A)-CORE_TH)/(1-CORE_TH)));
+  let verdict,conf;
+  if(!dir){verdict='neutral';conf=Math.round(Math.abs(A)/CORE_TH*35);}
+  else if(mode==='chart'){verdict=dir>0?'buy':'sell';conf=Math.round(50+50*strength);}
+  else if(timing==='extended'){verdict='neutral';conf=30;}
+  else{verdict=dir>0?'buy':'sell';conf=Math.round(timing==='pullback'?65+25*strength:42+18*strength);if(mode==='chart-fallback')conf=Math.min(conf,45);}
+  // displayed score: the consensus, kept inside the HOLD band when the call is to wait
+  let composite=A;if(verdict==='neutral'&&Math.abs(composite)>=CORE_TH)composite=Math.sign(composite)*(CORE_TH-0.07);
+  const net=Math.round(A*7),where=mode==='daily'?'Daily':'Chart';
+  const notes=[];
+  notes.push([dir>0?'buy':dir<0?'sell':(A>=0?'buy':'sell'),'TREND',where+' trend consensus '+(net>0?'+':'')+net+' of 7 — '+(dir>0?'uptrend':dir<0?'downtrend':'no clear trend (needs ±4)')+(mode==='chart-fallback'?' · no daily history for this asset, so this uses the chart itself (less reliable)':'')]);
+  if(timing==='pullback')notes.push([dir>0?'buy':'sell','TIMING','Pullback in a '+(dir>0?'daily uptrend':'daily downtrend')+' — chart is stretched against the trend; historically the better entry zone']);
+  if(timing==='extended')notes.push([dir>0?'sell':'buy','TIMING',(tfMs?'Extended — chart is stretched in the trend\'s direction; on intraday charts late entries here were wrong more often than right, so the call is to wait':'Extended — stretched in the trend\'s direction; strong daily trends often stay stretched')]);
+  return{mode,A,net,votes,dir,timing,stretch:st,verdict,conf,composite,strength,notes,track:coreTrack(d,cs,anc,tfMs,mode),anchored:!!anc,intraday:!!tfMs};
 }
 
 function analyze(d){
@@ -2061,10 +2058,8 @@ function analyze(d){
 
   // RSI
   let rsiSig='neutral';
-  if(rsiV<30){rsiSig='buy';score+=2;signals.push(['buy','RSI','Oversold ('+rsiV.toFixed(1)+') — momentum exhausted, rebound likely'])}
-  else if(rsiV>70){rsiSig='sell';score-=2;signals.push(['sell','RSI','Overbought ('+rsiV.toFixed(1)+') — pullback risk elevated'])}
-  else if(rsiV<45){rsiSig='buy';score+=1;signals.push(['buy','RSI','Below midline ('+rsiV.toFixed(1)+') — leaning bullish'])}
-  else if(rsiV>55){rsiSig='sell';score-=1;signals.push(['sell','RSI','Above midline ('+rsiV.toFixed(1)+') — leaning bearish'])}
+  if(rsiV<30){rsiSig='buy';signals.push(['buy','RSI','Oversold ('+rsiV.toFixed(1)+') — stretched down; a bounce is likelier on intraday charts, but in a downtrend it can stay oversold'])}
+  else if(rsiV>70){rsiSig='sell';signals.push(['sell','RSI','Overbought ('+rsiV.toFixed(1)+') — stretched up; late entries here have a poor record on intraday charts'])}
 
   // EMA cross
   const eDiff=e12[last]-e26[last], ePrev=e12[last-1]-e26[last-1];
@@ -2078,10 +2073,8 @@ function analyze(d){
 
   // Bollinger
   let bollSig='neutral';
-  if(price<=b.lo[last]){bollSig='buy';score+=1.5;signals.push(['buy','BOLL','Price at/below lower band — stretched cheap'])}
-  else if(price>=b.up[last]){bollSig='sell';score-=1.5;signals.push(['sell','BOLL','Price at/above upper band — stretched rich'])}
-  else if(price<b.mid[last]){bollSig='buy';score+=.5}
-  else{bollSig='sell';score-=.5}
+  if(price<=b.lo[last]){bollSig='buy';signals.push(['buy','BOLL','Price at/below lower band — stretched down'])}
+  else if(price>=b.up[last]){bollSig='sell';signals.push(['sell','BOLL','Price at/above upper band — stretched up'])}
 
   // Volume
   const volRatio=curVol/avgVol;
@@ -2124,7 +2117,7 @@ function analyze(d){
   if(hist<0&&hist>histPrev)signals.push(['buy','MACD','Bearish momentum shrinking — selling exhausting']);
 
   // Stochastic — fast extremes
-  const st=stoch(prices),stK=st.k[last],stD=st.d[last];
+  const st=stoch(prices,14,3,highs,lows),stK=st.k[last],stD=st.d[last];
   let stochSig='neutral';
   if(stK<20){stochSig='buy';leadScore+=1;signals.push(['buy','STOCH','%K oversold ('+stK.toFixed(0)+') — fast reversal zone'])}
   else if(stK>80){stochSig='sell';leadScore-=1;signals.push(['sell','STOCH','%K overbought ('+stK.toFixed(0)+') — fast reversal zone'])}
@@ -2265,97 +2258,24 @@ function analyze(d){
   const piv=pivotPoints(highs,lows,prices);
   const fib=fibLevels(highs,lows,120);
 
-  // ===== TREND-HOLD BIAS (lesson learned: signal exited winners too early) =====
-  // Backtesting showed high direction-accuracy still lost to buy-and-hold because
-  // the signal flipped out of strong trends on minor counter-signals. Fix: when a
-  // trend is CONFIRMED and ESTABLISHED (Supertrend aligned with ADX≥25, and not a
-  // brand-new flip), add a hold-bonus in the trend's direction so small opposing
-  // oscillator wiggles don't prematurely knock the verdict out of a working trend.
-  // Applied BEFORE the regime multiplier so a strong trend amplifies the hold too.
-  let trendHold=0;
-  const establishedUp = stDir===1 && stPrev===1 && adxV>=25 && plusDI>minusDI;
-  const establishedDn = stDir===-1 && stPrev===-1 && adxV>=25 && minusDI>plusDI;
-  if(establishedUp){ trendHold=1.5; score+=trendHold;
-    signals.push(['buy','HOLD','Confirmed uptrend (Supertrend + ADX '+adxV.toFixed(0)+') — holding bias added, resisting early exit']); }
-  else if(establishedDn){ trendHold=-1.5; score+=trendHold;
-    signals.push(['sell','HOLD','Confirmed downtrend (Supertrend + ADX '+adxV.toFixed(0)+') — holding bias added, resisting early exit']); }
-
-  // ===== HIGHER-TIMEFRAME CONFLUENCE (accuracy: trade with the bigger trend) =====
-  // load() fetches the next timeframe up and computes its Supertrend direction.
-  // Aligning with the higher-TF trend is one of the few techniques with real
-  // statistical grounding. ±1.0, applied before the regime multiplier.
-  let htfPts=0;
-  if(d.htf && d.htf.dir){
-    htfPts = d.htf.dir===1 ? 1 : -1;
-    score += htfPts;
-    signals.push([htfPts>0?'buy':'sell','HTF',
-      d.htf.tf.toUpperCase()+' trend is '+(htfPts>0?'UP':'DOWN')+' — higher-timeframe '+(((htfPts>0&&score>0)||(htfPts<0&&score<0))?'confluence':'conflict')]);
-  }
-
-  // ===== ADX-GATED WEIGHTING (accuracy filter) =====
-  // In ranging markets (ADX<20) trend signals are unreliable, so down-weight the
-  // directional portion of the score and lean toward mean-reversion read.
+  // ===== REGIME (ADX + Choppiness) — context for the cards and for stop widths =====
   let regime='trending';
   if(adxV<20||(adxV<25&&chopV>61.8)){
     regime='ranging';
-    score*=0.55;   // dampen — most of the directional score is noise here
-    signals.push(['sell','REGIME','ADX '+adxV.toFixed(0)+' + CHOP '+chopV.toFixed(0)+' — ranging market: trend signals down-weighted, prefer mean-reversion']);
-  }else if(adxV>=25&&chopV<38.2){
-    regime='strong';
-    score*=1.18;   // ADX and Choppiness BOTH confirm a clean trend — most reliable state
-    signals.push([plusDI>minusDI?'buy':'sell','REGIME','ADX '+adxV.toFixed(0)+' + CHOP '+chopV.toFixed(0)+' — double-confirmed trend, signals amplified']);
+    signals.push(['sell','REGIME','ADX '+adxV.toFixed(0)+' + CHOP '+chopV.toFixed(0)+' — ranging market: trend reads are less reliable here']);
   }else if(adxV>=25){
     regime='strong';
-    score*=1.12;   // amplify slightly — trend signals are more trustworthy
+    if(chopV<38.2)signals.push([plusDI>minusDI?'buy':'sell','REGIME','ADX '+adxV.toFixed(0)+' + CHOP '+chopV.toFixed(0)+' — clean, directional market']);
   }
 
-  // ===== COMPOSITE FORMULA (v2) — category-normalized, consensus-weighted =====
-  // The old model summed ad-hoc points, which over-weighted correlated momentum
-  // oscillators (RSI + StochRSI + Stochastic + MFI all say the same thing). Here
-  // each indicator casts a -1 / 0 / +1 vote; votes are averaged WITHIN four
-  // low-correlation categories; the categories are then blended with weights that
-  // ADAPT to the market regime. Output `composite` is normalized to [-1, +1], and
-  // conviction combines the composite's magnitude with how many indicators agree.
-  const _d = s => s === 'buy' ? 1 : s === 'sell' ? -1 : 0;
-  const _net = arr => { const v = arr.map(_d); return v.reduce((a, x) => a + x, 0) / (v.length || 1); };
-
-  const htfSig = htfPts > 0 ? 'buy' : htfPts < 0 ? 'sell' : 'neutral';
-  const patSig = patPts > 0 ? 'buy' : patPts < 0 ? 'sell' : 'neutral';
-
-  // four low-correlation buckets, each normalized to [-1, +1]
-  const catTrend = _net([superSig, emaSig, psarSig, donchSig, tsSig, adxSig, htfSig]);
-  const catMom   = _net([macdSig, rsiSig, stochSig, srsiSig, rocSig]);
-  const catFlow  = _net([mfiSig, cmfSig, obvSig, vwapSig, volSig]);
-  const catVol   = _net([bollSig, sqSig, patSig]);
-
-  // regime-adaptive category weights (each set sums to 1.0)
-  let wT, wM, wF, wV;
-  if (regime === 'strong')      { wT = .46; wM = .18; wF = .22; wV = .14; } // clean trend → trust trend
-  else if (regime === 'ranging'){ wT = .20; wM = .34; wF = .28; wV = .18; } // chop → mean-reversion & flow
-  else                          { wT = .36; wM = .24; wF = .24; wV = .16; } // normal
-
-  let composite = wT * catTrend + wM * catMom + wF * catFlow + wV * catVol;
-  composite = Math.max(-1, Math.min(1, composite));
-
-  // consensus: share of voting (non-neutral) indicators that agree with the sign
-  const _votes = [superSig, emaSig, psarSig, donchSig, tsSig, adxSig, htfSig,
-                  macdSig, rsiSig, stochSig, srsiSig, rocSig,
-                  mfiSig, cmfSig, obvSig, vwapSig, volSig, bollSig, sqSig, patSig].map(_d);
-  const _nz = _votes.filter(v => v !== 0);
-  const _sign = composite > 0 ? 1 : composite < 0 ? -1 : 0;
-  const agreement = _nz.length ? _nz.filter(v => v === _sign).length / _nz.length : 0;
-
-  // display score (~[-10, +10]), verdict, and consensus-weighted conviction
-  // Signal Lab: if the adaptive (measured-edge) model beat the fixed formula
-  // out-of-sample on this chart, let it carry half the vote.
-  let lab=null; try{ lab=signalLab(d); }catch(e){ lab=null; }
-  if(lab && lab.wins){
-    composite = Math.max(-1, Math.min(1, 0.5*composite + 0.5*lab.live));
-    signals.push([lab.live>=0?'buy':'sell','LAB','Adaptive model ('+lab.active+' indicators with a measured edge here) beat the fixed formula out-of-sample — blended into the verdict']);
-  }
-  score = +(composite * 10).toFixed(2);
-  verdict = composite >= 0.15 ? 'buy' : composite <= -0.15 ? 'sell' : 'neutral';
-  const conf2 = Math.round(Math.min(100, 100 * (0.55 * Math.abs(composite) + 0.45 * agreement)));
+  // ===== VERDICT — Signal Core v3 (see coreRead): daily-horizon trend consensus + entry timing =====
+  const core=coreRead(d);
+  const composite=core.composite;
+  score=+(composite*10).toFixed(2);
+  verdict=core.verdict;
+  const conf2=core.conf;
+  leadVerdict=core.timing==='pullback'?(core.dir>0?'buy':'sell'):'neutral';
+  core.notes.forEach(x=>signals.unshift(x));
 
   // ===== SMART TAKE-PROFIT / STOP-LOSS (structure-aware · volatility-adaptive) =====
   // Accuracy upgrades vs a plain ATR bracket:
@@ -2437,51 +2357,9 @@ function analyze(d){
   // ===== DIVERGENCE DETECTION (price vs RSI and price vs OBV) =====
   const divs=detectDivergences(prices,r,obvArr);
 
-  // ===== CONTRIBUTION BREAKDOWN (why this signal) =====
-  // Reconstruct each indicator's exact point contribution, matching the scoring above.
-  const contrib=[];
-  // RSI
-  let rsiPts=0; if(rsiV<30)rsiPts=2; else if(rsiV>70)rsiPts=-2; else if(rsiV<45)rsiPts=1; else if(rsiV>55)rsiPts=-1;
-  contrib.push({k:'RSI',pts:rsiPts,why:rsiV<30?`oversold ${rsiV.toFixed(0)}`:rsiV>70?`overbought ${rsiV.toFixed(0)}`:`${rsiV.toFixed(0)}`});
-  // EMA
-  contrib.push({k:'EMA',pts:(e12[last]-e26[last]>0)?1.5:-1.5,why:(e12[last]-e26[last]>0)?'12>26 uptrend':'12<26 downtrend'});
-  // Bollinger
-  let bPts; if(price<=b.lo[last])bPts=1.5; else if(price>=b.up[last])bPts=-1.5; else if(price<b.mid[last])bPts=.5; else bPts=-.5;
-  contrib.push({k:'BOLL',pts:bPts,why:price<=b.lo[last]?'at lower band':price>=b.up[last]?'at upper band':price<b.mid[last]?'lower half':'upper half'});
-  // Volume
-  let vPts=0; if(volRatio>1.3)vPts=dirUp?1:-1;
-  contrib.push({k:'VOLUME',pts:vPts,why:volRatio>1.3?`surge ${volRatio.toFixed(1)}×`:`normal ${volRatio.toFixed(1)}×`});
-  // Supertrend
-  contrib.push({k:'SUPER',pts:stDir===1?2:-2,why:stDir===1?'trend up':'trend down'});
-  // MFI
-  let mPts=0; if(mfiV!=null){if(mfiV<=20)mPts=1;else if(mfiV>=80)mPts=-1;}
-  contrib.push({k:'MFI',pts:mPts,why:mfiV==null?'n/a':mfiV<=20?`oversold ${mfiV.toFixed(0)}`:mfiV>=80?`overbought ${mfiV.toFixed(0)}`:`${mfiV.toFixed(0)} (neutral)`});
-  // ADX directional
-  let aPts=0; if(adxV>=25)aPts=plusDI>minusDI?1:-1;
-  contrib.push({k:'ADX',pts:aPts,why:adxV>=25?`strong ${adxV.toFixed(0)}, ${plusDI>minusDI?'+DI':'−DI'}`:`weak ${adxV.toFixed(0)}`});
-  // OBV
-  let oPts=0; if(obvNow>obvPast)oPts=.5; else if(obvNow<obvPast)oPts=-.5;
-  contrib.push({k:'OBV',pts:oPts,why:obvNow>obvPast?'accumulating':'distributing'});
-  // Leading (×0.7) — show raw then note scaling
-  let rocPts=rocV>0?Math.min(rocV/3,1.5):Math.max(rocV/3,-1.5);
-  contrib.push({k:'ROC',pts:rocPts*0.7,why:`velocity ${rocV>0?'+':''}${rocV.toFixed(1)}%`,lead:true});
-  let spPts=0; if(vel>0&&acc>0)spPts=2; else if(vel>0&&acc<0)spPts=.3; else if(vel<0&&acc<0)spPts=-2; else if(vel<0&&acc>0)spPts=-.3;
-  contrib.push({k:'SPEED',pts:spPts*0.7,why:vel>0?(acc>0?'accelerating up':'slowing'):(acc<0?'accelerating down':'bottoming'),lead:true});
-  contrib.push({k:'MACD',pts:(hist>0?1:-1)*0.7,why:hist>0?'histogram +':'histogram −',lead:true});
-  let kPts=0; if(stK<20)kPts=1; else if(stK>80)kPts=-1; else kPts=stK>stD?.4:-.4;
-  contrib.push({k:'STOCH',pts:kPts*0.7,why:stK<20?`oversold ${stK.toFixed(0)}`:stK>80?`overbought ${stK.toFixed(0)}`:`%K ${stK.toFixed(0)}`,lead:true});
-  if(trendHold!==0)contrib.push({k:'HOLD',pts:trendHold,why:trendHold>0?'confirmed uptrend — hold bias':'confirmed downtrend — hold bias'});
-  if(htfPts!==0)contrib.push({k:'HTF',pts:htfPts,why:(d.htf?d.htf.tf:'higher TF')+' trend '+(htfPts>0?'up — confluence':'down — confluence')});
-  // PRO PACK contributions
-  contrib.push({k:'SRSI',pts:srsiPts,why:srsiK<20?`oversold ${srsiK.toFixed(0)}`:srsiK>80?`overbought ${srsiK.toFixed(0)}`:`%K ${srsiK.toFixed(0)}`});
-  contrib.push({k:'CMF',pts:cmfPts,why:cmfV>0?`inflow +${cmfV.toFixed(2)}`:`outflow ${cmfV.toFixed(2)}`});
-  contrib.push({k:'PSAR',pts:psarPts,why:psDir===1?'SAR below price':'SAR above price'});
-  contrib.push({k:'VWAP',pts:vwapPts,why:vwV==null?'n/a':price>vwV?'above VWAP20':'below VWAP20'});
-  if(sqPts!==0)contrib.push({k:'SQUEEZE',pts:sqPts,why:'released '+(sqPts>0?'up':'down')});
-  if(donPts!==0)contrib.push({k:'DONCH',pts:donPts,why:donPts>0?'20-bar breakout':'20-bar breakdown'});
-  if(patPts!==0)contrib.push({k:'CANDLE',pts:patPts,why:pats.filter(x=>x.type!=='neutral').map(x=>x.name).join(', ')});
-  // regime multiplier note
-  const regimeMult=regime==='ranging'?0.55:regime==='strong'?(chopV<38.2?1.18:1.12):1;
+  // ===== CONTRIBUTION BREAKDOWN (why this signal): the seven trend votes behind the consensus =====
+  const contrib=core.votes.map((v,k)=>({k:CORE_VOTES[k],pts:v,why:v>0?'bullish':v<0?'bearish':'neutral'}));
+  const regimeMult=1;
 
   // ===== PAST SIGNAL HISTORY (real Supertrend flip points = where buy/sell fired) =====
   const history=[];
@@ -2537,7 +2415,7 @@ function analyze(d){
   return{r,e12,e21,e26,e50,b,rsiV,price,rsiSig,emaSig,bollSig,volSig,volRatio,
     avgVol,curVol,verdict,score,conf:conf2,signals,contrib,regimeMult,
     rocArr,rocV,rocSig,ts,vel,acc,tsSig,mac,hist,macdSig,st,stK,stD,stochSig,
-    leadScore,leadVerdict,levels,divs,history,htf:d.htf||null,lab,
+    leadScore,leadVerdict,levels,divs,history,core,htf:core.mode==='daily'?{tf:'day',dir:core.dir}:null,
     adxV,plusDI,minusDI,adxSig,adxSeries:adxR.series,
     obvArr,obvSig,
     str,stDir,stLine,superSig,mfiV,mfiArr,mfiSig,regime,
@@ -2608,22 +2486,29 @@ function render(d,tf){
   document.getElementById('assetName').textContent=current.name+' · Signal Terminal';
   document.getElementById('logo').textContent=current.symbol.slice(0,1);
 
-  const tfName={'15m':'Next 15m','1h':'Next Hour','4h':'Next 4h',day:'Today',week:'This Week',month:'This Month'}[tf];
+  const tfName={'15m':'15m chart','1h':'1h chart','4h':'4h chart',day:'Daily',week:'Weekly',month:'Monthly'}[tf];
   const vClass=a.verdict;
   const vText={buy:'BUY',sell:'SELL',neutral:'HOLD'}[a.verdict];
   try{ window.__aryxSignal={ verdict:a.verdict, text:vText, score:a.score, conf:a.conf, sym:current&&current.symbol, price:a.price }; }catch(e){}
-  const htfBadge=a.htf&&a.htf.dir?`<span class="htf-badge ${a.htf.dir===1?'up':'down'}" title="Higher-timeframe trend (confluence is scored)">${a.htf.tf.toUpperCase()} ${a.htf.dir===1?'▲ up':'▼ down'}</span>`:'';
+  const htfBadge=a.htf?`<span class="htf-badge ${a.htf.dir===1?'up':a.htf.dir===-1?'down':''}" title="Trend of the daily candles — on intraday charts the direction comes from here">DAY ${a.htf.dir===1?'▲ up':a.htf.dir===-1?'▼ down':'◆ mixed'}</span>`:'';
 
   // gauge color split
   const buyPct=Math.max(0,Math.min(100,50+a.score/18*50));
   const sellPct=100-buyPct;
-  const leadText={buy:'BUY',sell:'SELL',neutral:'WAIT'}[a.leadVerdict];
+  const tmg=a.core.timing;
+  const leadText={pullback:'GOOD ENTRY',extended:'WAIT',neutral:'NEUTRAL',oversold:'OVERSOLD',overbought:'OVERBOUGHT',none:'—'}[tmg];
+  const leadSub={pullback:`Chart is stretched <b>against</b> the ${a.core.dir>0?'uptrend':'downtrend'} — a pullback. In the backtest this was the better entry zone (next 5 candles went the trend's way about 54% of the time).`,
+    extended:a.core.intraday?`Chart is stretched <b>in the trend's direction</b>. On intraday charts, entries here were right only about 46% of the time — wait for a pullback.`:`Stretched in the trend's direction. On daily candles strong trends often stay stretched, so this is a caution, not a reversal call.`,
+    neutral:`No stretch — price is mid-range within the trend.`,
+    oversold:`Oversold, but there is no clear trend to lean on — bounces here are unreliable.`,
+    overbought:`Overbought, but there is no clear trend to lean on.`,
+    none:`No clear trend and no stretch — nothing to time.`}[tmg];
 
   let html=`
   <div class="verdict ${vClass}">
     <div class="v-row">
       <div>
-        <div class="v-label">${tfName} · Composite Signal</div>
+        <div class="v-label">${tfName} · Trend Signal</div>
         <div class="v-signal ${vClass}">${vText}${htfBadge}</div>
         <div class="v-meta">Score ${a.score>0?'+':''}${a.score.toFixed(1)} · ${a.conf}% conviction · ${a.signals.length} active triggers</div>
       </div>
@@ -2644,13 +2529,13 @@ function render(d,tf){
 
   <div class="lead-banner ${a.leadVerdict}">
     <div>
-      <div class="v-label">⚡ Leading Edge · early signal</div>
-      <div class="lead-sub">Trend Speed + ROC + MACD histogram + Stochastic — low-lag, fire <b>before</b> RSI/EMA confirm.</div>
+      <div class="v-label">⏱ Entry timing · RSI + Stochastic + Bollinger position</div>
+      <div class="lead-sub">${leadSub}</div>
     </div>
     <div class="lead-sig ${a.leadVerdict}">${leadText}</div>
   </div>
 
-  ${renderLab(a)}
+  ${renderTrack(a)}
 
   ${renderLevels(a)}
 
@@ -2679,10 +2564,10 @@ function render(d,tf){
     ${cardConfluence(a)}
   </div>
 
-  <div class="hi-acc-label">★ High-accuracy core — trend + volume + regime filter</div>
+  <div class="hi-acc-label">★ Trend, volume &amp; regime context</div>
   <div class="grid4">
     ${cardSuper(a)}
-    ${card('MFI-14',a.mfiV!=null?a.mfiV.toFixed(0):'—',a.mfiSig,'Volume-weighted RSI. Stronger than RSI: ≤20 oversold, ≥80 overbought.',a.mfiV||50,0,100,20,80)}
+    ${card('MFI-14',a.mfiV!=null?a.mfiV.toFixed(0):'—',a.mfiSig,'Volume-weighted RSI. Above 50 = money flowing in (one of the seven trend votes); ≤20 / ≥80 = stretched.',a.mfiV||50,0,100,20,80)}
     ${cardRegime(a)}
     ${cardConfluence(a)}
   </div>
@@ -2736,34 +2621,29 @@ function render(d,tf){
 }
 
 
-function renderLab(a){
-  const L=a.lab;
-  if(!L)return `<div class="lab-card"><div class="lab-h">🎯 Signal Lab</div><div class="lab-sub">Needs at least ~125 candles of history to measure indicator accuracy on this chart.</div></div>`;
+function renderTrack(a){
+  const c=a.core,t=c.track;
   const pct=v=>v==null?'—':(v*100).toFixed(0)+'%';
-  const pp=v=>v==null?'—':(v>=0?'+':'')+(v*100).toFixed(1)+' pts';
+  const mv=v=>v==null?'—':(v>=0?'+':'')+(v*100).toFixed(2)+'%';
   const col=v=>v==null?'':v>0.02?'up':v<-0.02?'down':'';
-  const liveTxt=Math.abs(L.live)<0.15?'HOLD':L.live>0?'BUY':'SELL';
-  const liveCls=Math.abs(L.live)<0.15?'neutral':L.live>0?'buy':'sell';
-  const top=L.ranked.slice(0,5), worst=L.ranked.slice(-3).reverse().filter(x=>x.edge<0);
-  const row=x=>`<div class="lab-row"><span class="lab-nm">${x.name}</span><span class="lab-now ${x.now>0?'buy':x.now<0?'sell':''}">${x.now>0?'▲':x.now<0?'▼':'·'}</span><span class="lab-acc ${x.acc>0.55?'up':x.acc<0.48?'down':''}">${pct(x.acc)}</span><small>n=${x.n}</small></div>`;
-  return `<div class="lab-card">
-    <div class="lab-top"><div><div class="lab-h">🎯 Signal Lab — measured on this chart</div>
-      <div class="lab-sub">Each indicator is graded on whether price moved its way over the next ${L.h} candles. The adaptive model is trained on the older ${L.trainN} candles and tested on the newer ${L.testN} it never saw.</div></div>
-      <div class="lab-live ${liveCls}"><small>adaptive read</small>${liveTxt}</div></div>
+  const chips=c.votes.map((v,k)=>`<span class="core-v ${v>0?'buy':v<0?'sell':''}">${v>0?'▲':v<0?'▼':'·'} ${CORE_VOTES[k]}</span>`).join('');
+  const src=c.mode==='daily'?'the <b>daily candles</b> (this is an intraday chart — its own fast signals had no edge in testing)':c.mode==='chart-fallback'?'this chart (no daily history available for this asset — treat as low reliability)':'this chart';
+  const tr=!t||!t.n?`<div class="lab-sub">Not enough history on this chart to measure the signal yet.</div>`:`
     <div class="lab-grid">
-      <div class="lab-m"><span>Adaptive model · out-of-sample</span><b class="${col(L.adaptive.edge)}">${pct(L.adaptive.acc)}</b><small>${pp(L.adaptive.edge)} vs chance · ${L.adaptive.n} signals</small></div>
-      <div class="lab-m"><span>Fixed formula · out-of-sample</span><b class="${col(L.fixed.edge)}">${pct(L.fixed.acc)}</b><small>${pp(L.fixed.edge)} vs chance · ${L.fixed.n} signals</small></div>
-      <div class="lab-m"><span>Base rate (price rose)</span><b>${pct(L.baseUp)}</b><small>of ${L.h}-candle windows in the test period</small></div>
-      <div class="lab-m ${L.wins?'on':''}"><span>Verdict uses</span><b>${L.wins?'Blend':'Fixed'}</b><small>${L.wins?'adaptive won out-of-sample → 50% weight':'adaptive didn’t clearly win → kept out'}</small></div>
-    </div>
-    <div class="lab-cols">
-      <div><div class="lab-ch">Most accurate here <small>hit rate</small></div>${top.map(row).join('')}</div>
-      <div><div class="lab-ch">Weakest here — ignored by the adaptive model</div>${worst.length?worst.map(row).join(''):'<div class="lab-sub">No indicator scored below chance.</div>'}</div>
-    </div>
-    <div class="lab-note">“vs chance” compares with random calls using the same long/short mix, so a market that just went up doesn’t flatter the numbers. Samples are small and windows overlap — treat this as a guide to which tools suit this market, not a guarantee.</div>
+      <div class="lab-m"><span>BUY calls · next ${t.h} candles</span><b class="${t.buy.avg>0?'up':t.buy.avg<0?'down':''}">${pct(t.buy.acc)}</b><small>right · avg move ${mv(t.buy.avg)} · ${t.buy.n} calls</small></div>
+      <div class="lab-m"><span>SELL calls · next ${t.h} candles</span><b class="${t.sell.avg>0?'up':t.sell.avg<0?'down':''}">${pct(t.sell.acc)}</b><small>right · avg move ${mv(t.sell.avg)} · ${t.sell.n} calls</small></div>
+      <div class="lab-m"><span>All calls vs chance</span><b class="${col(t.edge)}">${t.edge==null?'—':(t.edge>=0?'+':'')+(t.edge*100).toFixed(1)+' pts'}</b><small>${pct(t.acc)} right vs a coin flip with the same buy/sell mix</small></div>
+      ${c.intraday?`<div class="lab-m"><span>Pullback entries</span><b class="${t.pull.acc>0.52?'up':t.pull.acc<0.48?'down':''}">${pct(t.pull.acc)}</b><small>right · ${t.pull.n} calls</small></div>`:`<div class="lab-m"><span>Price rose anyway</span><b>${pct(t.baseUp)}</b><small>of all ${t.h}-candle windows on this chart</small></div>`}
+    </div>`;
+  return `<div class="lab-card">
+    <div class="lab-top"><div><div class="lab-h">🎯 How this signal is built — and how it has done on this chart</div>
+      <div class="lab-sub">Direction comes from a consensus of seven trend votes read from ${src}: <b>${c.net>0?'+':''}${c.net} of 7</b> (needs ±4 for a call).</div></div></div>
+    <div class="core-votes">${chips}</div>
+    ${tr}
+    <div class="lab-note">Measured on the ${t?t.bars:0} candles loaded here, so samples are small and overlap. In a wider test (12 major coins, up to 8 years of real candles) this trend read was right only about half the time candle-to-candle — its edge is staying with big moves and out of big drops (long-only it roughly halved the worst drawdown of buy-and-hold on daily candles). It is not a prediction of the next candle, and no indicator tested was.</div>
   </div>`;
 }
-function rsiDesc(v){if(v<30)return'Oversold zone (<30) — bounce setup';if(v>70)return'Overbought zone (>70) — reversal risk';return'Neutral momentum (30–70)';}
+function rsiDesc(v){if(v<30)return'Oversold (<30) — stretched down; used for entry timing, not direction';if(v>70)return'Overbought (>70) — stretched up; used for entry timing, not direction';return'Not stretched (30–70)';}
 
 function card(name,val,sig,desc,v,min,max,loZ,hiZ){
   const pct=Math.max(0,Math.min(100,(v-min)/(max-min)*100));
@@ -2819,48 +2699,38 @@ function cardVol(name,sig,ratio){
 // ---------- backtest panel ----------
 // ---------- "why this signal" contribution breakdown ----------
 function renderWhy(a,vClass,vText){
-  const C=a.contrib.slice().sort((x,y)=>Math.abs(y.pts)-Math.abs(x.pts));
-  const maxAbs=Math.max(...C.map(c=>Math.abs(c.pts)),1.5);
-  const rawSum=a.contrib.reduce((s,c)=>s+c.pts,0);
-  const rows=C.map(c=>{
-    const w=Math.abs(c.pts)/maxAbs*100;
-    const side=c.pts>0?'buy':c.pts<0?'sell':'neutral';
-    const col=c.pts>0?'var(--buy)':c.pts<0?'var(--sell)':'var(--dim)';
-    // bar grows from center: left for sell, right for buy
+  const c=a.core;
+  const rows=a.contrib.map(x=>{
+    const col=x.pts>0?'var(--buy)':x.pts<0?'var(--sell)':'var(--dim)';
     return `<div class="why-row">
-      <span class="why-k">${c.k}${c.lead?'<i class="why-lead">⚡</i>':''}</span>
+      <span class="why-k">${x.k}</span>
       <span class="why-bar">
-        <span class="why-half left">${c.pts<0?`<i style="width:${w}%;background:${col}"></i>`:''}</span>
-        <span class="why-half right">${c.pts>0?`<i style="width:${w}%;background:${col}"></i>`:''}</span>
+        <span class="why-half left">${x.pts<0?`<i style="width:100%;background:${col}"></i>`:''}</span>
+        <span class="why-half right">${x.pts>0?`<i style="width:100%;background:${col}"></i>`:''}</span>
       </span>
-      <span class="why-pts" style="color:${col}">${c.pts>0?'+':''}${c.pts.toFixed(2)}</span>
-      <span class="why-why">${c.why}</span>
+      <span class="why-pts" style="color:${col}">${x.pts>0?'+1':x.pts<0?'−1':'0'}</span>
+      <span class="why-why">${x.why}</span>
     </div>`;
   }).join('');
-  const regTxt=a.regime==='ranging'?`× 0.55 (ranging — trend signals down-weighted)`
-    :a.regime==='strong'?`× ${a.regimeMult} (strong trend — amplified)`:`× 1.0 (normal)`;
+  const src=c.mode==='daily'?'daily candles':c.mode==='chart-fallback'?'this chart (no daily history)':'this chart';
+  const tm={pullback:'pullback — stretched against the trend (better entry zone)',extended:c.intraday?'extended — stretched with the trend (call is to wait)':'extended — stretched with the trend (caution only on daily)',neutral:'neutral',oversold:'oversold, no trend',overbought:'overbought, no trend',none:'—'}[c.timing];
   return `
-    <div class="why-head">Every indicator's exact contribution to this bar's score. Bars left of center push <b class="sell">SELL</b>, right push <b class="buy">BUY</b>. ⚡ = leading (already ×0.7).</div>
+    <div class="why-head">Seven trend-following votes, each <b class="buy">+1</b>, 0 or <b class="sell">−1</b>, read from <b>${src}</b>. These are the rules that held up in the backtest; oscillators like RSI and Stochastic are used for entry timing only, not direction.</div>
     <div class="why-list">${rows}</div>
     <div class="why-math">
-      <div class="why-mrow"><span>Sum of contributions</span><b>${rawSum>0?'+':''}${rawSum.toFixed(2)}</b></div>
-      <div class="why-mrow"><span>ADX regime factor (${a.regime})</span><b>${regTxt}</b></div>
-      <div class="why-mrow total"><span>Final score</span><b class="${vClass}">${a.score>0?'+':''}${a.score.toFixed(2)}</b></div>
-      <div class="why-mrow"><span>Verdict thresholds</span><b>≥+4.0 BUY · ≤−4.0 SELL · else HOLD</b></div>
+      <div class="why-mrow"><span>Net trend votes</span><b>${c.net>0?'+':''}${c.net} of 7</b></div>
+      <div class="why-mrow"><span>Needed for a call</span><b>≥ +4 BUY · ≤ −4 SELL · else HOLD</b></div>
+      <div class="why-mrow"><span>Entry timing on this chart</span><b>${tm}</b></div>
       <div class="why-mrow total"><span>→ Result</span><b class="${vClass}">${vText} @ ${a.conf}%</b></div>
     </div>
     <div class="why-plain">${whyPlain(a,vText)}</div>`;
 }
 function whyPlain(a,vText){
-  const C=a.contrib.slice().sort((x,y)=>Math.abs(y.pts)-Math.abs(x.pts));
-  const top=C.filter(c=>Math.abs(c.pts)>=0.5).slice(0,3);
-  const agree=top.filter(c=>(a.verdict==='buy'&&c.pts>0)||(a.verdict==='sell'&&c.pts<0));
-  if(a.verdict==='neutral'){
-    return `<b>Plain English:</b> the indicators are split — no side reached the ±4.0 threshold, so the call is HOLD. The biggest pulls were ${top.map(c=>c.k+' ('+(c.pts>0?'+':'')+c.pts.toFixed(1)+')').join(', ')}. Wait for clearer agreement.`;
-  }
-  const drivers=agree.length?agree.map(c=>`<b>${c.k}</b> (${c.why}, ${c.pts>0?'+':''}${c.pts.toFixed(1)})`).join(', '):'mixed contributors';
-  const reg=a.regime==='ranging'?' Note: ADX shows a ranging market, so this signal was down-weighted and should be treated cautiously.':a.regime==='strong'?' ADX confirms a strong trend, which amplified the signal.':'';
-  return `<b>Plain English:</b> the call is <b class="${a.verdict}">${vText}</b> mainly because ${drivers} pushed the score to ${a.score>0?'+':''}${a.score.toFixed(1)}, past the ${a.verdict==='buy'?'+4.0':'−4.0'} threshold.${reg}`;
+  const c=a.core,where=c.mode==='daily'?'daily':'chart';
+  if(!c.dir)return `<b>Plain English:</b> only ${Math.abs(c.net)} net of the 7 ${where} trend votes agree, short of the 4 needed — there is no clear trend, so the call is HOLD.`;
+  const side=c.dir>0?'uptrend':'downtrend';
+  if(a.verdict==='neutral')return `<b>Plain English:</b> the ${where} trend is ${c.dir>0?'up':'down'} (${c.net>0?'+':''}${c.net} of 7), but this chart is already stretched in that direction. On intraday charts entries like this were wrong more often than right, so the call is HOLD until price pulls back.`;
+  return `<b>Plain English:</b> the call is <b class="${a.verdict}">${vText}</b> because ${Math.abs(c.net)} net of the 7 ${where} trend votes point ${c.dir>0?'up':'down'} — a ${side}.${c.timing==='pullback'?' The chart is also pulled back against that trend, which has been the better entry zone.':''} Expect it to be wrong on many individual candles; the edge is in staying with the trend.`;
 }
 
 function renderLevels(a){
@@ -3143,7 +3013,7 @@ function cardSuper(a){
   return `<div class="card" style="border-color:${up?'rgba(0,224,138,.5)':'rgba(255,61,94,.5)'}">
     <div class="card-h"><span class="card-name">Supertrend</span><span class="pill ${a.superSig}">${a.superSig}</span></div>
     <div class="card-val">${up?'▲ UP':'▼ DOWN'}</div>
-    <div class="card-desc">ATR trend follower (10,3). Flips define the trend; line sits at ${num(a.stLine)}. One of the most reliable single trend signals.</div>
+    <div class="card-desc">ATR trend follower (10,3). Flips mark trend changes; line sits at ${num(a.stLine)}. Useful as a trailing stop — on its own it was a weak signal in testing.</div>
   </div>`;
 }
 function cardRegime(a){
@@ -3153,7 +3023,7 @@ function cardRegime(a){
   return `<div class="card" style="border-color:${r==='ranging'?'rgba(240,180,41,.5)':'rgba(0,224,138,.35)'}">
     <div class="card-h"><span class="card-name">Regime (ADX)</span><span class="pill ${sig}">${r==='ranging'?'range':'trend'}</span></div>
     <div class="card-val" style="font-size:18px">${txt}</div>
-    <div class="card-desc">${r==='ranging'?'ADX<20 — directional signals are down-weighted; mean-reversion only.':r==='strong'?'ADX≥25 — trend signals amplified, most reliable conditions.':'ADX 20–25 — building trend, normal weighting.'}</div>
+    <div class="card-desc">${r==='ranging'?'ADX<20 — choppy; trend reads are less reliable here.':r==='strong'?'ADX≥25 — a directional market.':'ADX 20–25 — a trend may be building.'}</div>
   </div>`;
 }
 
@@ -3560,7 +3430,8 @@ async function setHeader(){
   }
   try{
     const sym=current.binance||(current.symbol+'USDT');
-    const r=await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`);
+    let r=await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`).catch(()=>null);
+    if(!r||!r.ok)r=await fetch(`https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${sym}`);
     if(!r.ok)throw 0;
     const j=await r.json();
     const ch=parseFloat(j.priceChangePercent);
@@ -3593,21 +3464,16 @@ async function load(tf,silent=false){
   try{
     // refresh always re-pulls live data; switching uses cache if present
     if(silent||!chart[key])chart[key]=await getData(tf);
-    // higher-timeframe confluence: fetch the next TF up, compute its Supertrend direction.
-    // Fail-safe: if it errors (rate limit etc.), the signal simply runs without HTF.
+    // Intraday charts take their direction from the DAILY trend (the chart's own fast signals had no edge in testing).
+    // Fail-safe: if the daily fetch errors, the signal falls back to the chart itself and says so.
+    chart[key].tfKey=tf;
     try{
-      const HTF_UP={'15m':'1h','1h':'4h','4h':'day','day':'week','week':'month'};
-      const htfTf=HTF_UP[tf];
-      if(htfTf){
-        const hKey=current.id+'|'+htfTf;
-        if(silent||!chart[hKey])chart[hKey]=await getData(htfTf);
-        const hd=chart[hKey];
-        if(hd&&hd.prices&&hd.prices.length>30){
-          const hst=supertrend(hd.highs||hd.prices,hd.lows||hd.prices,hd.prices);
-          chart[key].htf={tf:htfTf,dir:hst.dir[hst.dir.length-1]};
-        }
-      }else{chart[key].htf=null;}
-    }catch(e){chart[key].htf=null;}
+      if(tf==='15m'||tf==='1h'||tf==='4h'){
+        const hKey=current.id+'|day';
+        if(silent||!chart[hKey])chart[hKey]=await getData('day');
+        chart[key].anchor=buildAnchor(chart[hKey]);
+      }else chart[key].anchor=null;
+    }catch(e){chart[key].anchor=null;}
     render(chart[key],tf);
     const src=chart[key].source||'live';
     document.getElementById('status').textContent='Live · '+src+' · '+current.name+' · updated '+new Date().toLocaleTimeString();
@@ -4231,7 +4097,8 @@ function aryxBackToLanding(){
   var GT_NEW = 'https://api.geckoterminal.com/api/v2/networks/new_pools?page=';
   var GT_NET = { solana:'solana', eth:'ethereum', bsc:'bsc', base:'base', polygon_pos:'polygon', arbitrum:'arbitrum', avax:'avalanche' };
   var mode = 'movers', allGems = [];
-  var TOKENS = 'https://api.dexscreener.com/latest/dex/tokens/'; // + comma addresses
+  var TOKV1 = 'https://api.dexscreener.com/tokens/v1/'; // + chainId/ + up to 30 comma addresses → array of pairs
+  function tokenPairs(chain, addrs){ return getJSON(TOKV1 + chain + '/' + addrs.join(',')).then(function(r){ return { pairs: Array.isArray(r) ? r : (r && r.pairs) || [] }; }).catch(function(){ return { pairs: [] }; }); }
   var SEARCH = 'https://api.dexscreener.com/latest/dex/search?q=';
   // established mid/large-cap DEX tokens searched alongside trending ones,
   // so the list isn't only micro-caps
@@ -4255,38 +4122,50 @@ function aryxBackToLanding(){
   var BM_CHAIN   = { ethereum:'eth', bsc:'bsc', base:'base', polygon:'poly', arbitrum:'arbi', avalanche:'avax', solana:'sol' };
 
   // holder concentration (top-10 non-LP, non-burn wallets) and LP lock share, when GoPlus has them
-  function holderInfo(d){
-    var out = { top10:null, lpLocked:null, holders:d && d.holder_count ? +d.holder_count : null };
+  // holder concentration (top-10 wallets, excluding pools / burn / lock accounts) and how much liquidity is locked or burned
+  var SOL_AMM = { '5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1':1, 'GpMZbSM2GgvTKHJirzeGfMFoaZ8UR2X7F4v8vHTvxFbL':1 };   // Raydium pool authorities
+  function holderInfo(d, m){
+    var out = { top10:null, lpLocked:null, holders:d && +d.holder_count ? +d.holder_count : null };
+    var pair = String((m && m.pair) || '').toLowerCase();
     if(d && Array.isArray(d.holders) && d.holders.length){
       var t = 0, n = 0;
       d.holders.forEach(function(h){
         if(n >= 10 || !h) return;
-        var addr = String(h.address||'').toLowerCase(), tag = String(h.tag||'').toLowerCase();
-        if(/^0x0{40}$|dead$/.test(addr) || /burn|lock|pool|lp|pair|raydium|uniswap|pancake/.test(tag) || h.is_contract==1 && h.is_locked==1) return;
+        var owner = String(h.account || h.address || ''), lc = owner.toLowerCase(), tag = String(h.tag||'').toLowerCase();
+        // skip the pool / bonding curve itself, AMM vaults, burn & lock accounts — they are not whales
+        if(lc === pair || SOL_AMM[owner] || /^0x0{40}$|dead$/.test(lc) || /burn|lock|vest|streamflow|pool|lp|pair|raydium|meteora|orca|pump|uniswap|pancake|aerodrome|sushi/.test(tag) || h.is_locked == 1) return;
         t += (+h.percent || 0) * 100; n++;
       });
       out.top10 = t;
     }
-    if(d && Array.isArray(d.lp_holders) && d.lp_holders.length){
+    // EVM v2-style pools: share of LP tokens locked or burned. (v3/v4 positions are NFTs — not judgeable this way.)
+    var v3 = d && Array.isArray(d.dex) && d.dex.length && /v3|v4/i.test(String(d.dex[0].liquidity_type || ''));
+    if(d && !v3 && Array.isArray(d.lp_holders) && d.lp_holders.length){
       var lk = 0;
       d.lp_holders.forEach(function(h){ var a = String(h.address||'').toLowerCase();
         if(h.is_locked==1 || /^0x0{40}$|0x0{36}dead$/.test(a)) lk += (+h.percent || 0) * 100; });
       out.lpLocked = Math.min(100, lk);
     }
+    // Solana: GoPlus reports the burned share of LP per pool
+    if(d && Array.isArray(d.dex) && d.dex.length && d.dex[0].burn_percent != null){
+      var best = d.dex.filter(function(x){ return String(x.id||'').toLowerCase() === pair; })[0] || d.dex.slice().sort(function(a,b){ return (+b.tvl||0) - (+a.tvl||0); })[0];
+      if(best && best.burn_percent != null) out.lpLocked = Math.max(0, Math.min(100, +best.burn_percent));
+    }
     return out;
   }
-  function parseEvmSafety(d){
-    var r = parseEvmSafetyCore(d); if(d) r.info = holderInfo(d); return r;
+  function parseEvmSafety(d, m){
+    var r = parseEvmSafetyCore(d); if(d) r.info = holderInfo(d, m); return r;
   }
   function parseEvmSafetyCore(d){
     if(!d) return { v:'?', why:'no data' };
-    var honey = d.is_honeypot==='1' || d.cannot_sell_all==='1';
+    var honey = d.is_honeypot==='1' || d.cannot_sell_all==='1' || d.cannot_buy==='1';
     var sellTax = (+d.sell_tax||0)*100, buyTax = (+d.buy_tax||0)*100;
     var danger = [];
     if(d.transfer_pausable==='1') danger.push('pausable');
     if(d.hidden_owner==='1') danger.push('hidden owner');
     if(d.can_take_back_ownership==='1') danger.push('owner can reclaim');
     if(d.is_blacklisted==='1') danger.push('blacklist');
+    if(d.honeypot_with_same_creator==='1') danger.push('creator made honeypots before');
     if(honey) return { v:'danger', why:'honeypot — buyers cannot sell' };
     if(sellTax>=30) return { v:'danger', why:'sell tax '+sellTax.toFixed(0)+'%' };
     if(danger.length) return { v:'danger', why:danger.join(', ') };
@@ -4294,36 +4173,73 @@ function aryxBackToLanding(){
     if(sellTax>=10||buyTax>=10) caution.push('tax '+Math.max(buyTax,sellTax).toFixed(0)+'%');
     if(d.is_open_source==='0') caution.push('closed source');
     if(d.is_mintable==='1') caution.push('mintable');
+    if(d.is_proxy==='1' && d.is_open_source==='0') caution.push('upgradeable');
     if(d.owner_address && d.owner_address!=='0x0000000000000000000000000000000000000000' && d.is_open_source==='0') caution.push('owned');
+    // on newer pool types GoPlus cannot simulate a sale: "not a honeypot" is then unverified
+    if(!caution.length && d.is_in_dex!=='1' && (d.sell_tax==null || d.sell_tax==='')) caution.push('sell not simulated on this pool type');
     if(caution.length) return { v:'caution', why:caution.join(', ') };
     return { v:'ok', why:'no major flags' };
   }
-  function parseSolSafety(d){
-    var r = parseSolSafetyCore(d); if(d) r.info = holderInfo(d); return r;
+  function parseSolSafety(d, m){
+    var r = parseSolSafetyCore(d); if(d) r.info = holderInfo(d, m); return r;
   }
   function parseSolSafetyCore(d){
     if(!d) return { v:'?', why:'no data' };
-    var fr = (d.freezable && d.freezable.status)==='1';
-    var nt = d.non_transferable==='1' || (d.transferable && d.transferable.status)==='0';
-    var mint = (d.mintable && d.mintable.status)==='1';
-    if(fr) return { v:'danger', why:'freeze authority — tokens can be frozen' };
-    if(nt) return { v:'danger', why:'non-transferable' };
-    if(mint) return { v:'caution', why:'mint authority active' };
+    var on = function(x){ return !!x && String(x.status) === '1'; };
+    if(on(d.freezable)) return { v:'danger', why:'freeze authority — tokens can be frozen' };
+    if(d.non_transferable == 1) return { v:'danger', why:'non-transferable' };
+    if(on(d.balance_mutable_authority)) return { v:'danger', why:'an authority can change balances — freeze/seize risk' };
+    if(String(d.default_account_state) === '2') return { v:'danger', why:'accounts are frozen by default — non-transferable until unfrozen' };
+    var caution = [];
+    if(on(d.mintable)) caution.push('mint authority active');
+    if(Array.isArray(d.transfer_hook) && d.transfer_hook.length) caution.push('transfer hook');
+    if(d.transfer_fee && typeof d.transfer_fee === 'object' && Object.keys(d.transfer_fee).length) caution.push('transfer fee');
+    if(on(d.closable)) caution.push('closable');
+    if(caution.length) return { v:'caution', why:caution.join(', ') };
     return { v:'ok', why:'no freeze/mint flags' };
+  }
+  // GoPlus allows roughly 30 keyless lookups a minute and answers one token per request. So: remember results
+  // (6h), run lookups one at a time with at most 24 a minute, and let callers render as each result arrives.
+  var GP = 'https://api.gopluslabs.io/api/v1/';
+  var SAFE_KEY = 'aryx.safety2', SAFE_TTL = 6*3600000, safeMem = {}, gpQueue = [], gpBusy = false, gpStamps = [], safePending = 0;
+  try{ safeMem = JSON.parse(localStorage.getItem(SAFE_KEY)) || {}; }catch(e){ safeMem = {}; }
+  function saveSafe(){
+    var now = Date.now(), keys = Object.keys(safeMem).filter(function(k){ return now - safeMem[k].t < SAFE_TTL; });
+    if(keys.length > 500) keys = keys.sort(function(a,b){ return safeMem[b].t - safeMem[a].t; }).slice(0, 500);
+    var out = {}; keys.forEach(function(k){ out[k] = safeMem[k]; }); safeMem = out;
+    try{ localStorage.setItem(SAFE_KEY, JSON.stringify(safeMem)); }catch(e){}
+  }
+  function gpLookup(m){
+    var url, a = m.addr;
+    if(m.chain === 'solana') url = GP + 'solana/token_security?contract_addresses=' + a;
+    else { a = a.toLowerCase(); url = GP + 'token_security/' + GOPLUS_EVM[m.chain] + '?contract_addresses=' + a; }
+    return fetch(url).then(function(r){ return r.json(); }).then(function(r){
+      if(r && r.code === 4029) return 'limited';
+      var res = r && r.result, d = res && (res[a] || res[Object.keys(res)[0]]);
+      return m.chain === 'solana' ? parseSolSafety(d, m) : parseEvmSafety(d, m);
+    }).catch(function(){ return { v:'?', why:'check failed' }; });
+  }
+  function gpPump(){
+    if(gpBusy || !gpQueue.length) return;
+    var now = Date.now(); gpStamps = gpStamps.filter(function(t){ return now - t < 60000; });
+    if(gpStamps.length >= 24){ gpBusy = true; setTimeout(function(){ gpBusy = false; gpPump(); }, 60000 - (now - gpStamps[0]) + 250); return; }
+    var job = gpQueue.shift(); gpBusy = true; gpStamps.push(now);
+    gpLookup(job.m).then(function(res){
+      if(res === 'limited'){                       // rate-limited: back off, try this one once more later
+        if(job.tries++ < 2){ gpQueue.unshift(job); setTimeout(function(){ gpBusy = false; gpPump(); }, 20000); return; }
+        res = { v:'?', why:'safety service busy — will retry on the next scan' };
+      } else if(res.v !== '?'){ safeMem[job.k] = { t:Date.now(), r:res }; saveSafe(); }
+      safePending = Math.max(0, safePending - 1);
+      job.done(res);
+      setTimeout(function(){ gpBusy = false; gpPump(); }, 150);
+    });
   }
   function checkSafety(m){
     if(!m.addr) return Promise.resolve({ v:'?', why:'no address' });
-    if(m.chain==='solana'){
-      return getJSON('https://api.goplus.org/api/v1/solana/token_security?contract_addresses='+m.addr)
-        .then(function(r){ var res=r&&r.result; var d=res&&(res[m.addr]||res[Object.keys(res)[0]]); return parseSolSafety(d); })
-        .catch(function(){ return { v:'?', why:'unchecked' }; });
-    }
-    var cid = GOPLUS_EVM[m.chain];
-    if(!cid) return Promise.resolve({ v:'?', why:'chain unchecked' });
-    var a = m.addr.toLowerCase();
-    return getJSON('https://api.goplus.org/api/v1/token_security/'+cid+'?contract_addresses='+a)
-      .then(function(r){ var res=r&&r.result; var d=res&&(res[a]||res[Object.keys(res||{})[0]]); return parseEvmSafety(d); })
-      .catch(function(){ return { v:'?', why:'unchecked' }; });
+    if(m.chain !== 'solana' && !GOPLUS_EVM[m.chain]) return Promise.resolve({ v:'?', why:'chain not covered by the safety service' });
+    var k = m.chain + ':' + m.addr, hit = safeMem[k];
+    if(hit && Date.now() - hit.t < SAFE_TTL) return Promise.resolve(hit.r);
+    return new Promise(function(done){ safePending++; gpQueue.push({ k:k, m:m, tries:0, done:done }); gpPump(); });
   }
   function safetyLinks(m){
     var out = [];
@@ -4341,6 +4257,10 @@ function aryxBackToLanding(){
     var ch = p.priceChange || {};
     var h1 = +ch.h1 || 0, h6 = +ch.h6 || 0, h24 = +ch.h24 || 0, m5 = +ch.m5 || 0;
     if (liq < 15000 || vol < 20000) return null;     // avoid illiquid / dead / rug-prone
+    var ageH = p.pairCreatedAt ? (Date.now() - p.pairCreatedAt) / 3600000 : 9999;
+    // Too new to judge. In a live forward test, tokens 1–6h old lost a median 18% within the next hour
+    // (10–60 min old: −61%), and every "1h / 6h / 24h" reading is the same single number for them.
+    if (ageH < 6) return null;
 
     var s = 0, tags = [];
     if (h1 > 0) { s += 2; tags.push(['H1 ↑ '+h1.toFixed(0)+'%', 0]); }
@@ -4355,19 +4275,17 @@ function aryxBackToLanding(){
       else if (bp >= 0.55) { s += 0.6; }
       else if (bp <= 0.4) { s -= 1.4; tags.push(['Sell pressure', 1]); }
     }
-    // volume acceleration — last hour vs the average hour of the day
-    var vh1 = (p.volume && +p.volume.h1) || 0, accel = vol > 0 ? vh1 / (vol / 24) : 0;
+    // volume acceleration — last hour vs the hourly pace of the previous six (fair for young tokens too)
+    var vh1 = (p.volume && +p.volume.h1) || 0, vh6 = (p.volume && +p.volume.h6) || 0, accel = vh6 > 0 ? vh1 / (vh6 / 6) : 0;
     if (accel >= 2.5 && h1 > 0) { s += 1.5; tags.push(['Vol surge ×'+accel.toFixed(1), 0]); }
-    else if (accel >= 1.5 && h1 > 0) { s += 0.7; }
+    else if (accel >= 1.5 && h1 > 0) { s += 0.9; tags.push(['Vol rising ×'+accel.toFixed(1), 0]); }
 
     var vlr = vol / liq;                              // turnover — real activity
     if (vlr > 3) { s += 2; tags.push(['High turnover', 0]); }
     else if (vlr > 1) { s += 1; tags.push(['Active', 0]); }
 
-    var ageH = p.pairCreatedAt ? (Date.now() - p.pairCreatedAt) / 3600000 : 9999;
     if (ageH < 24 * 45) { s += 1; }
     if (ageH < 24 * 7) { s += 1.2; tags.push(['Fresh', 0]); }
-    if (ageH < 6) { tags.push(['Very new', 1]); }     // extra risky
 
     if (p._boosted) { s += 0.8; tags.push(['Boosted', 0]); }
 
@@ -4393,17 +4311,20 @@ function aryxBackToLanding(){
     var ch = p.priceChange || {}, m5 = +ch.m5 || 0, h1 = +ch.h1 || 0, h6 = +ch.h6 || 0, h24 = +ch.h24 || 0;
     var ageH = p.pairCreatedAt ? (Date.now() - p.pairCreatedAt) / 3600000 : 9999;
     // hard gates: early, small, tradeable, not already ran, not dumping
-    if (ageH > 24 * 14 || !mcap || mcap < 30000 || mcap > 10000000) return null;
+    // Under 6 hours old is left out on purpose (see score()): that window is where almost everything collapses.
+    if (ageH < 6 || ageH > 24 * 14 || !mcap || mcap < 30000 || mcap > 10000000) return null;
     if (liq < 10000 || vol < 15000 || liq / mcap < 0.04) return null;
     if (h24 > 150 || h1 < -10 || h6 < -25) return null;
 
     var s = 0, tags = [];
-    if (ageH < 24) { s += 2; tags.push(['Launched '+fmtAge(ageH)+' ago', 0]); }
-    else if (ageH < 72) { s += 1.5; tags.push(['New '+fmtAge(ageH), 0]); }
-    else if (ageH < 24 * 7) { s += 0.8; }
+    // survivors of the first day did best in the forward test (1–3 days old: no crashes, best average)
+    if (ageH < 24) { s += 1; tags.push(['New '+fmtAge(ageH), 0]); }
+    else if (ageH < 72) { s += 2; tags.push(['Survived day one · '+fmtAge(ageH), 0]); }
+    else if (ageH < 24 * 7) { s += 1; }
     if (mcap < 1e6) { s += 2; tags.push(['Micro cap', 0]); } else if (mcap < 3e6) s += 1.4; else s += 0.6;
     var lr = liq / mcap;
-    if (lr >= 0.1) { s += 1; tags.push(['Deep liq', 0]); }
+    if (lr >= 0.1 && lr <= 0.6) { s += 1; tags.push(['Deep liq', 0]); }
+    if (p.dexId === 'pumpfun') { s -= 1; tags.push(['Not graduated', 1]); }      // still on the launch curve: most never leave it
 
     var t1 = (p.txns && p.txns.h1) || {}, t6 = (p.txns && p.txns.h6) || {}, t24 = (p.txns && p.txns.h24) || {};
     var b1 = +t1.buys || 0, s1 = +t1.sells || 0, b6 = +t6.buys || 0, s6 = +t6.sells || 0;
@@ -4414,8 +4335,9 @@ function aryxBackToLanding(){
     // activity accelerating: last hour's trades vs the 6h and 24h hourly pace
     var n1 = b1 + s1, n6h = (b6 + s6) / 6, n24h = ((+t24.buys || 0) + (+t24.sells || 0)) / 24;
     if (n1 >= 15 && n6h > 0 && n1 >= n6h * 1.5) { s += 1; tags.push(['Activity rising', 0]); }
-    var vh1 = (p.volume && +p.volume.h1) || 0, accel = vol > 0 ? vh1 / (vol / 24) : 0;
-    if (accel >= 2 && h1 > 0) { s += 1.3; tags.push(['Vol surge ×'+accel.toFixed(1), 0]); }
+    var vh1 = (p.volume && +p.volume.h1) || 0, vh6 = (p.volume && +p.volume.h6) || 0, accel = vh6 > 0 ? vh1 / (vh6 / 6) : 0;
+    if (accel >= 3 && h1 > 0) { s += 1.6; tags.push(['Vol surge ×'+accel.toFixed(1), 0]); }
+    else if (accel >= 1.5 && h1 > 0) { s += 1.1; tags.push(['Vol rising ×'+accel.toFixed(1), 0]); }
     // steady climb beats a single spike
     if (m5 >= 0 && h1 > 0 && h6 > 0 && h1 < 60) { s += 1.5; tags.push(['Steady climb', 0]); }
     else if (h1 > 0) s += 0.5;
@@ -4542,7 +4464,7 @@ function aryxBackToLanding(){
   // ---- Themes: narratives that spawn waves of tokens (events, memes, sectors) ----
   // Edit THEME_EVENT dates as announcements change — GTA VI has slipped before.
   var DEFAULT_THEMES = [
-    { id:'gta6', name:'GTA 6', icon:'🎮', q:['gta 6','gta6','gta vi','vice city','leonida'], rx:'gta ?(6|vi)\\b|gtavi|gta6|vice ?city|leonida|grand ?theft|rockstar',
+    { id:'gta6', name:'GTA 6', icon:'🎮', q:['gta 6','gta6','gta vi','vice city','leonida'], rx:'\\bgta\\b|gta ?(6|vi)\\b|gtavi|gta6|vice ?city|leonida|grand ?theft|rockstar',
       event:{ date:'2026-11-19', label:'GTA VI release (as last announced by Rockstar — verify, it has been delayed before)' },
       news:'"GTA 6" OR "GTA VI"', warn:'Rockstar Games / Take-Two have not launched a token — anything sold as an “official GTA token” is a scam.' },
     { id:'ai', name:'AI agents', icon:'🤖', q:['ai agent','agent','gpt'], rx:'\\bai\\b|agent|gpt|neural|\\bllm\\b|virtuals?\\b', news:'crypto "AI agents"' },
@@ -4570,26 +4492,28 @@ function aryxBackToLanding(){
     if(liq < 5000 || vol < 5000) return null;
     var ch = p.priceChange || {}, h1 = +ch.h1 || 0, h6 = +ch.h6 || 0, h24 = +ch.h24 || 0;
     var tx = (p.txns && p.txns.h1) || {}, buys = +tx.buys || 0, sells = +tx.sells || 0, bp = buys+sells ? buys/(buys+sells) : null;
-    var vh1 = (p.volume && +p.volume.h1) || 0, accel = vol > 0 ? vh1/(vol/24) : 0;
     var ageH = p.pairCreatedAt ? (Date.now() - p.pairCreatedAt)/3600000 : 9999;
+    var vh1 = (p.volume && +p.volume.h1) || 0, vh6 = (p.volume && +p.volume.h6) || 0, accel = ageH >= 6 && vh6 > 0 ? vh1/(vh6/6) : 0;
     var s = 0, tags = [];
     if(h1 > 0){ s += 1.5; tags.push(['H1 ↑ '+h1.toFixed(0)+'%', 0]); }
     if(buys+sells >= 15 && bp >= 0.6){ s += 1.2; tags.push(['Buy pressure', 0]); }
     if(buys+sells >= 15 && bp <= 0.4){ s -= 1.5; tags.push(['Sell pressure', 1]); }
     if(accel >= 2 && h1 > 0){ s += 1.2; tags.push(['Vol surge ×'+accel.toFixed(1), 0]); }
     if(liq >= 50000){ s += 1; tags.push(['Liquid', 0]); }
-    if(ageH < 24){ s += 0.8; tags.push(['New '+fmtAge(ageH), 0]); } else if(ageH < 72) s += 0.5;
+    if(ageH < 6){ s -= 1.5; tags.push(['Under 6h old — most fail', 1]); }
+    else if(ageH < 24){ s += 0.5; tags.push(['New '+fmtAge(ageH), 0]); } else if(ageH < 72) s += 0.8;
     if(h24 > 150){ s -= 1.5; tags.push(['Already ran', 1]); }
     var name = (p.baseToken && p.baseToken.name) || '';
     if(/official|\breal\b|original|verified|\bv2\b/i.test(name)) { s -= 1; tags.push(['Claims official', 1]); }
     return { sym:(p.baseToken && p.baseToken.symbol) || '?', name:name, chain:p.chainId, addr:(p.baseToken && p.baseToken.address), pair:p.pairAddress, url:p.url,
-      price:+p.priceUsd, liq:liq, vol:vol, vh1:vh1, mcap:(+p.marketCap || +p.fdv || 0), h1:h1, h6:h6, h24:h24, s:s, pct:Math.max(0, Math.min(100, Math.round(s/6.2*100))),
+      price:+p.priceUsd, liq:liq, vol:vol, vh1:vh1, vh6:vh6, mcap:(+p.marketCap || +p.fdv || 0), h1:h1, h6:h6, h24:h24, s:s, pct:Math.max(0, Math.min(100, Math.round(s/6.2*100))),
       tags:tags, buys:buys, sells:sells, bp:bp, accel:accel, ageH:ageH };
   }
   function themeHeat(list){
-    var n = list.length, new24 = 0, new7 = 0, vol24 = 0, vol1h = 0, up = 0, act = 0;
-    list.forEach(function(m){ if(m.ageH < 24) new24++; if(m.ageH < 168) new7++; vol24 += m.vol; vol1h += m.vh1; if(m.vh1 > 0){ act++; if(m.h1 > 0) up++; } });
-    var accel = vol24 > 0 ? vol1h*24/vol24 : 0, upShare = act ? up/act : 0;
+    var n = list.length, new24 = 0, new7 = 0, vol24 = 0, vol1h = 0, a1 = 0, a6 = 0, up = 0, act = 0;
+    list.forEach(function(m){ if(m.ageH < 24) new24++; if(m.ageH < 168) new7++; vol24 += m.vol; vol1h += m.vh1; if(m.vh1 > 0){ act++; if(m.h1 > 0) up++; }
+      if(m.ageH >= 6){ a1 += m.vh1; a6 += m.vh6 || 0; } });                       // pace only from tokens old enough to have one
+    var accel = a6 > 0 ? a1/(a6/6) : 0, upShare = act ? up/act : 0;
     var lg = function(x, full){ return Math.min(1, Math.log10(1+x)/Math.log10(1+full)); };
     var heat = Math.round(30*lg(new24, 25) + 25*Math.min(1, Math.max(0, accel-0.6)/1.9) + 20*upShare + 25*lg(vol24/1e5, 100));
     return { n:n, new24:new24, new7:new7, vol24:vol24, vol1h:vol1h, accel:accel, upShare:upShare, heat:Math.max(0, Math.min(100, heat)) };
@@ -4613,8 +4537,7 @@ function aryxBackToLanding(){
     if(days >= 0) return { days:days, cls:'hot', txt:'⚠ Peak-risk window — event tokens often top before or on the day ("buy the rumour, sell the news").' };
     return { days:days, cls:'quiet', txt:'Post-event — most event tokens fade after the event; only a few with real communities survive.' };
   }
-  var safetyCache = {};
-  function cachedSafety(m){ var k = m.chain+':'+m.addr; return safetyCache[k] || (safetyCache[k] = checkSafety(m)); }
+  function cachedSafety(m){ return checkSafety(m); }     // checkSafety remembers results itself
 
 
   // ---- Emerging trends: words/phrases suddenly shared by many fresh launches ----
@@ -4636,14 +4559,16 @@ function aryxBackToLanding(){
     ws.forEach(function(w){ if(!uniq[w]){ uniq[w] = 1; out.push(w); } });
     // two-word phrases from the name ("vice city", "baby shark")
     var nm = String(name||'').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter(Boolean);
-    for(var i=0;i<nm.length-1;i++){ var a = nm[i], b = nm[i+1]; if(a.length < 2 || b.length < 2 || (STOP[a] && STOP[b])) continue; var bg = a+' '+b; if(!uniq[bg]){ uniq[bg] = 1; out.push(bg); } }
+    for(var i=0;i<nm.length-1;i++){ var a = nm[i], b = nm[i+1]; if(a.length < 2 || b.length < 2 || STOP[a] || STOP[b]) continue; var bg = a+' '+b; if(!uniq[bg]){ uniq[bg] = 1; out.push(bg); } }
     return out;
   }
   function mineTrends(pairs){
     var agg = {};
     Object.keys(pairs).forEach(function(k){
       var p = pairs[k], ageH = p.pairCreatedAt ? (Date.now()-p.pairCreatedAt)/3600000 : 9999;
-      if(ageH > 72) return;
+      // only tokens that surfaced on their own (boosted, newly profiled, new pools): searching for a ticker
+      // ourselves always returns its copycats, which would look like a "trend"
+      if(ageH > 72 || !p._disc) return;
       var vol = (p.volume && p.volume.h24) || 0, liq = (p.liquidity && p.liquidity.usd) || 0;
       if(liq < 3000 && vol < 3000) return;
       var w8 = 1 + Math.log10(1 + vol/10000);
@@ -4664,7 +4589,11 @@ function aryxBackToLanding(){
       a.base = h.length ? h.reduce(function(s,x){ return s + x[1]; }, 0)/h.length : null;
       a.growth = a.base ? a.n/a.base - 1 : null;
       a.isNew = !hist[a.word] || !hist[a.word].length;
+      // part of a tracked theme if the word matches it, or most of the cluster's tokens do
       a.theme = themesOf(a.word)[0] || null;
+      if(!a.theme){ var cnt = {}; a.keys.forEach(function(k){ var bt = pairs[k].baseToken || {}; themesOf((bt.name||'')+' '+(bt.symbol||'')).forEach(function(t){ cnt[t.id] = (cnt[t.id]||0) + 1; }); });
+        var top = Object.keys(cnt).sort(function(x,y){ return cnt[y] - cnt[x]; })[0];
+        if(top && cnt[top] >= a.n * 0.5) a.theme = allThemes().filter(function(t){ return t.id === top; })[0] || null; }
       a.score = a.w * (1 + a.new24/a.n) * (a.isNew ? 1.4 : a.growth != null ? Math.max(0.6, Math.min(2.5, 1 + a.growth)) : 1);
     });
     list.sort(function(x,y){ return y.score - x.score; });
@@ -4674,7 +4603,16 @@ function aryxBackToLanding(){
     Object.keys(hist).forEach(function(w){ hist[w] = hist[w].filter(function(x){ return now - x[0] < 3*86400000; }); if(!hist[w].length) delete hist[w]; });
     var keys = Object.keys(hist); if(keys.length > 400) keys.sort(function(a,b){ return hist[a].length - hist[b].length; }).slice(0, keys.length-400).forEach(function(w){ delete hist[w]; });
     try{ localStorage.setItem(TREND_HIST_KEY, JSON.stringify(hist)); }catch(e){}
-    trends = list.slice(0, 12);
+    // keep clusters that are genuinely new: drop ones already covered by a tracked theme, and near-duplicates
+    // of a stronger cluster (same tokens under another word, e.g. "elon reeve" / "reeve musk")
+    var kept = [];
+    list.forEach(function(a){
+      if(a.theme || kept.length >= 12) return;
+      var set = {}; a.keys.forEach(function(k){ set[k] = 1; });
+      var dup = kept.some(function(b){ var inter = 0; b.keys.forEach(function(k){ if(set[k]) inter++; }); return inter >= Math.min(a.keys.length, b.keys.length) * 0.6; });
+      if(!dup) kept.push(a);
+    });
+    trends = kept;
     trends.forEach(function(a){
       var toks = a.keys.map(function(k){ return themeToken(pairs[k]); }).filter(Boolean);
       var bySym = {}; toks.forEach(function(m){ var u = m.sym.toUpperCase(); bySym[u] = (bySym[u] || 0) + 1; });
@@ -4717,8 +4655,11 @@ function aryxBackToLanding(){
   }
   function checkThemeSafety(){
     var d = themeData[themeSel]; if(!d) return Promise.resolve();
-    return Promise.all(d.tokens.slice(0, 20).map(function(m){ return cachedSafety(m).then(function(sf){ m.safety = sf; }); })).then(function(){
-      d.tokens = d.tokens.filter(function(m){ return !(m.safety && m.safety.v === 'danger' && /honeypot|cannot sell|non-transferable|freeze/.test(m.safety.why)); }); });
+    var id = themeSel;
+    d.tokens.slice(0, 20).forEach(function(m){ if(m.safety) return; cachedSafety(m).then(function(sf){ m.safety = sf;
+      d.tokens = d.tokens.filter(function(x){ return !(x.safety && x.safety.v === 'danger' && /honeypot|cannot sell|non-transferable|freeze|frozen|seize/.test(x.safety.why)); });
+      if(mode === 'themes' && themeSel === id) applyFilters(); }); });
+    return Promise.resolve();
   }
   function loadTopic(t){
     if(!t || !t.news) return;
@@ -4813,7 +4754,7 @@ function aryxBackToLanding(){
     return '<div class="mv-flow" title="Last hour: '+m.buys+' buys vs '+m.sells+' sells">'+
       '<div class="mv-flow-bar"><i style="width:'+b+'%"></i></div>'+
       '<span class="mv-flow-lbl"><b class="up">'+m.buys+'</b> buys · <b class="down">'+m.sells+'</b> sells <small>1h</small>'+
-      (m.accel?' · vol <b class="'+(m.accel>=1.5?'up':'')+'">×'+m.accel.toFixed(1)+'</b> <small>vs avg hr</small>':'')+
+      (m.accel?' · vol <b class="'+(m.accel>=1.5?'up':'')+'">×'+m.accel.toFixed(1)+'</b> <small>vs prior 6h pace</small>':'')+
       ' · age '+fmtAge(m.ageH)+'</span></div>';
   }
 
@@ -4876,8 +4817,7 @@ function aryxBackToLanding(){
       Object.keys(byChain).forEach(function(chain){
         var addrs = byChain[chain].slice(0, 150);
         for(var i=0;i<addrs.length;i+=30){
-          var chunk = addrs.slice(i, i+30).join(',');
-          calls.push(getJSON(TOKENS + chunk).catch(function(){ return {pairs:[]}; }));
+          calls.push(tokenPairs(chain, addrs.slice(i, i+30)));
         }
       });
       MAJORS.forEach(function(t){ calls.push(getJSON(SEARCH + encodeURIComponent(t)).catch(function(){ return {pairs:[]}; })); });
@@ -4890,7 +4830,7 @@ function aryxBackToLanding(){
           (r && r.pairs || []).forEach(function(p){
             if(!p || !p.baseToken) return;
             var key = p.chainId+':'+p.baseToken.address;
-            p._boosted = !!boosted[key];
+            p._boosted = !!boosted[key]; p._disc = !!seen[key];
             // keep the deepest-liquidity pair per token
             var cur = bestByToken[key];
             var liq = (p.liquidity && p.liquidity.usd) || 0;
@@ -4907,26 +4847,27 @@ function aryxBackToLanding(){
         Object.keys(bestByToken).forEach(function(k){ var g = gemScore(bestByToken[k]); if(g){ g.name = (bestByToken[k].baseToken||{}).name || ''; persist(g,'gem'); if(g.s >= 4) gems.push(g); } });
         gems.sort(function(a,b){ return b.s - a.s; });
         var gemPool = gems.slice(0, 30);
-        // 3) run rug/honeypot safety checks on both shortlists (one call per token)
-        if(scanBtn) scanBtn.textContent = '… safety';
-        var checks = {};
-        function safetyOf(m){ var k = m.chain+':'+m.addr; return checks[k] || (checks[k] = checkSafety(m)); }
-        Promise.all(pool.concat(gemPool).map(function(m){ return safetyOf(m).then(function(s){ m.safety = s; return m; }); }))
-          .then(function(){
-            // always drop confirmed honeypots; keep the rest for filtering
-            function notRug(m){ return !(m.safety && m.safety.v==='danger' && /honeypot|cannot sell|non-transferable|freeze/.test(m.safety.why)); }
-            allMovers = pool.filter(notRug);
-            gemPool.forEach(gemAdjust);
-            allGems = gemPool.filter(notRug).filter(function(m){ return m.s >= 4; });
-            applyFilters();
-            startWatch();   // begin drop-alert monitoring on the fresh list
-            remember(allMovers, 'mv'); remember(allGems, 'gem');
-            logPicks(allMovers, 'mv'); logPicks(allGems, 'gem'); saveRec(); renderRecord();
-            lastScan = Date.now(); lastSeen = nTokens; updateStatus();
-            if(mode === 'themes') scanThemes(true);
-            scanning = false;
-            if(scanBtn) scanBtn.textContent = '↻ scan';
-          });
+        // flag copycats: several different contracts using the same ticker in one list
+        [pool, gemPool].forEach(function(list){ var bySym = {}; list.forEach(function(m){ var u = String(m.sym).toUpperCase(); bySym[u] = (bySym[u]||0) + 1; });
+          list.forEach(function(m){ var c = bySym[String(m.sym).toUpperCase()]; if(c > 1){ m.tags.unshift(['Copycat ×'+c, 1]); m.s -= 0.7; m.pct = Math.max(0, Math.min(100, Math.round(m.s / (m.gem?13:10.5) * 100))); } }); });
+        // 3) show the lists now; safety results arrive one by one (the service allows ~24 lookups a minute) and are remembered
+        function notRug(m){ return !(m.safety && m.safety.v==='danger' && /honeypot|cannot sell|non-transferable|freeze|frozen|seize/.test(m.safety.why)); }
+        allMovers = pool; allGems = gemPool;
+        applyFilters();
+        startWatch();   // begin drop-alert monitoring on the fresh list
+        remember(allMovers, 'mv'); remember(allGems, 'gem');
+        logPicks(allMovers, 'mv'); logPicks(allGems, 'gem'); saveRec(); renderRecord();
+        lastScan = Date.now(); lastSeen = nTokens; updateStatus();
+        if(mode === 'themes') scanThemes(true);
+        scanning = false;
+        if(scanBtn) scanBtn.textContent = '↻ scan';
+        var reTimer = null;
+        function refresh(){ if(reTimer) return; reTimer = setTimeout(function(){ reTimer = null;
+          allMovers = allMovers.filter(notRug); allGems = allGems.filter(notRug).filter(function(m){ return m.s >= 4; });
+          if(mode !== 'themes') applyFilters(); updateStatus(); }, 250); }
+        // check what is on screen first: the current mode's list by rank, then the other list
+        var order = mode === 'gems' ? gemPool.concat(pool) : pool.concat(gemPool);
+        order.forEach(function(m){ checkSafety(m).then(function(sres){ m.safety = sres; if(m.gem && !m._adj){ m._adj = 1; gemAdjust(m); } refresh(); }); });
       });
     }).catch(function(){
       listEl.innerHTML = '<div class="mover-empty">Couldn’t reach the DEX scanner right now. Tap “scan” to retry.</div>';
@@ -4962,6 +4903,8 @@ function aryxBackToLanding(){
     rows.sort(function(a,b){ return key(b) - key(a) || b.s - a.s; });
     if(!rows.length){
       var hiddenBySafe = safeOnly ? src.filter(function(m){ return !(m.safety && m.safety.v === 'ok'); }).length : 0;
+      var waiting = safeOnly ? src.filter(function(m){ return !m.safety; }).length : 0;
+      if(waiting){ listEl.innerHTML = '<div class="mover-loading">checking token safety — '+(src.length - waiting)+' of '+src.length+' done. Tokens appear here as they pass (the free safety service allows about 24 checks a minute; results are remembered for 6 hours).</div>'; return; }
       listEl.innerHTML = '<div class="mover-empty">'+(mode==='themes' && hiddenBySafe
         ? hiddenBySafe+' token'+(hiddenBySafe>1?'s':'')+' in this theme '+(hiddenBySafe>1?'are':'is')+' hidden by “Safe only” — theme tokens are often too new for the automated safety scan, or got flagged. Turn it off to see them, then check each contract yourself.'
         : 'No tokens match these filters. Loosen the chain / cap band, lower min liquidity, or turn off “Safe only”.')+'</div>';
@@ -5002,7 +4945,7 @@ function aryxBackToLanding(){
     var pend=pendingKeys(); Object.keys(pend).forEach(function(k){ if(!want[k]) want[k]=pend[k]; });
     Object.keys(want).slice(0,150).forEach(function(k){ var t=want[k]; (byChain[t.chain]=byChain[t.chain]||[]).push(t.addr); });
     var calls=[];
-    Object.keys(byChain).forEach(function(chain){ var a=byChain[chain]; for(var i=0;i<a.length;i+=30) calls.push(getJSON(TOKENS + a.slice(i,i+30).join(',')).catch(function(){ return {pairs:[]}; })); });
+    Object.keys(byChain).forEach(function(chain){ var a=byChain[chain]; for(var i=0;i<a.length;i+=30) calls.push(tokenPairs(chain, a.slice(i,i+30))); });
     if(!calls.length) return;
     Promise.all(calls).then(function(results){
       var pbt={};
@@ -5028,7 +4971,8 @@ function aryxBackToLanding(){
     var mins = Math.floor((Date.now()-lastScan)/60000);
     if(mode==='themes'){ var tm = themeAt ? Math.floor((Date.now()-themeAt)/60000) : null; var tot = 0; Object.keys(themeData).forEach(function(k){ tot += themeData[k].n; });
       statusEl.textContent = allThemes().length+' themes · '+tot+' tokens · '+(tm==null?'scanning…':tm<1?'just now':tm+'m ago'); return; }
-    statusEl.textContent = (mode==='gems' ? allGems.length+' gems' : allMovers.length+' setups')+' from '+lastSeen+' tokens · '+(mins<1?'just now':mins+'m ago');
+    var src0 = mode==='gems' ? allGems : allMovers, chk = src0.filter(function(m){ return m.safety; }).length;
+    statusEl.textContent = (mode==='gems' ? allGems.length+' gems' : allMovers.length+' setups')+' from '+lastSeen+' tokens · '+(mins<1?'just now':mins+'m ago')+(chk < src0.length ? ' · safety '+chk+'/'+src0.length : '');
   }
   function visible(){ var c=document.getElementById('moverCard'); return !!(c && c.offsetParent !== null) && !document.hidden; }
 
@@ -6642,6 +6586,7 @@ function aryxBackToLanding(){
 
   function binanceDaily(sym){
     return fetch('https://api.binance.com/api/v3/klines?symbol='+sym+'&interval=1d&limit=520').then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .catch(function(){ return fetch('https://data-api.binance.vision/api/v3/klines?symbol='+sym+'&interval=1d&limit=520').then(function(r){ if(!r.ok) throw 0; return r.json(); }); })
       .then(function(j){ return j.map(function(k){ return [k[0], +k[1], +k[2], +k[3], +k[4], +k[5]]; }); }).catch(function(){ return null; });
   }
   function load(force){
