@@ -116,6 +116,12 @@ and VWAP on live candles:
   buying, buyers > sellers, rising activity & volume), liquidity depth and socials, and penalised
   if already pumped. GoPlus holder concentration and LP-lock data adjust the score; concentrated or
   unlocked tokens are marked caution. A ranking of early setups — not a prediction.
+- **🤖 Auto-Bot — trades the Terminal signal** (paper wallet, no real funds) — a virtual wallet (default
+  $10,000, set your own on Reset) that auto-trades Signal Core v3 on real Binance candles: buy on BUY, hold
+  while the trend consensus stays up, sell to cash on HOLD/SELL (long-only), 0.1% fee per side, optional
+  stop-loss/take-profit, signals read on closed candles only. "🤖 Auto-trade this signal" in the Terminal
+  points the bot at the coin and timeframe on screen. The leaderboard replays every strategy on up to 1,000
+  candles and compares it with buy-and-hold. Runs in the browser while Aryx is open; state in localStorage.
 - **🎯 Signal Core v3** (Terminal) — rebuilt from a bar-by-bar replay of the engine on real Binance candles
   (12 major coins; daily 2018–2026, 4h from 2022, 1h from 2023, 15m from 2025). Findings it is built on:
   the previous composite was right 47–49% of the time on every timeframe (below a coin flip); on daily

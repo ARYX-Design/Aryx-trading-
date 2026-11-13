@@ -1138,59 +1138,63 @@
 
   <div class="bot-card" id="botCard">
     <div class="mover-h">
-      <div class="chart-title">🤖 Auto-Bot — paper trading</div>
-      <span class="bot-badge">Simulated · no real funds</span>
+      <div class="chart-title">🤖 Auto-Bot — trades the Terminal signal</div>
+      <span class="bot-badge">Paper wallet · no real funds</span>
     </div>
-    <div class="mover-note">A bot that <b>paper-trades</b> a strategy on live prices with a virtual <b>$10,000</b> wallet, so you can test strategies risk-free. <b>No real money, no exchange keys — nothing is actually bought or sold.</b> Paper results do not predict real trading.</div>
+    <div class="mover-note">A virtual wallet that <b>auto-trades the Terminal's BUY / SELL / HOLD call</b> (Signal Core v3 — the same engine, on the same real Binance candles). It buys on BUY, holds while the trend stays up and sells to cash when it doesn't, with 0.1% fees on every trade. <b>No real money, no exchange keys — nothing is actually bought or sold.</b> It trades while Aryx is open in a browser tab and picks up where it left off when you come back. In the Terminal, tap <b>🤖 Auto-trade this signal</b> to follow any Binance coin. Paper results do not predict real trading.</div>
 
     <div class="bot-wallet">
       <div class="bw"><span>Equity</span><strong id="botEquity">$10,000</strong></div>
       <div class="bw"><span>Total return</span><strong id="botReturn" class="up">+0.0%</strong></div>
       <div class="bw"><span>Cash</span><strong id="botCash">$10,000</strong></div>
-      <div class="bw"><span>Position</span><strong id="botPos">Flat</strong></div>
+      <div class="bw"><span>Position</span><strong id="botPos">Cash</strong></div>
       <div class="bw"><span>Realized P&amp;L</span><strong id="botReal">$0</strong></div>
       <div class="bw"><span>Win rate</span><strong id="botWin">—</strong></div>
     </div>
 
+    <div class="bot-sig" id="botSig"></div>
+
     <div class="bot-controls">
-      <select id="botStrat" class="mv-sel" title="Strategy">
-        <option value="trend">1 · Trend (EMA 9/21)</option>
-        <option value="meanrev">2 · Mean-Reversion (RSI)</option>
-        <option value="breakout">3 · Breakout (Donchian 20)</option>
-        <option value="macd">4 · MACD momentum</option>
-        <option value="multi">5 · Multi-factor vote</option>
+      <select id="botStrat" class="mv-sel" title="What the bot trades on">
+        <option value="signal">★ Terminal Signal (Signal Core v3)</option>
+        <option value="trend">Trend (EMA 9/21)</option>
+        <option value="meanrev">Mean-Reversion (RSI)</option>
+        <option value="breakout">Breakout (Donchian 20)</option>
+        <option value="macd">MACD momentum</option>
+        <option value="multi">Multi-factor vote</option>
       </select>
-      <select id="botSym" class="mv-sel" title="Market">
-        <option value="bitcoin">BTC</option><option value="ethereum">ETH</option>
-        <option value="solana">SOL</option><option value="binancecoin">BNB</option>
-        <option value="ripple">XRP</option><option value="dogecoin">DOGE</option>
-        <option value="cardano">ADA</option><option value="avalanche-2">AVAX</option>
-        <option value="chainlink">LINK</option>
+      <select id="botSym" class="mv-sel" title="Market (Binance spot, USDT)">
+        <option value="BTCUSDT">BTC</option><option value="ETHUSDT">ETH</option>
+        <option value="SOLUSDT">SOL</option><option value="BNBUSDT">BNB</option>
+        <option value="XRPUSDT">XRP</option><option value="DOGEUSDT">DOGE</option>
+        <option value="ADAUSDT">ADA</option><option value="AVAXUSDT">AVAX</option>
+        <option value="LINKUSDT">LINK</option><option value="SUIUSDT">SUI</option>
+        <option value="LTCUSDT">LTC</option><option value="PAXGUSDT">PAXG (gold)</option>
       </select>
       <select id="botTf" class="mv-sel" title="Candle timeframe">
-        <option value="1">30m</option><option value="7" selected>4h</option><option value="30">1D</option>
+        <option value="day" selected>1D (best tested)</option><option value="4h">4h</option><option value="1h">1h</option><option value="15m">15m</option>
       </select>
       <select id="botSize" class="mv-sel" title="Position size">
         <option value="25">Size 25%</option><option value="50">Size 50%</option><option value="100" selected>Size 100%</option>
       </select>
       <select id="botSL" class="mv-sel" title="Auto stop-loss">
         <option value="0">Stop-loss: off</option><option value="3">SL −3%</option>
-        <option value="5" selected>SL −5%</option><option value="8">SL −8%</option><option value="12">SL −12%</option>
+        <option value="5">SL −5%</option><option value="8">SL −8%</option><option value="12" selected>SL −12%</option><option value="20">SL −20%</option>
       </select>
       <select id="botTP" class="mv-sel" title="Auto take-profit">
-        <option value="0">Take-profit: off</option><option value="5">TP +5%</option>
-        <option value="10" selected>TP +10%</option><option value="20">TP +20%</option><option value="50">TP +50%</option>
+        <option value="0" selected>Take-profit: off (ride the trend)</option><option value="5">TP +5%</option>
+        <option value="10">TP +10%</option><option value="20">TP +20%</option><option value="50">TP +50%</option>
       </select>
-      <button id="botToggle" class="ctool on">▶ Start</button>
-      <button id="botReset" class="ctool">Reset</button>
+      <button id="botToggle" class="ctool on">▶ Start auto-trading</button>
+      <button id="botReset" class="ctool">Reset wallet</button>
     </div>
 
-    <div class="bot-status" id="botStatus">Idle — pick a strategy and press Start.</div>
+    <div class="bot-status" id="botStatus">Idle — press Start and the bot follows the signal automatically.</div>
     <div class="bot-log" id="botLog"></div>
 
     <div class="bot-lb">
-      <button id="botRank" class="ctool">🏆 Rank all 5 strategies</button>
-      <div class="bot-lb-note">Backtests each strategy on ~90 days of the selected market (long-only, all-in, no fees) and ranks by return. Tap a row to load that strategy into the bot. Backtests are in-sample and optimistic vs live.</div>
+      <button id="botRank" class="ctool">🏆 Backtest all strategies</button>
+      <div class="bot-lb-note">Replays every strategy candle by candle on up to 1,000 real Binance candles of the selected coin and timeframe — long-only, 0.1% fee per side, your stop-loss/take-profit — and compares it with simply holding. Tap a row to load that strategy. Past results don't predict future ones.</div>
       <div id="botLbList" class="lb-list"></div>
     </div>
   </div>
@@ -2535,6 +2539,7 @@ function render(d,tf){
     <div class="lead-sig ${a.leadVerdict}">${leadText}</div>
   </div>
 
+  ${(current.mode==='cex'&&!current.yahoo)?`<div class="bot-follow"><button class="ctool on" onclick="window.aryxBotFollow&&aryxBotFollow(current.binance||(current.symbol+'USDT'),current.symbol,activeTf)">🤖 Auto-trade this signal</button><span>Paper wallet in the Auto-Bot tab follows this coin's ${({'15m':'15m','1h':'1h','4h':'4h'})[activeTf]||'daily'} signal automatically — no real funds.</span></div>`:''}
   ${renderTrack(a)}
 
   ${renderLevels(a)}
@@ -5057,24 +5062,41 @@ function aryxBackToLanding(){
 <script>
 (function () {
   'use strict';
-  // 100% SIMULATED. Virtual wallet in localStorage, live prices from
-  // CoinGecko (keyless). No exchange keys, no real orders, no real funds.
-  var KEY = 'aryx.bot', START = 10000;
-  var TFLBL = { '1':'30m', '7':'4h', '30':'daily' };
-  var STRATLBL = { trend:'Trend EMA', meanrev:'Mean-Reversion', breakout:'Breakout', macd:'MACD', multi:'Multi-factor' };
-  var timer = null;
+  // 100% SIMULATED. Virtual wallet in localStorage, real Binance candles (public market data, no key).
+  // No exchange keys, no real orders, no real funds. Runs while the app is open in a browser tab.
+  var KEY = 'aryx.bot', START = 10000, FEE = 0.001;            // 0.1% per side, like a spot taker fee
+  var TFLBL = { '15m':'15m', '1h':'1h', '4h':'4h', 'day':'daily' };
+  var TFMS = { '15m':9e5, '1h':36e5, '4h':144e5, 'day':864e5 };
+  var BINT = { '15m':'15m', '1h':'1h', '4h':'4h', 'day':'1d' };
+  var STRATS = ['signal','trend','meanrev','breakout','macd','multi'];
+  var STRATLBL = { signal:'Terminal Signal', trend:'Trend EMA', meanrev:'Mean-Reversion', breakout:'Breakout', macd:'MACD', multi:'Multi-factor', hold:'Just holding' };
+  var OLDSYM = { bitcoin:'BTCUSDT', ethereum:'ETHUSDT', solana:'SOLUSDT', binancecoin:'BNBUSDT', ripple:'XRPUSDT', dogecoin:'DOGEUSDT', cardano:'ADAUSDT', 'avalanche-2':'AVAXUSDT', chainlink:'LINKUSDT' };
+  var OLDTF = { '1':'1h', '7':'4h', '30':'day' };
+  var timer = null, busy = false, host = null, dayCache = {}, rankKey = '';
 
   function load(){ try{ return JSON.parse(localStorage.getItem(KEY)); }catch(e){ return null; } }
   function save(){ try{ localStorage.setItem(KEY, JSON.stringify(st)); }catch(e){} }
-  var st = load() || { cash:START, pos:null, realized:0, trades:0, wins:0, running:false,
-    strat:'trend', sym:'bitcoin', symLabel:'BTC', tf:'7', size:100, log:[], lastPrice:0 };
+  var st = load() || { cash:START, start:START, pos:null, realized:0, trades:0, wins:0, running:false,
+    strat:'signal', sym:'BTCUSDT', symLabel:'BTC', tf:'day', size:100, log:[], lastPrice:0, sl:12, tp:0, v:2 };
   if(st.sl==null) st.sl = 5;   // auto stop-loss %  (0 = off)
   if(st.tp==null) st.tp = 10;  // auto take-profit % (0 = off)
+  if(!st.start) st.start = START;
+  if(st.v!==2){                // one-time upgrade from the CoinGecko version → Binance symbols, follow the Terminal signal
+    st.sym = OLDSYM[st.sym] || st.sym; st.tf = OLDTF[st.tf] || st.tf;
+    if(!st.running){ st.strat = 'signal'; st.tf = 'day'; if(st.sl===5 && st.tp===10){ st.sl = 12; st.tp = 0; } }   // old defaults cut trends short
+    st.v = 2; save();
+  }
+  if(!/^[A-Z0-9]{2,20}$/.test(String(st.sym))){ st.sym='BTCUSDT'; st.symLabel='BTC'; }
+  if(!TFLBL[st.tf]) st.tf = 'day';
+  if(STRATS.indexOf(st.strat)<0) st.strat = 'signal';
+  if(!Array.isArray(st.log)) st.log = [];
 
   function usd(v){ var n=+v||0; return (n<0?'-$':'$')+Math.abs(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
-  function equity(){ return st.cash + (st.pos ? st.pos.qty*(st.lastPrice||st.pos.entry) : 0); }
+  function px(v){ v=+v; return '$'+v.toLocaleString('en-US',{maximumFractionDigits: v>=100?2 : v>=1?4 : 6}); }
+  function equity(){ return st.cash + (st.pos ? st.pos.qty*(st.lastPrice||st.pos.entry)*(1-FEE) : 0); }
+  function esc(s){ return String(s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 
-  // ---- indicators ----
+  // ---- indicators (classic strategies) ----
   function ema(a,p){ var k=2/(p+1),e=a[0],o=[e]; for(var i=1;i<a.length;i++){ e=a[i]*k+e*(1-k); o.push(e); } return o; }
   function rsi(a,p){ p=p||14; var o=[],g=0,l=0; for(var i=1;i<a.length;i++){ var d=a[i]-a[i-1];
     if(i<=p){ if(d>=0)g+=d; else l-=d; if(i===p){ g/=p; l/=p; o[p]=100-100/(1+g/(l||1e-9)); } }
@@ -5084,7 +5106,7 @@ function aryxBackToLanding(){
   function donchian(h,l,p){ p=p||20; var up=[],lo=[]; for(var i=0;i<h.length;i++){ if(i<p){ up[i]=null; lo[i]=null; }
     else { var hh=-Infinity,ll=Infinity; for(var j=i-p;j<i;j++){ if(h[j]>hh)hh=h[j]; if(l[j]<ll)ll=l[j]; } up[i]=hh; lo[i]=ll; } } return {up:up,lo:lo}; }
 
-  // ---- strategy → target state ('long' | 'flat' | null=keep) ----
+  // ---- classic strategy → target state ('long' | 'flat' | null=keep) ----
   function signal(strat,o,h,l,c){
     var i=c.length-1;
     if(strat==='trend'){ var e9=ema(c,9),e21=ema(c,21); return e9[i]>e21[i]?'long':'flat'; }
@@ -5097,150 +5119,299 @@ function aryxBackToLanding(){
     return 'flat';
   }
 
-  // ---- backtest one strategy over the full candle series (long-only, all-in) ----
-  function backtest(strat,h,l,c){
-    var cash=1, pos=null, trades=0, wins=0, peak=1, maxDD=0, eq=[], warm=27;
-    for(var i=warm;i<c.length;i++){
-      var sc=c.slice(0,i+1), sh=h.slice(0,i+1), sl=l.slice(0,i+1);
-      var cur = pos ? 'long' : 'flat';
-      var tgt = signal(strat, null, sh, sl, sc); if(tgt===null) tgt=cur;
-      var price=c[i];
-      if(tgt==='long' && !pos){ pos={ entry:price }; }
-      else if(tgt==='flat' && pos){ var r=price/pos.entry; cash*=r; trades++; if(r>1)wins++; pos=null; }
-      var e = pos ? cash*(price/pos.entry) : cash;
+  // ---- Terminal signal (Signal Core v3, the exact engine the Terminal tab uses) ----
+  function hasCore(){ return typeof coreRead==='function' && typeof coreSeries==='function' && typeof buildAnchor==='function'; }
+  // One rule, live and in the backtest: BUY → buy · stay in while the trend consensus is still up
+  // (incl. "extended" = wait-for-pullback on intraday) · trend no longer up (HOLD/SELL) → sell to cash. Long-only.
+  function coreTarget(dir, buyNow){ return dir<=0 ? 'flat' : buyNow ? 'long' : null; }
+  function corePlan(c, day, tf){
+    // decisions for every closed candle; the engine's inputs are causal, so one pass = a bar-by-bar replay
+    var cs=coreSeries(c), n=c.prices.length, tfMs=TFMS[tf], out=new Array(n).fill(null);
+    var dcs=(tf!=='day' && day) ? coreSeries(day) : null, k=0;
+    if(tf!=='day' && !dcs) return out;
+    for(var i=60;i<n;i++){
+      var A;
+      if(tf==='day') A=cs.T[i];
+      else { var ct=c.times[i]+tfMs; while(k+1<day.times.length && day.times[k+1]+864e5<=ct) k++;
+        if(day.times[k]+864e5>ct || k<60) continue; A=dcs.T[k]; }
+      var dir=A>=CORE_TH?1:A<=-CORE_TH?-1:0, sx=cs.stretch[i]*dir;
+      out[i]={ tgt:coreTarget(dir, dir>0 && (tf==='day' || sx<=0)), pull: dir>0 && sx<0 };
+    }
+    return out;
+  }
+  function sigText(s){
+    if(!s) return '';
+    return (s.v==='buy'?'BUY':s.v==='sell'?'SELL':'HOLD')+' · trend '+(s.net>0?'+':'')+s.net+'/7'+(s.timing&&s.timing!=='none'?' · '+s.timing:'');
+  }
+
+  // ---- market data: real Binance candles (public mirror as fallback) ----
+  function klines(sym, tf, limit){
+    var q='/api/v3/klines?symbol='+encodeURIComponent(sym)+'&interval='+BINT[tf]+'&limit='+(limit||500);
+    var hosts = host ? [host] : ['https://api.binance.com','https://data-api.binance.vision'];
+    function attempt(i){
+      return fetch(hosts[i]+q).then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); })
+        .then(function(j){ host=hosts[i]; return j; })
+        .catch(function(e){ if(i+1<hosts.length) return attempt(i+1); if(host){ host=null; } throw e; });
+    }
+    return attempt(0).then(function(j){
+      if(!Array.isArray(j) || !j.length) throw new Error('empty');
+      var f=function(k){ return j.map(function(x){ return parseFloat(x[k]); }); };
+      return { times:j.map(function(x){ return x[0]; }), opens:f(1), highs:f(2), lows:f(3), prices:f(4), vols:f(5) };
+    });
+  }
+  function closedOnly(d, tf){
+    var n=d.times.length; if(!n || d.times[n-1]+TFMS[tf] <= Date.now()) return d;
+    var o={}; ['times','opens','highs','lows','prices','vols'].forEach(function(k){ o[k]=d[k].slice(0,n-1); }); return o;
+  }
+  function daily(sym){
+    var c=dayCache[sym]; if(c && Date.now()-c.t < 10*60000) return Promise.resolve(c.d);
+    return klines(sym,'day',1000).then(function(d){ dayCache[sym]={ t:Date.now(), d:d }; return d; });
+  }
+
+  // ---- backtest: decisions on each candle's close, filled at that close; SL/TP intrabar; fees both sides ----
+  function backtest(plan, d, from, sl, tp){
+    var c=d.prices, h=d.highs, l=d.lows, o=d.opens;
+    var cash=1, pos=null, trades=0, wins=0, peak=1, maxDD=0, eq=[], cool=false, coolBar=-1, held=0;
+    for(var i=from;i<c.length;i++){
+      if(pos){
+        var ex=null, stopPx=pos.entry*(1-sl/100), tpPx=pos.entry*(1+tp/100);
+        if(sl && l[i]<=stopPx) ex=Math.min(stopPx,o[i]); else if(tp && h[i]>=tpPx) ex=Math.max(tpPx,o[i]);
+        if(ex!=null){ var r0=ex/pos.entry*(1-FEE)*(1-FEE); cash*=r0; trades++; if(r0>1)wins++; pos=null; cool=true; coolBar=i; }
+      }
+      var p=plan[i], tgt=p?p.tgt:null;
+      if(tgt==='flat') cool=false;
+      if(cool && p && p.pull && i>coolBar) cool=false;
+      if(tgt==='long' && !pos && !cool) pos={ entry:c[i] };
+      else if(tgt==='flat' && pos){ var r=c[i]/pos.entry*(1-FEE)*(1-FEE); cash*=r; trades++; if(r>1)wins++; pos=null; }
+      if(pos) held++;
+      var e = pos ? cash*(1-FEE)*(c[i]/pos.entry) : cash;
       eq.push(e); if(e>peak)peak=e; var dd=(peak-e)/peak; if(dd>maxDD)maxDD=dd;
     }
-    if(pos){ var rr=c[c.length-1]/pos.entry; cash*=rr; trades++; if(rr>1)wins++; }
-    return { ret:(cash-1)*100, trades:trades, win:trades?wins/trades*100:0, maxDD:maxDD*100, eq:eq };
+    if(pos){ var rr=c[c.length-1]/pos.entry*(1-FEE)*(1-FEE); cash*=rr; trades++; if(rr>1)wins++; }
+    return { ret:(cash-1)*100, trades:trades, win:trades?wins/trades*100:0, maxDD:maxDD*100, eq:eq, inMkt:held/Math.max(1,c.length-from)*100 };
+  }
+  function holdBench(d, from){
+    var c=d.prices, peak=0, maxDD=0, eq=[];
+    for(var i=from;i<c.length;i++){ var e=c[i]/c[from]; eq.push(e); if(e>peak)peak=e; var dd=(peak-e)/peak; if(dd>maxDD)maxDD=dd; }
+    return { key:'hold', ret:(c[c.length-1]/c[from]*(1-FEE)*(1-FEE)-1)*100, trades:1, win:null, maxDD:maxDD*100, eq:eq, inMkt:100 };
   }
   function spark(eq){
     if(!eq || eq.length<2) return '';
-    var w=88,hh=22,mn=Math.min.apply(null,eq),mx=Math.max.apply(null,eq),rg=(mx-mn)||1;
-    var pts=eq.map(function(v,i){ return (i/(eq.length-1)*w).toFixed(1)+','+(hh-((v-mn)/rg)*hh).toFixed(1); }).join(' ');
-    var col = eq[eq.length-1]>=eq[0] ? '#26d982' : '#ff5c73';
+    var step=Math.max(1,Math.floor(eq.length/120)), s=eq.filter(function(_,i){ return i%step===0 || i===eq.length-1; });
+    var w=88,hh=22,mn=Math.min.apply(null,s),mx=Math.max.apply(null,s),rg=(mx-mn)||1;
+    var pts=s.map(function(v,i){ return (i/(s.length-1)*w).toFixed(1)+','+(hh-((v-mn)/rg)*hh).toFixed(1); }).join(' ');
+    var col = s[s.length-1]>=s[0] ? '#26d982' : '#ff5c73';
     return '<svg class="lb-spark" width="'+w+'" height="'+hh+'" viewBox="0 0 '+w+' '+hh+'"><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5"/></svg>';
   }
   function renderLb(rows){
     var lb=$('botLbList'); if(!lb) return;
     lb.innerHTML = rows.map(function(r,idx){
-      var cls = r.ret>=0?'up':'down';
-      return '<div class="lb-row'+(idx===0?' best':'')+'" data-strat="'+r.key+'" title="Use this strategy in the bot">'+
-        '<span class="lb-rank">'+(idx+1)+'</span>'+
-        '<span class="lb-name">'+STRATLBL[r.key]+(idx===0?' 👑':'')+'</span>'+
+      var cls = r.ret>=0?'up':'down', bench=r.key==='hold';
+      return '<div class="lb-row'+(idx===0&&!bench?' best':'')+(bench?' bench':'')+(r.key===st.strat?' is-cur':'')+'"'+(bench?' title="Reference: buy once and hold"':' data-strat="'+r.key+'" title="Use this strategy in the bot"')+'>'+
+        '<span class="lb-rank">'+(bench?'—':idx+1)+'</span>'+
+        '<span class="lb-name">'+STRATLBL[r.key]+(r.key==='signal'?' ★':'')+(idx===0&&!bench?' 👑':'')+'</span>'+
         spark(r.eq)+
         '<span class="lb-ret '+cls+'">'+(r.ret>=0?'+':'')+r.ret.toFixed(1)+'%</span>'+
-        '<span class="lb-meta">'+Math.round(r.win)+'% win · '+r.trades+'t · DD '+r.maxDD.toFixed(0)+'%</span></div>';
+        '<span class="lb-meta">'+(bench?'buy once, never sell':Math.round(r.win)+'% win · '+r.trades+'t')+' · DD '+r.maxDD.toFixed(0)+'%'+(bench?'':' · in market '+Math.round(r.inMkt)+'%')+'</span></div>';
     }).join('');
   }
+  var lastRank = null;
   function rankStrategies(){
     var btn=$('botRank'); if(btn){ btn.disabled=true; btn.textContent='… backtesting'; }
-    fetchOHLC(st.sym, '90').then(function(rows){
-      if(!rows || rows.length<40){ if($('botLbList')) $('botLbList').innerHTML='<div class="bot-status">Not enough history to backtest right now — try again.</div>'; if(btn){ btn.disabled=false; btn.textContent='🏆 Rank all 5 strategies'; } return; }
-      var h=rows.map(function(r){return r[2];}), l=rows.map(function(r){return r[3];}), c=rows.map(function(r){return r[4];});
-      var res=['trend','meanrev','breakout','macd','multi'].map(function(k){ var b=backtest(k,h,l,c); b.key=k; return b; });
+    var sym=st.sym, tf=st.tf, lbl=st.symLabel;
+    var done=function(t){ if(btn){ btn.disabled=false; btn.textContent=t||'↻ Re-run backtest'; } };
+    Promise.all([klines(sym,tf,1000), tf==='day' ? Promise.resolve(null) : daily(sym)]).then(function(x){
+      var d=closedOnly(x[0],tf), day=x[1];
+      var from=60;
+      if(d.prices.length<from+40){ $('botLbList').innerHTML='<div class="bot-status">Not enough history to backtest this market yet.</div>'; done('🏆 Backtest all strategies'); return; }
+      var res=[];
+      if(hasCore()){ var b0=backtest(corePlan(d, day, tf), d, from, st.sl, st.tp); b0.key='signal'; res.push(b0); }
+      ['trend','meanrev','breakout','macd','multi'].forEach(function(k){
+        var plan=d.prices.map(function(_,i){ if(i<from) return null; var t=signal(k,null,d.highs.slice(0,i+1),d.lows.slice(0,i+1),d.prices.slice(0,i+1)); return t?{tgt:t}:null; });
+        var b=backtest(plan, d, from, st.sl, st.tp); b.key=k; res.push(b);
+      });
       res.sort(function(a,b){ return b.ret - a.ret; });
+      var hb=holdBench(d, from); res.push(hb);
       renderLb(res);
-      if(btn){ btn.disabled=false; btn.textContent='↻ Re-rank ('+st.symLabel+' · ~90d)'; }
-    }).catch(function(){ if($('botLbList')) $('botLbList').innerHTML='<div class="bot-status">Price feed rate-limited — try again in a moment.</div>'; if(btn){ btn.disabled=false; btn.textContent='🏆 Rank all 5 strategies'; } });
+      var days=Math.round((d.times[d.times.length-1]-d.times[from])/864e5);
+      var span=days>=60 ? Math.round(days/30.4)+' months' : days+' days';
+      lastRank={ key:sym+'|'+tf+'|'+st.sl+'|'+st.tp, span:span, lbl:lbl, tf:tf, sig:res.filter(function(r){ return r.key==='signal'; })[0], hold:hb,
+        from:new Date(d.times[from]).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) };
+      rankKey=lastRank.key;
+      renderSig();
+      done('↻ Re-run ('+lbl+' '+TFLBL[tf]+' · '+span+')');
+    }).catch(function(){ if($('botLbList')) $('botLbList').innerHTML='<div class="bot-status">Price feed unavailable — try again in a moment.</div>'; done('🏆 Backtest all strategies'); });
   }
 
   // ---- trades ----
-  function log(act,price,pnl,tag){ st.log.unshift({ t:Date.now(), act:act, price:price, pnl:pnl, sym:st.symLabel, tag:tag||null }); st.log = st.log.slice(0,12); }
-  function buy(price){ var notional=equity()*st.size/100; if(notional<1)return; var qty=notional/price;
-    st.cash-=notional; st.pos={ qty:qty, entry:price }; st.trades++; log('buy',price,null); }
-  function sell(price,tag){ if(!st.pos)return; var proceeds=st.pos.qty*price, pnl=proceeds-st.pos.qty*st.pos.entry;
-    st.cash+=proceeds; st.realized+=pnl; if(pnl>0)st.wins++; log('sell',price,pnl,tag); st.pos=null; }
+  function log(act,price,pnl,tag,why){ st.log.unshift({ t:Date.now(), act:act, price:price, pnl:pnl, sym:st.symLabel, tag:tag||null, why:why||null }); st.log = st.log.slice(0,30); }
+  function buy(price,why){ var notional=Math.min(equity()*st.size/100, st.cash); if(notional<1)return;
+    var qty=notional*(1-FEE)/price; st.cash-=notional; st.pos={ qty:qty, entry:price, cost:notional, t:Date.now() }; st.trades++; log('buy',price,null,null,why); }
+  function sell(price,tag,why){ if(!st.pos)return; var proceeds=st.pos.qty*price*(1-FEE), cost=st.pos.cost||st.pos.qty*st.pos.entry, pnl=proceeds-cost;
+    st.cash+=proceeds; st.realized+=pnl; if(pnl>0)st.wins++; log('sell',price,pnl,tag,why); st.pos=null; }
 
   // ---- render ----
   function $(id){ return document.getElementById(id); }
   function setStatus(t){ var e=$('botStatus'); if(e)e.textContent=t; }
+  function renderSig(){
+    var el=$('botSig'); if(!el) return;
+    var s=st.sig, where=st.symLabel+' · '+TFLBL[st.tf];
+    var rec='';
+    if(lastRank && lastRank.key===st.sym+'|'+st.tf+'|'+st.sl+'|'+st.tp && lastRank.sig){
+      var g=lastRank.sig, h=lastRank.hold;
+      rec='<div class="bs-rec">📊 Backtest on '+esc(lastRank.lbl)+' '+TFLBL[lastRank.tf]+' since '+lastRank.from+' ('+lastRank.span+', 0.1% fees, your SL/TP): following this signal <b class="'+(g.ret>=0?'up':'down')+'">'+(g.ret>=0?'+':'')+g.ret.toFixed(1)+'%</b> (worst drop −'+g.maxDD.toFixed(0)+'%, '+g.trades+' trades) vs just holding <b class="'+(h.ret>=0?'up':'down')+'">'+(h.ret>=0?'+':'')+h.ret.toFixed(1)+'%</b> (worst drop −'+h.maxDD.toFixed(0)+'%).</div>';
+    }
+    if(st.strat!=='signal'){
+      el.innerHTML='<div class="bs-h"><span class="bs-lbl">Strategy · '+esc(where)+'</span><span class="bs-v neutral">'+STRATLBL[st.strat]+'</span></div>'+
+        '<div class="bs-rule">This bot is running a classic indicator strategy. Pick <b>★ Terminal Signal</b> to make it trade the same BUY/SELL/HOLD call the Terminal shows.</div>';
+      return;
+    }
+    var act='';
+    if(!s){ act=st.running?'Reading the signal…':'Press Start and the bot will follow this signal automatically.'; }
+    else if(st.pos && s.dir>0) act='🟢 Holding — the trend is still up'+(s.timing==='extended'&&st.tf!=='day'?' (extended: no new buys, but no reason to sell)':'');
+    else if(st.pos) act='Selling — the trend is no longer up';
+    else if(s.v==='buy' && st.cool) act='⏸ Stopped out — waiting for a fresh pullback before buying again';
+    else if(s.v==='buy') act=st.running?'Buying on this signal':'BUY signal — press Start to let the bot take it';
+    else if(s.dir>0) act='⏳ Uptrend but extended — waiting for a pullback to buy';
+    else if(s.dir<0) act='💵 In cash — downtrend (SELL). Long-only bot: no shorting';
+    else act='💵 In cash — no clear trend (HOLD)';
+    var vt=s?(s.v==='buy'?'BUY':s.v==='sell'?'SELL':'HOLD'):'—', vc=s?s.v:'neutral';
+    el.innerHTML='<div class="bs-h"><span class="bs-lbl">Terminal signal · '+esc(where)+'</span><span class="bs-v '+vc+'">'+vt+'</span></div>'+
+      (s?'<div class="bs-meta">'+(s.mode==='daily'?'Daily':'Chart')+' trend consensus '+(s.net>0?'+':'')+s.net+' of 7 · timing: '+s.timing+' · '+s.conf+'% conviction · read on the last closed candle ('+new Date(s.bar).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+')</div>':'')+
+      '<div class="bs-act">'+act+'</div>'+
+      '<div class="bs-rule">Rule: buy when the Terminal says <b>BUY</b> · hold while the trend consensus stays up (+4 of 7 or better) · sell to cash when it turns HOLD/SELL. Your stop-loss/take-profit also apply.'+(st.tf==='day'?'':' <b>Daily</b> had the strongest record when this engine was tested; intraday calls were close to a coin flip.')+'</div>'+rec;
+  }
   function render(){
-    var eq=equity(), ret=(eq/START-1)*100;
+    var eq=equity(), base=st.start||START, ret=(eq/base-1)*100;
     if($('botEquity')) $('botEquity').textContent=usd(eq);
     var r=$('botReturn'); if(r){ r.textContent=(ret>=0?'+':'')+ret.toFixed(1)+'%'; r.className=ret>=0?'up':'down'; }
     if($('botCash')) $('botCash').textContent=usd(st.cash);
     var pe=$('botPos');
-    if(pe){ if(st.pos){ var up=(st.lastPrice/st.pos.entry-1)*100; pe.innerHTML='Long '+st.symLabel+' <span style="font-size:12px;opacity:.8">'+(up>=0?'+':'')+up.toFixed(1)+'%</span>'; pe.className=up>=0?'up':'down'; } else { pe.textContent='Flat'; pe.className=''; } }
+    if(pe){ if(st.pos){ var up=((st.lastPrice||st.pos.entry)/st.pos.entry-1)*100; pe.innerHTML='Long '+esc(st.symLabel)+' <span style="font-size:12px;opacity:.8">'+(up>=0?'+':'')+up.toFixed(1)+'%</span>'; pe.className=up>=0?'up':'down'; } else { pe.textContent='Cash'; pe.className=''; } }
     var re=$('botReal'); if(re){ re.textContent=(st.realized>=0?'+':'')+usd(st.realized); re.className=st.realized>=0?'up':'down'; }
-    if($('botWin')) $('botWin').textContent = st.trades? Math.round(st.wins/st.trades*100)+'% ('+st.wins+'/'+st.trades+')' : '—';
+    var nClosed=st.trades-(st.pos?1:0);
+    if($('botWin')) $('botWin').textContent = nClosed>0? Math.round(st.wins/nClosed*100)+'% ('+st.wins+'/'+nClosed+')' : '—';
     var lg=$('botLog');
     if(lg){ lg.innerHTML = st.log.map(function(x){
       var pnl = x.pnl==null ? '' : '<span class="bt-pnl '+(x.pnl>=0?'up':'down')+'">'+(x.pnl>=0?'+':'')+usd(x.pnl)+'</span>';
       var tag = x.tag ? '<span class="bt-tag '+(x.tag==='TP'?'tp':'sl')+'">'+x.tag+'</span>' : '';
       return '<div class="bot-trade"><span class="act '+x.act+'">'+x.act.toUpperCase()+'</span>'+tag+
-        '<span class="bt-t">'+new Date(x.t).toLocaleTimeString()+'</span>'+
-        '<span>'+x.sym+'</span><span class="bt-p">@ $'+(+x.price).toLocaleString('en-US',{maximumFractionDigits:4})+'</span>'+pnl+'</div>';
+        '<span class="bt-t">'+new Date(x.t).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</span>'+
+        '<span>'+esc(x.sym)+'</span><span class="bt-p">@ '+px(x.price)+'</span>'+pnl+
+        (x.why?'<span class="bt-why">'+esc(x.why)+'</span>':'')+'</div>';
     }).join('') || '<div class="bot-status">No trades yet.</div>'; }
-  }
-
-  function fetchOHLC(id,days){
-    return fetch('https://api.coingecko.com/api/v3/coins/'+id+'/ohlc?vs_currency=usd&days='+days)
-      .then(function(r){ if(!r.ok) throw 0; return r.json(); });
+    renderSig();
   }
 
   function tick(){
-    if(!st.running) return;
-    fetchOHLC(st.sym, st.tf).then(function(rows){
-      if(!rows || rows.length < 25){ setStatus('waiting for price data…'); return; }
-      var h=rows.map(function(r){return r[2];}), l=rows.map(function(r){return r[3];}), c=rows.map(function(r){return r[4];});
-      var price=c[c.length-1]; st.lastPrice=price;
-      // ---- auto stop-loss / take-profit (checked before the strategy) ----
+    if(!st.running || busy) return;
+    busy=true;
+    var sym=st.sym, tf=st.tf, strat=st.strat;
+    var need=strat==='signal' && tf!=='day';
+    Promise.all([klines(sym,tf,500), need ? daily(sym) : Promise.resolve(null)]).then(function(x){
+      if(sym!==st.sym || tf!==st.tf || strat!==st.strat || !st.running) return;     // settings changed mid-fetch
+      var d=x[0], price=d.prices[d.prices.length-1], c=closedOnly(d,tf), n=c.prices.length;
+      st.lastPrice=price;
+      if(n<60){ save(); render(); setStatus('waiting for enough candle history…'); return; }
+      var lastBar=c.times[n-1], tgt, why, s=null;
+      if(strat==='signal'){
+        if(!hasCore()){ setStatus('Terminal engine not loaded — reload the page.'); return; }
+        c.tfKey=tf; if(x[1]) c.anchor=buildAnchor(x[1]);
+        var core=coreRead(c);
+        s=st.sig={ v:core.verdict, dir:core.dir, net:core.net, timing:core.timing, conf:core.conf, mode:core.mode, bar:lastBar };
+        tgt=coreTarget(core.dir, core.verdict==='buy');
+        why='Terminal '+sigText(s)+' · '+TFLBL[tf];
+        if(st.cool && core.timing==='pullback' && lastBar!==st.coolBar) st.cool=false;
+      } else {
+        st.sig=null;
+        tgt=signal(strat,null,c.highs,c.lows,c.prices);
+        why=STRATLBL[strat]+' · '+TFLBL[tf];
+      }
+      // ---- auto stop-loss / take-profit on the live price (checked first) ----
       if(st.pos){
         var chg=(price/st.pos.entry-1)*100;
-        if(st.sl && chg <= -st.sl){ sell(price,'SL'); save(); render();
+        if(st.sl && chg <= -st.sl){ sell(price,'SL','stop-loss '+chg.toFixed(1)+'%'); st.cool=true; st.coolBar=lastBar; save(); render();
           setStatus('🛑 Stop-loss hit on '+st.symLabel+' ('+chg.toFixed(1)+'%) · '+new Date().toLocaleTimeString()); return; }
-        if(st.tp && chg >= st.tp){ sell(price,'TP'); save(); render();
+        if(st.tp && chg >= st.tp){ sell(price,'TP','take-profit +'+chg.toFixed(1)+'%'); st.cool=true; st.coolBar=lastBar; save(); render();
           setStatus('🎯 Take-profit hit on '+st.symLabel+' (+'+chg.toFixed(1)+'%) · '+new Date().toLocaleTimeString()); return; }
       }
-      var cur = st.pos ? 'long' : 'flat';
-      var tgt = signal(st.strat, null, h, l, c); if(tgt===null) tgt=cur;
-      if(tgt==='long' && !st.pos) buy(price);
-      else if(tgt==='flat' && st.pos) sell(price);
+      if(tgt==='flat') st.cool=false;
+      if(tgt==='long' && !st.pos && !st.cool) buy(price, why);
+      else if(tgt==='flat' && st.pos) sell(price, null, why);
       save(); render();
-      setStatus('● running · '+st.symLabel+' '+TFLBL[st.tf]+' · '+STRATLBL[st.strat]+
-        (st.sl?' · SL '+st.sl+'%':'')+(st.tp?' · TP '+st.tp+'%':'')+' · '+new Date().toLocaleTimeString());
-    }).catch(function(){ setStatus('price feed rate-limited — retrying…'); });
+      setStatus('● auto-trading · '+st.symLabel+' '+TFLBL[tf]+' · '+STRATLBL[strat]+(s?' ('+sigText(s)+')':'')+
+        (st.sl?' · SL '+st.sl+'%':'')+(st.tp?' · TP '+st.tp+'%':'')+' · '+px(price)+' · '+new Date().toLocaleTimeString());
+    }).catch(function(){ setStatus('price feed unavailable — retrying…'); }).then(function(){ busy=false; });
   }
 
-  function start(){ if(timer) return; st.running=true; save(); syncToggle(); tick(); timer=setInterval(tick, 20000); }
-  function stop(){ if(timer){ clearInterval(timer); timer=null; } st.running=false; save(); syncToggle(); setStatus('Stopped.'); }
-  function syncToggle(){ var b=$('botToggle'); if(!b)return; b.textContent = st.running?'■ Stop':'▶ Start'; b.className='ctool '+(st.running?'stop':'on'); }
-
-  function init(){
-    if(!$('botToggle')) return;
-    // restore control values
+  function start(){ if(timer) return; st.running=true; save(); syncToggle(); tick(); timer=setInterval(tick, 20000); render(); }
+  function stop(){ if(timer){ clearInterval(timer); timer=null; } st.running=false; save(); syncToggle(); setStatus('Stopped.'); render(); }
+  function syncToggle(){ var b=$('botToggle'); if(!b)return; b.textContent = st.running?'■ Stop':'▶ Start auto-trading'; b.className='ctool '+(st.running?'stop':'on'); }
+  function ensureOption(sym,label){
+    var sel=$('botSym'); if(!sel) return;
+    for(var i=0;i<sel.options.length;i++) if(sel.options[i].value===sym) return;
+    var o=document.createElement('option'); o.value=sym; o.textContent=label||sym.replace(/USDT$/,''); sel.appendChild(o);
+  }
+  function syncControls(){
+    ensureOption(st.sym, st.symLabel);
     if($('botStrat')) $('botStrat').value=st.strat;
     if($('botSym')) $('botSym').value=st.sym;
     if($('botTf')) $('botTf').value=st.tf;
     if($('botSize')) $('botSize').value=String(st.size);
     if($('botSL')) $('botSL').value=String(st.sl);
     if($('botTP')) $('botTP').value=String(st.tp);
+  }
+  function settingsChanged(){ st.sig=null; save(); render(); if(st.running) setTimeout(tick, 50); if(rankKey) rankStrategies(); }
 
+  // Terminal → "Auto-trade this signal": follow the coin + timeframe on screen with the paper wallet
+  window.aryxBotFollow = function(sym, label, tf){
+    sym=String(sym||'').toUpperCase(); if(!/^[A-Z0-9]{2,20}$/.test(sym)) return;
+    label=String(label||sym.replace(/USDT$/,'')).toUpperCase().slice(0,12);
+    tf=TFLBL[tf] ? tf : 'day';
+    if(st.pos && st.sym!==sym) sell(st.lastPrice||st.pos.entry, null, 'closed to follow '+label);
+    st.strat='signal'; st.sym=sym; st.symLabel=label; st.tf=tf; st.cool=false; st.sig=null;
+    save(); syncControls(); render();
+    var b=document.querySelector('.atab[data-t="bot"]'); if(b) b.click();
+    var card=$('botCard'); if(card) setTimeout(function(){ card.scrollIntoView({ behavior:'smooth', block:'start' }); }, 60);
+    if(st.running) setTimeout(tick, 50); else start();
+    rankStrategies();
+  };
+
+  function init(){
+    if(!$('botToggle')) return;
+    syncControls();
     $('botToggle').addEventListener('click', function(){ st.running?stop():start(); });
     $('botReset').addEventListener('click', function(){
-      if(!confirm('Reset the paper wallet to $10,000 and clear all trades?')) return;
-      stop(); st.cash=START; st.pos=null; st.realized=0; st.trades=0; st.wins=0; st.log=[]; st.lastPrice=0; save(); render(); setStatus('Wallet reset to $10,000.');
+      var v=prompt('Reset the paper wallet and clear all trades.\nStarting balance in USD:', String(st.start||START));
+      if(v===null) return;
+      var amt=+String(v).replace(/[^0-9.]/g,''); if(!(amt>=100)) amt=START; amt=Math.min(amt,1e9);
+      stop(); st.cash=amt; st.start=amt; st.pos=null; st.realized=0; st.trades=0; st.wins=0; st.log=[]; st.lastPrice=0; st.cool=false; st.sig=null;
+      save(); render(); setStatus('Wallet reset to '+usd(amt)+'.');
     });
-    $('botStrat').addEventListener('change', function(e){ st.strat=e.target.value; save(); });
+    $('botStrat').addEventListener('change', function(e){ st.strat=e.target.value; st.cool=false; settingsChanged(); });
     $('botSym').addEventListener('change', function(e){
-      if(st.pos) sell(st.lastPrice||st.pos.entry);            // close before switching asset
-      st.sym=e.target.value; st.symLabel=e.target.options[e.target.selectedIndex].text; save(); render();
+      if(st.pos) sell(st.lastPrice||st.pos.entry, null, 'closed to switch coin');
+      st.sym=e.target.value; st.symLabel=e.target.options[e.target.selectedIndex].text; st.lastPrice=0; st.cool=false; settingsChanged();
     });
-    $('botTf').addEventListener('change', function(e){ st.tf=e.target.value; save(); });
+    $('botTf').addEventListener('change', function(e){ st.tf=e.target.value; settingsChanged(); });
     $('botSize').addEventListener('change', function(e){ st.size=+e.target.value; save(); });
-    if($('botSL')) $('botSL').addEventListener('change', function(e){ st.sl=+e.target.value; save(); });
-    if($('botTP')) $('botTP').addEventListener('change', function(e){ st.tp=+e.target.value; save(); });
+    if($('botSL')) $('botSL').addEventListener('change', function(e){ st.sl=+e.target.value; settingsChanged(); });
+    if($('botTP')) $('botTP').addEventListener('change', function(e){ st.tp=+e.target.value; settingsChanged(); });
     if($('botRank')) $('botRank').addEventListener('click', rankStrategies);
     if($('botLbList')) $('botLbList').addEventListener('click', function(e){
       var row=e.target.closest('.lb-row'); if(!row) return;
       var k=row.dataset.strat; if(!k) return;
-      st.strat=k; save(); if($('botStrat')) $('botStrat').value=k;
-      setStatus('Loaded '+STRATLBL[k]+' into the bot — press Start to run it live.');
+      st.strat=k; st.cool=false; syncControls(); settingsChanged();
+      setStatus('Loaded '+STRATLBL[k]+' into the bot'+(st.running?'.':' — press Start to run it live.'));
     });
-
-    // label for restored symbol
-    var sel=$('botSym'); if(sel) st.symLabel = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : st.symLabel;
+    var sel=$('botSym'); if(sel && sel.options[sel.selectedIndex]) st.symLabel = sel.options[sel.selectedIndex].text;
     render(); syncToggle();
+    // backtest the selected market the first time the bot is on screen
+    var card=$('botCard');
+    if(card && 'IntersectionObserver' in window){
+      var io=new IntersectionObserver(function(en){ if(en.some(function(x){ return x.isIntersecting; })){ io.disconnect(); if(!rankKey) rankStrategies(); } });
+      io.observe(card);
+    }
     if(st.running){ timer=null; start(); }                    // auto-resume
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);
@@ -7313,6 +7484,23 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .bt-tag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;}
 .bt-tag.sl{background:rgba(255,92,115,.16);color:var(--ax-down);}
 .bt-tag.tp{background:rgba(38,217,130,.16);color:var(--ax-up);}
+.bot-trade{flex-wrap:wrap;}
+.bt-why{flex:1 1 100%;color:var(--ax-dim);font-size:11px;}
+.bot-sig{background:var(--ax-surface2);border:1px solid var(--ax-line);border-radius:11px;padding:11px 13px;margin-bottom:12px;font-size:12px;line-height:1.5;}
+.bot-sig:empty{display:none;}
+.bot-sig .bs-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;}
+.bot-sig .bs-lbl{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ax-dim);font-weight:700;}
+.bot-sig .bs-v{font-weight:800;font-size:12.5px;padding:3px 10px;border-radius:6px;font-family:'JetBrains Mono',monospace;}
+.bs-v.buy{color:var(--ax-up);background:rgba(38,217,130,.14);}
+.bs-v.sell{color:var(--ax-down);background:rgba(255,92,115,.14);}
+.bs-v.neutral{color:var(--ax-muted);background:var(--ax-surface);border:1px solid var(--ax-line);}
+.bot-sig .bs-meta,.bot-sig .bs-rule{color:var(--ax-muted);}
+.bot-sig .bs-act{margin:6px 0 4px;font-weight:600;color:var(--ax-text);}
+.bot-sig .bs-rec{margin-top:7px;padding-top:7px;border-top:1px solid var(--ax-line);color:var(--ax-text);}
+.bot-sig .up{color:var(--ax-up);} .bot-sig .down{color:var(--ax-down);}
+.lb-row.bench{opacity:.72;cursor:default;}
+.lb-row.is-cur{outline:1px solid rgba(38,217,130,.45);}
+.bot-follow{margin:10px 0 2px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:11.5px;color:var(--ax-muted);}
 .bot-trade .bt-pnl{margin-left:auto;font-weight:700;} .bt-pnl.up{color:var(--ax-up);} .bt-pnl.down{color:var(--ax-down);}
 .bot-lb{margin-top:16px;border-top:1px solid var(--ax-line);padding-top:14px;}
 .bot-lb-note{font-size:11px;color:var(--ax-dim);line-height:1.6;margin:8px 0 10px;}
