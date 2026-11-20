@@ -338,7 +338,8 @@
 
   /* ---- smart TP/SL ---- */
   .lvl-cell{display:flex;flex-direction:column;gap:1px;min-width:0}
-  .lvl-basis{font-size:10px;color:var(--dim);letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lvl-basis{font-size:10px;color:var(--dim);letter-spacing:.3px;line-height:1.35;white-space:normal}
+  @media(max-width:560px){.lvl-row{grid-template-columns:46px 1fr 66px 34px;gap:8px;padding:10px 10px;font-size:12px}.lvl-tag{padding:4px 4px;letter-spacing:.5px}}
   .bt-strip{margin-top:12px;padding:10px 12px;border:1px dashed var(--line);border-radius:9px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;background:var(--panel2)}
   .bt-h{font-size:11px;color:var(--txt);font-weight:700;width:100%}
   .bt-item{font-size:11px;font-weight:700;color:var(--dim)}
@@ -1141,7 +1142,7 @@
       <div class="chart-title">🤖 Auto-Bot — trades the Terminal signal</div>
       <span class="bot-badge">Paper wallet · no real funds</span>
     </div>
-    <div class="mover-note">A virtual wallet that <b>auto-trades the Terminal's BUY / SELL / HOLD call</b> (Signal Core v3 — the same engine, on the same real Binance candles). It buys on BUY, holds while the trend stays up and sells to cash when it doesn't, with 0.1% fees on every trade. <b>No real money, no exchange keys — nothing is actually bought or sold.</b> It trades while Aryx is open in a browser tab and picks up where it left off when you come back. In the Terminal, tap <b>🤖 Auto-trade this signal</b> to follow any Binance coin. Paper results do not predict real trading.</div>
+    <div class="mover-note">A virtual wallet that <b>auto-trades the Terminal's BUY / SELL / HOLD call</b> (Signal Core v3 — the same engine, on the same real Binance candles). It buys on BUY, holds while the trend stays up and sells to cash when it doesn't — the exit that beat every fixed stop and take-profit in testing — with a safety stop for crashes and 0.1% fees on every trade. <b>No real money, no exchange keys — nothing is actually bought or sold.</b> It trades while Aryx is open in a browser tab and picks up where it left off when you come back. In the Terminal, tap <b>🤖 Auto-trade this signal</b> to follow any Binance coin. Paper results do not predict real trading.</div>
 
     <div class="bot-wallet">
       <div class="bw"><span>Equity</span><strong id="botEquity">$10,000</strong></div>
@@ -1177,13 +1178,16 @@
       <select id="botSize" class="mv-sel" title="Position size">
         <option value="25">Size 25%</option><option value="50">Size 50%</option><option value="100" selected>Size 100%</option>
       </select>
-      <select id="botSL" class="mv-sel" title="Auto stop-loss">
-        <option value="0">Stop-loss: off</option><option value="3">SL −3%</option>
-        <option value="5">SL −5%</option><option value="8">SL −8%</option><option value="12" selected>SL −12%</option><option value="20">SL −20%</option>
+      <select id="botSL" class="mv-sel" title="Stop">
+        <option value="atr3" selected>Stop: safety 3× daily ATR (recommended)</option>
+        <option value="0">Stop: none — exit on the signal only</option>
+        <option value="8">Stop: fixed −8%</option><option value="12">Stop: fixed −12%</option><option value="20">Stop: fixed −20%</option>
       </select>
-      <select id="botTP" class="mv-sel" title="Auto take-profit">
-        <option value="0" selected>Take-profit: off (ride the trend)</option><option value="5">TP +5%</option>
-        <option value="10">TP +10%</option><option value="20">TP +20%</option><option value="50">TP +50%</option>
+      <select id="botTP" class="mv-sel" title="Take-profit">
+        <option value="0" selected>Take-profit: off — let winners run (recommended)</option>
+        <option value="t2h">Sell half at Target 2 (~35% of signals reach it)</option>
+        <option value="t2">Sell all at Target 2</option>
+        <option value="10">Take-profit: fixed +10%</option><option value="20">Take-profit: fixed +20%</option><option value="50">Take-profit: fixed +50%</option>
       </select>
       <button id="botToggle" class="ctool on">▶ Start auto-trading</button>
       <button id="botReset" class="ctool">Reset wallet</button>
@@ -1194,7 +1198,7 @@
 
     <div class="bot-lb">
       <button id="botRank" class="ctool">🏆 Backtest all strategies</button>
-      <div class="bot-lb-note">Replays every strategy candle by candle on up to 1,000 real Binance candles of the selected coin and timeframe — long-only, 0.1% fee per side, your stop-loss/take-profit — and compares it with simply holding. Tap a row to load that strategy. Past results don't predict future ones.</div>
+      <div class="bot-lb-note">Replays every strategy candle by candle on up to 1,000 real Binance candles of the selected coin and timeframe — long-only, 0.1% fee per side, with your stop and take-profit (a candle that touches both counts as the stop) — and compares it with simply holding. Tap a row to load that strategy. Past results don't predict future ones.</div>
       <div id="botLbList" class="lb-list"></div>
     </div>
   </div>
@@ -1338,7 +1342,7 @@
   </div>
 
   <div class="disc">
-    Signals are generated algorithmically from live exchange data (Binance public API — real OHLCV candles, with CoinGecko as fallback; GeckoTerminal for pasted contract addresses / DEX tokens) using a curated set of technical indicators (Supertrend, Parabolic SAR, EMA 12/21/26/50, ADX + Choppiness regime filter, RSI, StochRSI, Bollinger ±2σ, Keltner/TTM volatility squeeze, Donchian 20-bar breakout, MACD, Stochastic, MFI, CMF, OBV, rolling VWAP, Hull MA Trend Speed, ROC, volume, candlestick patterns, floor-trader pivots and Fibonacci retracements) plus candlestick charts, RSI/OBV divergence detection, a watchlist with signal-flip alerts, structure-aware take-profit/stop-loss brackets (stops behind swing structure, targets snapped to pivot/Fibonacci/channel levels, regime-adaptive widths), and a backtest that replays the bracket at every historical signal on the loaded chart and reports its measured hit-rates. Redundant/low-value indicators have been intentionally removed to reduce false consensus. This is an analytical tool, not financial advice. Indicators describe past and present behavior — they do not predict the future. Backtested win-rates are in-sample and optimistic versus live results. Crypto is volatile; never trade more than you can afford to lose, and do your own research.
+    Signals are generated algorithmically from live exchange data (Binance public API — real OHLCV candles, with CoinGecko as fallback; GeckoTerminal for pasted contract addresses / DEX tokens) using a curated set of technical indicators (Supertrend, Parabolic SAR, EMA 12/21/26/50, ADX + Choppiness regime filter, RSI, StochRSI, Bollinger ±2σ, Keltner/TTM volatility squeeze, Donchian 20-bar breakout, MACD, Stochastic, MFI, CMF, OBV, rolling VWAP, Hull MA Trend Speed, ROC, volume, candlestick patterns, floor-trader pivots and Fibonacci retracements) plus candlestick charts, RSI/OBV divergence detection, a watchlist with signal-flip alerts, take-profit/stop levels measured on the signal's own past trades (exit line = the close where the trend call flips, a 3× daily-ATR safety stop, and targets with the share of past signals that reached them). Redundant/low-value indicators have been intentionally removed to reduce false consensus. This is an analytical tool, not financial advice. Indicators describe past and present behavior — they do not predict the future. Backtested win-rates are in-sample and optimistic versus live results. Crypto is volatile; never trade more than you can afford to lose, and do your own research.
   </div>
   <div class="footer-brand">aryx_trading</div>
 </div>
@@ -1998,7 +2002,7 @@ function buildAnchor(day){
   if(!day||!day.prices||day.prices.length<60)return null;
   const cs=coreSeries(day),n=day.prices.length;
   const j=(day.times&&day.times[n-1]+864e5>Date.now())?n-2:n-1;
-  return{tf:'day',T:cs.T[j],votes:cs.votesAt(j),times:day.times,Ts:cs.T.slice(0,j+1)};
+  return{tf:'day',T:cs.T[j],votes:cs.votesAt(j),times:day.times,Ts:cs.T.slice(0,j+1),raw:day};
 }
 // How this exact read has done on the loaded chart: each past candle's call vs the move over the next CORE_H candles.
 function coreTrack(d,cs,anc,tfMs,mode){
@@ -2047,6 +2051,72 @@ function coreRead(d){
   if(timing==='pullback')notes.push([dir>0?'buy':'sell','TIMING','Pullback in a '+(dir>0?'daily uptrend':'daily downtrend')+' — chart is stretched against the trend; historically the better entry zone']);
   if(timing==='extended')notes.push([dir>0?'sell':'buy','TIMING',(tfMs?'Extended — chart is stretched in the trend\'s direction; on intraday charts late entries here were wrong more often than right, so the call is to wait':'Extended — stretched in the trend\'s direction; strong daily trends often stay stretched')]);
   return{mode,A,net,votes,dir,timing,stretch:st,verdict,conf,composite,strength,notes,track:coreTrack(d,cs,anc,tfMs,mode),anchored:!!anc,intraday:!!tfMs};
+}
+
+// ===== Trade levels — measured on the signal's own trades, not guessed =====
+// Replayed on real Binance candles (11 coins; daily 2018–2026, 4h from 2022, 1h from 2023, 15m from 2025; 0.1% fee/side):
+//  · Best stop = the signal's own exit: the close where the trend consensus drops under ±4 of 7. Average loser ≈ −5%.
+//    Fixed-%, ATR, trailing and structure stops all did worse (they shake you out of trades that then work).
+//  · A wide SAFETY stop at 3× the DAILY ATR (intrabar) costs almost nothing and caps crash risk. Measured in
+//    1h/15m ATRs instead, a "4×ATR" stop hit 50–80% of trades — the trend lives on the daily chart.
+//  · Take-profits cut the big winners that pay for a ~30% win rate: selling everything at Target 2 dropped the
+//    yearly return from +65% to +9% (daily), +22% → +4% (4h), +33% → +16% (1h).
+// r = how far trades ran in their favour (in ATR(14) of that timeframe) before the exit, reached by 60/35/15% of them.
+const LEVEL_STATS={
+  day:{long:{n:1010,win:32,r:[0.53,1.83,6.09]},short:{n:1169,win:35,r:[0.55,1.25,3.17]},sig:65,tp:9,span:'2018–2026'},
+  '4h':{long:{n:570,win:30,r:[1.22,3.41,11.32]},short:{n:720,win:33,r:[1.32,3.19,7.86]},sig:22,tp:4,span:'2022–2026'},
+  '1h':{long:{n:430,win:32,r:[3.14,8.67,23.93]},short:{n:527,win:32,r:[2.92,6.65,16.13]},sig:33,tp:16,span:'2023–2026'},
+  '15m':{long:{n:117,win:25,r:[5.28,14.36,37.73]},short:{n:177,win:35,r:[8.15,19.34,40.84]},sig:null,tp:null,span:'2025–2026'}
+};
+const TF_MS={'15m':9e5,'1h':36e5,'4h':144e5,day:864e5,week:6048e5,month:2592e6};
+const SAFETY_DATR=3;
+// The close (on the candle that closes next) at which the trend consensus crosses the ±4-of-7 line.
+// kind 'up': lowest close that keeps/makes an uptrend call · 'down': highest close that keeps/makes a downtrend call.
+const _crossCache=new Map();
+function coreCrossPrice(src,tfMs,kind){
+  if(!src||!src.prices||src.prices.length<60)return null;
+  const nn=src.prices.length,ck=kind+'|'+nn+'|'+(src.times?src.times[nn-1]:0)+'|'+src.prices[0]+'|'+Math.round(Math.log(src.prices[nn-1])/0.001);
+  if(_crossCache.has(ck))return _crossCache.get(ck);
+  const res=coreCrossCompute(src,tfMs,kind);
+  if(_crossCache.size>40)_crossCache.clear();
+  _crossCache.set(ck,res);return res;
+}
+function coreCrossCompute(src,tfMs,kind){
+  const n=src.prices.length,forming=!!(src.times&&src.times[n-1]+tfMs>Date.now());
+  const P=src.prices.slice(),H=(src.highs||src.prices).slice(),L=(src.lows||src.prices).slice(),V=(src.vols||src.prices.map(()=>1)).slice();
+  if(!forming){const c=P[n-1];P.push(c);H.push(c);L.push(c);V.push(V[n-1]||0);}   // next candle opens at the last close
+  const k=P.length-1,h0=H[k],l0=L[k],last=P[k],d={prices:P,highs:H,lows:L,vols:V};
+  const T=X=>{P[k]=X;H[k]=Math.max(h0,X);L[k]=Math.min(l0,X);return coreSeries(d).T[k];};
+  const ok=kind==='up'?(X=>T(X)>=CORE_TH):(X=>T(X)>-CORE_TH);      // monotone: a higher close only adds bullish votes
+  let lo=last*0.5,hi=last*1.6;
+  if(ok(lo))return{px:null,beyond:'below'};
+  if(!ok(hi))return{px:null,beyond:'above'};
+  for(let i=0;i<20;i++){const m=(lo+hi)/2;if(ok(m))hi=m;else lo=m;}
+  return{px:(lo+hi)/2};
+}
+function tradeLevels(d,core,price,atrV,verdict,full){
+  const tf=d.tfKey||'day',tfMs=TF_MS[tf]||864e5,TS=LEVEL_STATS[tf]||null;
+  const anc=core.mode==='daily'&&d.anchor&&d.anchor.raw?d.anchor.raw:null;
+  const src=core.mode==='daily'?anc:d, srcMs=core.mode==='daily'?864e5:tfMs;
+  let dAtr=anc?atr(anc.highs,anc.lows,anc.prices,14):tf==='day'?atrV:null;
+  if(!dAtr||!isFinite(dAtr))dAtr=atrV*Math.sqrt(864e5/tfMs);          // daily-equivalent range
+  const dir=core.dir>0?'long':core.dir<0?'short':'none',sg=core.dir<0?-1:1;
+  const where=srcMs===864e5?'daily close':({'15m':'15m','1h':'1h','4h':'4h',week:'weekly',month:'monthly'}[tf]||'')+' close';
+  const L={dir,active:verdict==='buy'||verdict==='sell',entry:price,atrV,atrPct:atrV/price*100,dAtr,where,tf,tfStats:TS,
+    stats:TS&&dir!=='none'?(dir==='short'?TS.short:TS.long):null};
+  L.safety=Math.max(price*0.001,price-sg*SAFETY_DATR*dAtr);
+  L.safetyPct=(L.safety-price)/price*100;
+  if(full&&src){
+    if(dir!=='none'){const c=coreCrossPrice(src,srcMs,dir==='long'?'up':'down');if(c){L.exit=c.px;L.exitBeyond=c.beyond||null;}}
+    else{const u=coreCrossPrice(src,srcMs,'up'),w=coreCrossPrice(src,srcMs,'down');L.buyAbove=u&&u.px;L.sellBelow=w&&w.px;}
+  }
+  if(L.exit!=null){L.exitPct=(L.exit-price)/price*100;L.exitNow=sg>0?price<L.exit:price>L.exit;}
+  else if(L.exitBeyond)L.exitNow=(sg>0&&L.exitBeyond==='above')||(sg<0&&L.exitBeyond==='below');
+  if(L.stats)L.tps=L.stats.r.map((m,i)=>{const v=Math.max(price*0.001,price+sg*m*atrV);return{v,pct:(v-price)/price*100,odds:[60,35,15][i],atr:m};});
+  // fields the chart overlay and position sizer read
+  L.sl=L.exit!=null?L.exit:L.safety;L.slPct=(L.sl-price)/price*100;
+  if(L.tps){L.tp1=L.tps[0].v;L.tp2=L.tps[1].v;L.tp3=L.tps[2].v;L.tp1Pct=L.tps[0].pct;L.tp2Pct=L.tps[1].pct;L.tp3Pct=L.tps[2].pct;}
+  return L;
 }
 
 function analyze(d){
@@ -2281,82 +2351,9 @@ function analyze(d){
   leadVerdict=core.timing==='pullback'?(core.dir>0?'buy':'sell'):'neutral';
   core.notes.forEach(x=>signals.unshift(x));
 
-  // ===== SMART TAKE-PROFIT / STOP-LOSS (structure-aware · volatility-adaptive) =====
-  // Accuracy upgrades vs a plain ATR bracket:
-  //  1. The stop hides BEHIND real structure (swing low/high, Supertrend, SAR,
-  //     nearest support/resistance) + a 0.25×ATR buffer, instead of a blind
-  //     fixed distance — that's where a move is actually invalidated.
-  //  2. Take-profits SNAP to real levels (pivots, fibs, Donchian, swing, BB)
-  //     where price statistically reacts, instead of arbitrary R multiples.
-  //  3. The ATR multiplier adapts to regime: choppy markets get wider stops
-  //     (noise would tag a tight one), clean trends run tighter.
+  // ===== TAKE-PROFIT & STOP — measured on the signal's own trades (see LEVEL_STATS / tradeLevels) =====
   const atrV=atr(highs,lows,prices,14)||price*0.02;
-  const atrMult=regime==='ranging'?1.8:regime==='strong'?1.4:1.5;
-  const dirLong=verdict!=='sell';               // buy or hold → framed long
-  const dir=dirLong?'long':'short';
-  const entry=price;
-  const buf=0.25*atrV, minStop=0.8*atrV, maxStop=3*atrV;
-
-  // pool of real levels around price (same set the Key Levels panel shows)
-  const lvlPool=[];
-  if(piv){lvlPool.push(['pivot PP',piv.P],['pivot R1',piv.R1],['pivot R2',piv.R2],['pivot R3',piv.R3],['pivot S1',piv.S1],['pivot S2',piv.S2],['pivot S3',piv.S3]);}
-  lvlPool.push(['Fib 23.6%',fib.f236],['Fib 38.2%',fib.f382],['Fib 50%',fib.f5],['Fib 61.8%',fib.f618],['Fib 78.6%',fib.f786],['swing high',fib.hi],['swing low',fib.lo]);
-  if(don.up[last]!=null){lvlPool.push(['Donchian hi',don.up[last]],['Donchian lo',don.lo[last]]);}
-  if(vwV!=null)lvlPool.push(['VWAP-20',vwV]);
-  if(b.up[last]!=null)lvlPool.push(['BB upper',b.up[last]],['BB lower',b.lo[last]]);
-  const supLv=lvlPool.filter(x=>isFinite(x[1])&&x[1]<price).sort((u,v)=>v[1]-u[1]); // nearest first
-  const resLv=lvlPool.filter(x=>isFinite(x[1])&&x[1]>price).sort((u,v)=>u[1]-v[1]); // nearest first
-
-  // ---- STOP: tightest structural level whose distance is sane (0.8–3 ATR) ----
-  const swLo=swings(lows,3), swHi=swings(highs,3);
-  const stopCands=[];
-  if(dirLong){
-    if(swLo.lo.length){const v=lows[swLo.lo[swLo.lo.length-1]];if(v<price)stopCands.push({v:v-buf,basis:'below last swing low + 0.25×ATR buffer'});}
-    if(stDir===1&&stLine<price)stopCands.push({v:stLine-buf,basis:'below Supertrend line + buffer'});
-    if(psDir===1&&psVal<price)stopCands.push({v:psVal,basis:'at Parabolic SAR'});
-    for(const x of supLv.slice(0,3))stopCands.push({v:x[1]-buf,basis:'below '+x[0]+' + buffer'});
-  }else{
-    if(swHi.hi.length){const v=highs[swHi.hi[swHi.hi.length-1]];if(v>price)stopCands.push({v:v+buf,basis:'above last swing high + 0.25×ATR buffer'});}
-    if(stDir===-1&&stLine>price)stopCands.push({v:stLine+buf,basis:'above Supertrend line + buffer'});
-    if(psDir===-1&&psVal>price)stopCands.push({v:psVal,basis:'at Parabolic SAR'});
-    for(const x of resLv.slice(0,3))stopCands.push({v:x[1]+buf,basis:'above '+x[0]+' + buffer'});
-  }
-  let sl,slBasis;
-  const validStops=stopCands.filter(c=>{const d2=Math.abs(price-c.v);return d2>=minStop&&d2<=maxStop&&(dirLong?c.v<price:c.v>price);});
-  if(validStops.length){
-    validStops.sort((u,v)=>dirLong?v.v-u.v:u.v-v.v);      // tightest valid structure
-    sl=validStops[0].v;slBasis=validStops[0].basis;
-  }else{
-    sl=dirLong?price-atrMult*atrV:price+atrMult*atrV;
-    slBasis=atrMult+'×ATR — no clean structure within 0.8–3 ATR';
-  }
-  sl=Math.max(sl,price*0.001);
-  const risk=Math.max(Math.abs(entry-sl),0.3*atrV);
-
-  // ---- TAKE-PROFITS: snap to real levels ≥0.8R away, ≥0.5×ATR apart ----
-  const tps=[],tpBasis=[];
-  let lastV=entry;
-  for(const x of (dirLong?resLv:supLv)){
-    const v=x[1],dd=Math.abs(v-entry);
-    if(dd<0.8*risk)continue;
-    if(tps.length&&Math.abs(v-lastV)<0.5*atrV)continue;
-    tps.push(v);tpBasis.push('at '+x[0]);lastV=v;
-    if(tps.length===3)break;
-  }
-  while(tps.length<3){                                   // fill gaps by projection
-    const mult=[1.5,2.5,3.5][tps.length];
-    let v=dirLong?entry+mult*risk:entry-mult*risk;
-    if(tps.length)v=dirLong?Math.max(v,lastV+0.8*risk):Math.min(v,lastV-0.8*risk);
-    tps.push(v);tpBasis.push(mult.toFixed(1)+'R projection');lastV=v;
-  }
-  const tp1=tps[0],tp2=tps[1],tp3=Math.max(tps[2],price*0.001);
-  const rr=v=>Math.abs(v-entry)/risk;
-  const slPct=(sl-price)/price*100, tp1Pct=(tp1-price)/price*100,
-        tp2Pct=(tp2-price)/price*100, tp3Pct=(tp3-price)/price*100;
-  const levels={dir,entry,sl,tp1,tp2,tp3,slPct,tp1Pct,tp2Pct,tp3Pct,
-    atrV,atrPct:atrV/price*100,atrMult,slBasis,tpBasis,
-    rr1:rr(tp1),rr2:rr(tp2),rr3:rr(tp3),
-    trailST:stLine,trailPSAR:psVal};
+  const levels=tradeLevels(d,core,price,atrV,verdict,!!d.full);
 
   // ===== DIVERGENCE DETECTION (price vs RSI and price vs OBV) =====
   const divs=detectDivergences(prices,r,obvArr);
@@ -2374,47 +2371,6 @@ function analyze(d){
     }
   }
 
-  // ===== BRACKET BACKTEST (measured on THIS chart's real history) =====
-  // Replays the ATR core of this bracket (1.5×ATR stop, 1R/2R targets,
-  // stop→break-even after TP1) at every historical Supertrend flip and walks
-  // the real highs/lows forward to see what got hit first. Conservative rule:
-  // if a single bar touches both stop and target, it counts as a stop.
-  const _atS=atrSeries(highs,lows,prices,14);
-  const bt={n:0,tp1:0,tp2:0,sl:0,be:0,open:0,avgBars:0};
-  {
-    let barsSum=0;
-    for(const hsig of history){
-      const i=hsig.i; if(i>=prices.length-2)continue;
-      const e0=prices[i], r0=1.5*(_atS[i]||e0*0.02);
-      const isL=hsig.verdict==='buy';
-      const slv=isL?e0-r0:e0+r0;
-      const t1=isL?e0+r0:e0-r0;
-      const t2=isL?e0+2*r0:e0-2*r0;
-      let phase='live',resolved=false,gotT1=false,gotT2=false,stopped=false,beExit=false,bars=0;
-      for(let j=i+1;j<prices.length&&j<=i+60;j++){
-        bars=j-i;
-        const hiJ=highs[j],loJ=lows[j];
-        const slHit=isL?loJ<=slv:hiJ>=slv;
-        const t1Hit=isL?hiJ>=t1:loJ<=t1;
-        const t2Hit=isL?hiJ>=t2:loJ<=t2;
-        if(phase==='live'){
-          if(slHit){stopped=true;resolved=true;break}   // conservative on ambiguous bars
-          if(t1Hit){gotT1=true;phase='be';if(t2Hit){gotT2=true;resolved=true;break}}
-        }else{ // stop at break-even, hunting TP2
-          const beHit=isL?loJ<=e0:hiJ>=e0;
-          if(beHit&&t2Hit){beExit=true;resolved=true;break} // conservative
-          if(t2Hit){gotT2=true;resolved=true;break}
-          if(beHit){beExit=true;resolved=true;break}
-        }
-      }
-      if(!resolved&&!gotT1){bt.open++;continue}
-      bt.n++;barsSum+=bars;
-      if(stopped)bt.sl++;
-      else{bt.tp1++;if(gotT2)bt.tp2++;if(beExit)bt.be++;}
-    }
-    bt.avgBars=bt.n?Math.round(barsSum/bt.n):0;
-  }
-  levels.bt=bt;
 
   return{r,e12,e21,e26,e50,b,rsiV,price,rsiSig,emaSig,bollSig,volSig,volRatio,
     avgVol,curVol,verdict,score,conf:conf2,signals,contrib,regimeMult,
@@ -2476,6 +2432,7 @@ function num(n){
 }
 
 function render(d,tf){
+  d.full=true;
   const a=analyze(d);
   // price flash: green/red glow on tick up/down
   const pEl=document.getElementById('price');
@@ -2739,82 +2696,17 @@ function whyPlain(a,vText){
 }
 
 function renderLevels(a){
-  const L=a.levels;
-  const isShort=L.dir==='short';
-  const dirLabel=isShort?'SHORT setup':'LONG setup';
-  const dirNote=a.verdict==='neutral'
-    ? 'Signal is HOLD — these are reference levels for a long bias if you choose to enter.'
-    : (isShort?'Levels for a short position (sell-side).':'Levels for a long position (buy-side).');
-  // visual ladder min/max
-  const vals=[L.sl,L.tp3,L.entry,L.tp1,L.tp2];
-  const lo=Math.min(...vals),hi=Math.max(...vals),span=(hi-lo)||1;
-  const pos=v=>((v-lo)/span)*100;
-  const tpRow=(label,val,pct,r,basis)=>`
-    <div class="lvl-row">
-      <span class="lvl-tag tp">${label}</span>
-      <span class="lvl-cell"><span class="lvl-price">${num(val)}</span><span class="lvl-basis">${basis}</span></span>
-      <span class="lvl-pct buy">${pct>=0?'+':''}${pct.toFixed(2)}%</span>
-      <span class="lvl-r">${r}</span>
+  const L=a.levels; if(!L)return '';
+  const TS=L.tfStats, tfn={'15m':'15m','1h':'1h','4h':'4h',day:'daily',week:'weekly',month:'monthly'}[L.tf]||L.tf;
+  const pct=v=>(v>=0?'+':'')+v.toFixed(2)+'%';
+  const row=(tag,cls,val,basis,p,right)=>`
+    <div class="lvl-row${cls==='entry'?' entry':''}">
+      <span class="lvl-tag ${cls}">${tag}</span>
+      <span class="lvl-cell"><span class="lvl-price">${val==null?'—':num(val)}</span><span class="lvl-basis">${basis}</span></span>
+      <span class="lvl-pct ${p==null||cls==='entry'?'':cls==='tp'?'buy':'sell'}">${p==null?'':pct(p)}</span>
+      <span class="lvl-r">${right||''}</span>
     </div>`;
-  const bt=L.bt||{n:0};
-  const pc=x=>bt.n?Math.round(x/bt.n*100):0;
-  const btStrip=bt.n>=5?`
-    <div class="bt-strip">
-      <span class="bt-h">📊 Measured on this chart — ATR core of this bracket replayed at all ${bt.n} historical Supertrend signals:</span>
-      <span class="bt-item buy">TP1 hit first ${pc(bt.tp1)}%</span>
-      <span class="bt-item buy">ran on to TP2 ${pc(bt.tp2)}%</span>
-      <span class="bt-item">exited break-even ${pc(bt.be)}%</span>
-      <span class="bt-item sell">stopped out ${pc(bt.sl)}%</span>
-      <span class="bt-item">avg ${bt.avgBars} bars</span>
-      <span class="bt-foot">In-sample & optimistic vs live; ambiguous bars (stop + target in one bar) are counted as stops. Structural snapping is applied only to the live levels below.</span>
-    </div>`:`
-    <div class="bt-strip"><span class="bt-h">📊 Fewer than 5 historical signals on this chart — not enough to backtest the bracket honestly.</span></div>`;
-  return `<div class="levels-card">
-    <div class="levels-h">
-      <div>
-        <div class="chart-title">🎯 Take-Profit & Stop-Loss — structure-aware</div>
-        <div class="lvl-note">${dirLabel} · ${dirNote} Stop is placed <b>${L.slBasis}</b>; targets snap to real levels where price historically reacts. ATR ${L.atrPct.toFixed(2)}%/bar · regime stop-width ×${L.atrMult} (${a.regime}).</div>
-      </div>
-      <div class="lvl-entry">
-        <div class="v-label">entry / current</div>
-        <div class="lvl-entry-val">${num(L.entry)}</div>
-      </div>
-    </div>
-
-    <div class="lvl-ladder">
-      <div class="lvl-track">
-        <i class="lvl-zone-tp" style="${isShort?`top:0;bottom:${pos(L.entry)}%`:`bottom:${pos(L.entry)}%;top:0`}"></i>
-        <i class="lvl-zone-sl" style="${isShort?`bottom:${pos(L.entry)}%;top:auto;height:${100-pos(L.entry)}%`:`top:${pos(L.entry)}%;height:${pos(L.entry)}%`}"></i>
-        <span class="lvl-mark entry" style="bottom:${pos(L.entry)}%">entry ${num(L.entry)}</span>
-        <span class="lvl-mark tp" style="bottom:${pos(L.tp1)}%">TP1</span>
-        <span class="lvl-mark tp" style="bottom:${pos(L.tp2)}%">TP2</span>
-        <span class="lvl-mark tp" style="bottom:${pos(L.tp3)}%">TP3</span>
-        <span class="lvl-mark sl" style="bottom:${pos(L.sl)}%">SL</span>
-      </div>
-    </div>
-
-    <div class="lvl-list">
-      ${tpRow('TP 3',L.tp3,L.tp3Pct,L.rr3.toFixed(1)+'R',L.tpBasis[2])}
-      ${tpRow('TP 2',L.tp2,L.tp2Pct,L.rr2.toFixed(1)+'R',L.tpBasis[1])}
-      ${tpRow('TP 1',L.tp1,L.tp1Pct,L.rr1.toFixed(1)+'R',L.tpBasis[0])}
-      <div class="lvl-row entry">
-        <span class="lvl-tag entry">ENTRY</span>
-        <span class="lvl-cell"><span class="lvl-price">${num(L.entry)}</span><span class="lvl-basis">current price</span></span>
-        <span class="lvl-pct">0.00%</span>
-        <span class="lvl-r">—</span>
-      </div>
-      <div class="lvl-row">
-        <span class="lvl-tag sl">STOP</span>
-        <span class="lvl-cell"><span class="lvl-price">${num(L.sl)}</span><span class="lvl-basis">${L.slBasis}</span></span>
-        <span class="lvl-pct sell">${L.slPct>=0?'+':''}${L.slPct.toFixed(2)}%</span>
-        <span class="lvl-r">-1R</span>
-      </div>
-    </div>
-
-    ${btStrip}
-
-    <div class="trail-hint">🧭 <b>Management:</b> take partials at each TP. After TP1 fills, move the stop to break-even (${num(L.entry)}), then trail the rest with the Supertrend line (${num(L.trailST)}) or Parabolic SAR (${num(L.trailPSAR)}) — exit the remainder when either flips against you. A target sitting AT a level means take profit just in front of it, not beyond it.</div>
-
+  const sizer=`
     <div class="pos-calc">
       <div class="pos-calc-h">📐 Position size — risk-based</div>
       <div class="pos-calc-row">
@@ -2822,8 +2714,67 @@ function renderLevels(a){
         <label>Risk % <input id="pcRisk" type="number" min="0" step="0.1" value="${(function(){try{return localStorage.getItem('aryx_risk')||1}catch(e){return 1}})()}" oninput="calcPos()"></label>
       </div>
       <div class="pos-calc-out" id="pcOut"></div>
+    </div>`;
+  const head=(title,note)=>`
+    <div class="levels-h">
+      <div>
+        <div class="chart-title">${title}</div>
+        <div class="lvl-note">${note}</div>
+      </div>
+      <div class="lvl-entry">
+        <div class="v-label">current price</div>
+        <div class="lvl-entry-val">${num(L.entry)}</div>
+      </div>
+    </div>`;
+  // ---- no trend: no trade — show what would start one ----
+  if(L.dir==='none'){
+    return `<div class="levels-card">
+      ${head('🎯 Entry triggers — no trade right now','No clear trend (needs 4 of 7 trend votes), so there is no stop or target to set. These are the closes that would turn the signal on — they move every candle.')}
+      <div class="lvl-list">
+        ${row('BUY','tp',L.buyAbove,L.buyAbove!=null?'a '+L.where+' above this turns the signal to BUY':'no single '+L.where+' can turn it BUY yet — the trend needs more candles',L.buyAbove!=null?(L.buyAbove-L.entry)/L.entry*100:null)}
+        ${row('NOW','entry',L.entry,'current price',0)}
+        ${row('SELL','sl',L.sellBelow,L.sellBelow!=null?'a '+L.where+' below this turns the signal to SELL':'no single '+L.where+' can turn it SELL yet — the trend needs more candles',L.sellBelow!=null?(L.sellBelow-L.entry)/L.entry*100:null)}
+      </div>
+      <div class="lvl-foot">Computed by re-running the Terminal's engine on a hypothetical ${L.where}. Not financial advice.</div>
+    </div>`;
+  }
+  const isShort=L.dir==='short', S=L.stats, side=isShort?'SELL':'BUY';
+  const state=L.active?(isShort?'SHORT — signal is SELL':'LONG — signal is BUY')
+    :(isShort?'Downtrend, but the signal is HOLD (wait for a bounce) — levels for a short':'Uptrend, but the signal is HOLD (stretched — wait for a pullback) — levels for a long');
+  const exitTxt=L.exit!=null
+    ? (L.exitNow?`⚠ price is past this line — a ${L.where} here ends the signal`:`signal ends on a ${L.where} ${isShort?'above':'below'}`)
+    : L.exitBeyond?(L.exitNow?`the trend call ends at the next ${L.where} wherever price closes`:`more than ${isShort?'60% above':'50% below'} — the trend is very strong`):'—';
+  const vals=[L.safety,L.exit,L.entry,L.tp1,L.tp2,L.tp3].filter(v=>v!=null&&isFinite(v));
+  const lo=Math.min(...vals),hi=Math.max(...vals),span=(hi-lo)||1,pos=v=>6+((v-lo)/span)*88;
+  const mark=(v,cls,t)=>v!=null&&isFinite(v)?`<span class="lvl-mark ${cls}" style="bottom:${pos(v)}%">${t}</span>`:'';
+  const tRows=L.tps?L.tps.slice().reverse().map((t,j)=>row('T'+(3-j),'tp',t.v,`reached by ${t.odds}% of past ${side} signals (${t.atr}×ATR)`,t.pct,t.odds+'%')).join(''):
+    row('TARGETS','tp',null,'not measured on '+tfn+' charts',null,'');
+  const research=S&&TS?`
+    <div class="bt-strip">
+      <span class="bt-h">📊 Measured on ${S.n.toLocaleString()} past ${tfn} ${side} signals (11 major coins, ${TS.span}, 0.1% fees):</span>
+      <span class="bt-item">right ${S.win}% of the time — winners are much bigger than losers</span>
+      ${TS.sig!=null&&!isShort?`<span class="bt-item buy">exit on the signal: +${TS.sig}%/yr</span><span class="bt-item sell">sell everything at Target 2 instead: ${TS.tp>=0?'+':''}${TS.tp}%/yr</span>`:''}
+      <span class="bt-foot">Tighter, trailing and chart-structure stops all did worse than the signal's own exit. Yearly returns are for buying (long); the reach odds for shorts were measured the same way. Past results don't guarantee future ones.</span>
+    </div>`:`<div class="bt-strip"><span class="bt-h">📊 Stops and targets were tested on 15m–daily charts; on ${tfn} charts only the exit line and safety stop apply.</span></div>`;
+  return `<div class="levels-card">
+    ${head('🎯 Take-Profit & Stop-Loss — measured, not guessed',`${state}. The stop is the signal's own exit line plus a wide safety stop; targets show how far past ${side} signals actually ran. ATR ${L.atrPct.toFixed(2)}% per ${tfn} candle.`)}
+    <div class="lvl-ladder">
+      <div class="lvl-track">
+        <i class="lvl-zone-tp" style="${isShort?`top:${100-pos(L.entry)}%;bottom:0`:`bottom:${pos(L.entry)}%;top:0`}"></i>
+        <i class="lvl-zone-sl" style="${isShort?`top:0;height:${100-pos(L.entry)}%`:`top:${100-pos(L.entry)}%;bottom:0`}"></i>
+        ${mark(L.entry,'entry','now '+num(L.entry))}${mark(L.tp1,'tp','T1')}${mark(L.tp2,'tp','T2')}${mark(L.tp3,'tp','T3')}${mark(L.exit,'sl','EXIT')}${mark(L.safety,'sl','SAFETY')}
+      </div>
     </div>
-    <div class="lvl-foot">Risk per unit ≈ ${num(Math.abs(L.entry-L.sl))} (1R, from the structural stop). Reward-to-risk: TP1 ${L.rr1.toFixed(1)}:1 · TP2 ${L.rr2.toFixed(1)}:1 · TP3 ${L.rr3.toFixed(1)}:1. Levels recompute every refresh as structure moves. Not financial advice.</div>
+    <div class="lvl-list">
+      ${tRows}
+      ${row('NOW','entry',L.entry,'current price',0,'')}
+      ${row('EXIT','sl',L.exit,exitTxt,L.exit!=null?L.exitPct:null,'signal')}
+      ${row('SAFE','sl',L.safety,`${SAFETY_DATR}× daily ATR · intrabar crash stop`,L.safetyPct,'max')}
+    </div>
+    ${research}
+    <div class="trail-hint">🧭 <b>How to use it:</b> exit when a ${L.where} lands ${isShort?'above':'below'} the EXIT line. It moves with every candle and usually trails behind price as the trend runs, so recheck it after each close. The SAFETY stop is your worst case if price crashes before the close.${L.exit!=null&&Math.abs(L.exit-L.entry)>Math.abs(L.safety-L.entry)?' <b>Right now the safety stop is closer than the exit line, so it would trigger first.</b>':''} Targets are optional: if you want profit along the way, take a <b>part</b> (say a third at Target 2) and keep the rest until the exit line. Selling everything at a target is what cut returns in testing.</div>
+    ${sizer}
+    <div class="lvl-foot">Exit line = the ${L.where} at which the trend consensus drops under ${isShort?'−':'+'}4 of 7, found by re-running the Terminal's engine. Position size uses the safety stop (worst case). Not financial advice.</div>
   </div>`;
 }
 
@@ -2959,11 +2910,12 @@ function calcPos(){
   if(!aEl||!rEl||!out)return;
   const acct=parseFloat(aEl.value)||0, risk=parseFloat(rEl.value)||0;
   try{localStorage.setItem('aryx_acct',aEl.value);localStorage.setItem('aryx_risk',rEl.value);}catch(e){}
-  const perUnit=Math.abs(L.entry-L.sl)||1e-9;
+  const stopPx=L.safety!=null?L.safety:L.sl;
+  const perUnit=Math.abs(L.entry-stopPx)||1e-9;
   const riskUsd=acct*risk/100;
   const units=riskUsd/perUnit;
   const notional=units*L.entry;
-  out.innerHTML=`Risking <b>$${riskUsd.toFixed(2)}</b> (${risk||0}% of $${acct.toLocaleString()}) → position <b>${units.toFixed(4)} ${current.symbol}</b> ≈ <b>$${notional.toLocaleString(undefined,{maximumFractionDigits:2})}</b> notional. A stop at ${num(L.sl)} caps the loss at ~${risk||0}% of the account; TP2 (2R) would return ≈ <b>$${(2*riskUsd).toFixed(2)}</b>.`;
+  out.innerHTML=`Risking <b>$${riskUsd.toFixed(2)}</b> (${risk||0}% of $${acct.toLocaleString()}) → position <b>${units.toFixed(4)} ${current.symbol}</b> ≈ <b>$${notional.toLocaleString(undefined,{maximumFractionDigits:2})}</b> notional. If the safety stop at ${num(stopPx)} is hit, you lose ~${risk||0}% of the account${L.exit!=null&&!L.exitNow&&Math.abs(L.entry-L.exit)<Math.abs(L.entry-stopPx)?`; a normal exit at the signal line (${num(L.exit)}) would cost about $${(units*Math.abs(L.entry-L.exit)).toFixed(2)}`:''}.`;
 }
 
 function cardMACD(a){
@@ -3146,7 +3098,7 @@ function renderChart(d,a,tf){
   // include trade levels in the y-range so entry/SL/TP lines are visible
   const showLevels = a.verdict==='buy' || a.verdict==='sell';
   const Lv = a.levels;
-  const lvlVals = showLevels&&Lv ? [Lv.entry,Lv.sl,Lv.tp1,Lv.tp2,Lv.tp3].filter(v=>v!=null&&isFinite(v)) : [];
+  const lvlVals = showLevels&&Lv ? [Lv.entry,Lv.exit,Lv.safety,Lv.tp1,Lv.tp2].filter(v=>v!=null&&isFinite(v)) : [];
   const allP=[...P,...extra,...(T.boll?U.filter(x=>x):[]),...(T.boll?L.filter(x=>x):[]),...lvlVals];
   const min=Math.min(...allP),max=Math.max(...allP),rng=max-min||1;
   const cw=W-pad*2, ch=H-pad*2-volH;
@@ -3204,11 +3156,11 @@ function renderChart(d,a,tf){
   if(showLevels&&Lv){
     const fmtP=v=>v>=1000?v.toFixed(0):v>=1?v.toFixed(2):v.toFixed(5);
     const rows=[
-      {v:Lv.tp3,c:'#00e08a',t:'TP3',p:Lv.tp3Pct},
-      {v:Lv.tp2,c:'#00e08a',t:'TP2',p:Lv.tp2Pct},
-      {v:Lv.tp1,c:'#00e08a',t:'TP1',p:Lv.tp1Pct},
+      {v:Lv.tp2,c:'#00e08a',t:'T2 ~35%',p:Lv.tp2Pct},
+      {v:Lv.tp1,c:'#00e08a',t:'T1 ~60%',p:Lv.tp1Pct},
       {v:Lv.entry,c:'#e6ecf2',t:'ENTRY',p:0},
-      {v:Lv.sl,c:'#ff3d5e',t:'STOP',p:Lv.slPct},
+      {v:Lv.exit,c:'#ff3d5e',t:'EXIT',p:Lv.exitPct},
+      {v:Lv.safety,c:'#b0263f',t:'SAFETY',p:Lv.safetyPct},
     ];
     rows.forEach(r=>{
       if(r.v==null||!isFinite(r.v))return;
@@ -3221,7 +3173,7 @@ function renderChart(d,a,tf){
         `<rect x="${W-pad-tw}" y="${yy-9}" width="${tw}" height="18" rx="4" fill="rgba(7,9,13,.85)" stroke="${r.c}" stroke-width=".8"/>`+
         `<text x="${W-pad-tw+6}" y="${yy+4}" fill="${r.c}" font-size="10.5" font-family="Space Mono" font-weight="700">${lbl}</text>`;
     });
-    const yE=y(Lv.entry), yT=y(Lv.tp3), yS=y(Lv.sl);
+    const yE=y(Lv.entry), yT=y(Lv.tp2!=null?Lv.tp2:Lv.entry), yS=y(Lv.exit!=null?Lv.exit:Lv.safety);
     const clip=v=>Math.max(pad,Math.min(pad+ch,v));
     levelLines=
       `<rect x="${pad}" y="${clip(Math.min(yE,yT))}" width="${cw}" height="${Math.abs(clip(yT)-clip(yE))}" fill="rgba(0,224,138,.05)"/>`+
@@ -5072,20 +5024,33 @@ function aryxBackToLanding(){
   var STRATLBL = { signal:'Terminal Signal', trend:'Trend EMA', meanrev:'Mean-Reversion', breakout:'Breakout', macd:'MACD', multi:'Multi-factor', hold:'Just holding' };
   var OLDSYM = { bitcoin:'BTCUSDT', ethereum:'ETHUSDT', solana:'SOLUSDT', binancecoin:'BNBUSDT', ripple:'XRPUSDT', dogecoin:'DOGEUSDT', cardano:'ADAUSDT', 'avalanche-2':'AVAXUSDT', chainlink:'LINKUSDT' };
   var OLDTF = { '1':'1h', '7':'4h', '30':'day' };
-  var timer = null, busy = false, host = null, dayCache = {}, rankKey = '';
+  // Exits, from testing on the signal's own trades (see LEVEL_STATS in the Terminal engine):
+  //  stop  'atr3' = safety stop 3× daily ATR (recommended) · '0' = no stop, exit on the strategy only · '8'/'12'/'20' = fixed %
+  //  take  '0' = off, let winners run (recommended) · 't2h' = sell half at Target 2 · 't2' = sell all at Target 2 · '10'/'20'/'50' = fixed %
+  var SLLBL = { atr3:'safety 3× daily ATR', '0':'no stop', '8':'SL −8%', '12':'SL −12%', '20':'SL −20%' };
+  var TPLBL = { '0':'no take-profit', t2h:'half at Target 2', t2:'all at Target 2', '10':'TP +10%', '20':'TP +20%', '50':'TP +50%' };
+  var T2R = { day:1.83, '4h':3.41, '1h':8.67, '15m':14.36 };    // Target 2 in ATRs: ~35% of past BUY signals got this far
+  var SAFE_K = 3;
+  var timer = null, busy = false, host = null, dayCache = {}, rankKey = '', lineCache = {};
 
   function load(){ try{ return JSON.parse(localStorage.getItem(KEY)); }catch(e){ return null; } }
   function save(){ try{ localStorage.setItem(KEY, JSON.stringify(st)); }catch(e){} }
   var st = load() || { cash:START, start:START, pos:null, realized:0, trades:0, wins:0, running:false,
-    strat:'signal', sym:'BTCUSDT', symLabel:'BTC', tf:'day', size:100, log:[], lastPrice:0, sl:12, tp:0, v:2 };
-  if(st.sl==null) st.sl = 5;   // auto stop-loss %  (0 = off)
-  if(st.tp==null) st.tp = 10;  // auto take-profit % (0 = off)
+    strat:'signal', sym:'BTCUSDT', symLabel:'BTC', tf:'day', size:100, log:[], lastPrice:0, sl:'atr3', tp:'0', v:3 };
   if(!st.start) st.start = START;
-  if(st.v!==2){                // one-time upgrade from the CoinGecko version → Binance symbols, follow the Terminal signal
+  if(st.v!==2 && st.v!==3){    // upgrade from the CoinGecko version → Binance symbols, follow the Terminal signal
     st.sym = OLDSYM[st.sym] || st.sym; st.tf = OLDTF[st.tf] || st.tf;
-    if(!st.running){ st.strat = 'signal'; st.tf = 'day'; if(st.sl===5 && st.tp===10){ st.sl = 12; st.tp = 0; } }   // old defaults cut trends short
-    st.v = 2; save();
+    if(!st.running){ st.strat = 'signal'; st.tf = 'day'; st.sl = 12; st.tp = 0; }
+    st.v = 2;
   }
+  if(st.v===2){                // fixed-% exits → measured exits (safety stop on the daily range, no take-profit)
+    var osl = +st.sl || 0, otp = +st.tp || 0;
+    st.sl = (osl===12 || osl===5 || osl===3) ? 'atr3' : osl===0 ? '0' : String(osl);
+    st.tp = (otp===10 || otp===5) ? '0' : otp===0 ? '0' : String(otp);
+    st.v = 3; save();
+  }
+  if(!SLLBL[st.sl]) st.sl = 'atr3';
+  if(!TPLBL[st.tp]) st.tp = '0';
   if(!/^[A-Z0-9]{2,20}$/.test(String(st.sym))){ st.sym='BTCUSDT'; st.symLabel='BTC'; }
   if(!TFLBL[st.tf]) st.tf = 'day';
   if(STRATS.indexOf(st.strat)<0) st.strat = 'signal';
@@ -5093,6 +5058,7 @@ function aryxBackToLanding(){
 
   function usd(v){ var n=+v||0; return (n<0?'-$':'$')+Math.abs(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
   function px(v){ v=+v; return '$'+v.toLocaleString('en-US',{maximumFractionDigits: v>=100?2 : v>=1?4 : 6}); }
+  function pct(v){ return (v>=0?'+':'')+v.toFixed(1)+'%'; }
   function equity(){ return st.cash + (st.pos ? st.pos.qty*(st.lastPrice||st.pos.entry)*(1-FEE) : 0); }
   function esc(s){ return String(s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 
@@ -5105,6 +5071,7 @@ function aryxBackToLanding(){
     return { hist: line.map(function(v,i){ return v-sig[i]; }) }; }
   function donchian(h,l,p){ p=p||20; var up=[],lo=[]; for(var i=0;i<h.length;i++){ if(i<p){ up[i]=null; lo[i]=null; }
     else { var hh=-Infinity,ll=Infinity; for(var j=i-p;j<i;j++){ if(h[j]>hh)hh=h[j]; if(l[j]<ll)ll=l[j]; } up[i]=hh; lo[i]=ll; } } return {up:up,lo:lo}; }
+  function atrS(d){ return (typeof atrSeries==='function') ? atrSeries(d.highs,d.lows,d.prices,14) : d.prices.map(function(p){ return p*0.02; }); }
 
   // ---- classic strategy → target state ('long' | 'flat' | null=keep) ----
   function signal(strat,o,h,l,c){
@@ -5144,6 +5111,25 @@ function aryxBackToLanding(){
     return (s.v==='buy'?'BUY':s.v==='sell'?'SELL':'HOLD')+' · trend '+(s.net>0?'+':'')+s.net+'/7'+(s.timing&&s.timing!=='none'?' · '+s.timing:'');
   }
 
+  // ---- exits: price levels fixed at entry ----
+  // dAtr = ATR(14) of the daily candles (the trend's own timeframe) · cAtr = ATR(14) of the trading timeframe
+  function exitLevels(entry, dAtr, cAtr, tf, sl, tp){
+    var o={ stop:null, tp:null, tpFrac:1 };
+    if(sl==='atr3' && dAtr) o.stop=entry-SAFE_K*dAtr;
+    else if(+sl>0) o.stop=entry*(1-(+sl)/100);
+    if((tp==='t2' || tp==='t2h') && cAtr){ o.tp=entry+T2R[tf]*cAtr; o.tpFrac=tp==='t2h'?0.5:1; }
+    else if(+tp>0) o.tp=entry*(1+(+tp)/100);
+    if(o.stop!=null && o.stop<=0) o.stop=null;
+    return o;
+  }
+  // daily ATR as of each candle (last closed day), for intraday charts
+  function alignDailyAtr(c, day, tf){
+    if(tf==='day' || !day) return atrS(c);
+    var da=atrS(day), out=new Array(c.prices.length).fill(null), k=0;
+    for(var i=0;i<c.prices.length;i++){ var ct=c.times[i]+TFMS[tf]; while(k+1<day.times.length && day.times[k+1]+864e5<=ct) k++; if(day.times[k]+864e5<=ct) out[i]=da[k]; }
+    return out;
+  }
+
   // ---- market data: real Binance candles (public mirror as fallback) ----
   function klines(sym, tf, limit){
     var q='/api/v3/klines?symbol='+encodeURIComponent(sym)+'&interval='+BINT[tf]+'&limit='+(limit||500);
@@ -5168,26 +5154,32 @@ function aryxBackToLanding(){
     return klines(sym,'day',1000).then(function(d){ dayCache[sym]={ t:Date.now(), d:d }; return d; });
   }
 
-  // ---- backtest: decisions on each candle's close, filled at that close; SL/TP intrabar; fees both sides ----
-  function backtest(plan, d, from, sl, tp){
+  // ---- backtest: decisions on each candle's close, filled at that close; stop/target intrabar
+  //      (a candle touching both counts as the stop; gaps fill at the open); fees both sides ----
+  function backtest(plan, d, from, sl, tp, tf, dA, cA){
     var c=d.prices, h=d.highs, l=d.lows, o=d.opens;
-    var cash=1, pos=null, trades=0, wins=0, peak=1, maxDD=0, eq=[], cool=false, coolBar=-1, held=0;
+    var cash=1, qty=0, pos=null, trades=0, wins=0, peak=1, maxDD=0, eq=[], cool=false, coolBar=-1, held=0;
+    function close(pxv, frac){
+      var q=qty*frac; cash+=q*pxv*(1-FEE); qty-=q; pos.got+=q*pxv*(1-FEE);
+      if(frac>=1){ trades++; if(pos.got>pos.cost) wins++; pos=null; qty=0; }
+    }
     for(var i=from;i<c.length;i++){
       if(pos){
-        var ex=null, stopPx=pos.entry*(1-sl/100), tpPx=pos.entry*(1+tp/100);
-        if(sl && l[i]<=stopPx) ex=Math.min(stopPx,o[i]); else if(tp && h[i]>=tpPx) ex=Math.max(tpPx,o[i]);
-        if(ex!=null){ var r0=ex/pos.entry*(1-FEE)*(1-FEE); cash*=r0; trades++; if(r0>1)wins++; pos=null; cool=true; coolBar=i; }
+        if(pos.stop!=null && l[i]<=pos.stop){ close(Math.min(pos.stop,o[i]),1); cool=true; coolBar=i; }
+        else if(pos.tp!=null && h[i]>=pos.tp){ var f=pos.tpFrac; var tpx=Math.max(pos.tp,o[i]); pos.tp=null; close(tpx,f); if(f>=1){ cool=true; coolBar=i; } }
       }
       var p=plan[i], tgt=p?p.tgt:null;
       if(tgt==='flat') cool=false;
       if(cool && p && p.pull && i>coolBar) cool=false;
-      if(tgt==='long' && !pos && !cool) pos={ entry:c[i] };
-      else if(tgt==='flat' && pos){ var r=c[i]/pos.entry*(1-FEE)*(1-FEE); cash*=r; trades++; if(r>1)wins++; pos=null; }
+      if(tgt==='long' && !pos && !cool){
+        var L=exitLevels(c[i], dA[i], cA[i], tf, sl, tp);
+        pos={ cost:cash, got:0, stop:L.stop, tp:L.tp, tpFrac:L.tpFrac }; qty=cash*(1-FEE)/c[i]; cash=0;
+      } else if(tgt==='flat' && pos) close(c[i],1);
       if(pos) held++;
-      var e = pos ? cash*(1-FEE)*(c[i]/pos.entry) : cash;
+      var e = cash + qty*c[i]*(1-FEE);
       eq.push(e); if(e>peak)peak=e; var dd=(peak-e)/peak; if(dd>maxDD)maxDD=dd;
     }
-    if(pos){ var rr=c[c.length-1]/pos.entry*(1-FEE)*(1-FEE); cash*=rr; trades++; if(rr>1)wins++; }
+    if(pos) close(c[c.length-1],1);
     return { ret:(cash-1)*100, trades:trades, win:trades?wins/trades*100:0, maxDD:maxDD*100, eq:eq, inMkt:held/Math.max(1,c.length-from)*100 };
   }
   function holdBench(d, from){
@@ -5218,24 +5210,25 @@ function aryxBackToLanding(){
   var lastRank = null;
   function rankStrategies(){
     var btn=$('botRank'); if(btn){ btn.disabled=true; btn.textContent='… backtesting'; }
-    var sym=st.sym, tf=st.tf, lbl=st.symLabel;
+    var sym=st.sym, tf=st.tf, lbl=st.symLabel, sl=st.sl, tp=st.tp;
     var done=function(t){ if(btn){ btn.disabled=false; btn.textContent=t||'↻ Re-run backtest'; } };
     Promise.all([klines(sym,tf,1000), tf==='day' ? Promise.resolve(null) : daily(sym)]).then(function(x){
-      var d=closedOnly(x[0],tf), day=x[1];
+      var d=closedOnly(x[0],tf), day=x[1] ? closedOnly(x[1],'day') : null;
       var from=60;
       if(d.prices.length<from+40){ $('botLbList').innerHTML='<div class="bot-status">Not enough history to backtest this market yet.</div>'; done('🏆 Backtest all strategies'); return; }
-      var res=[];
-      if(hasCore()){ var b0=backtest(corePlan(d, day, tf), d, from, st.sl, st.tp); b0.key='signal'; res.push(b0); }
+      var dA=alignDailyAtr(d, day, tf), cA=atrS(d), res=[];
+      if(hasCore()){ var b0=backtest(corePlan(d, day, tf), d, from, sl, tp, tf, dA, cA); b0.key='signal'; res.push(b0);
+        var bx=backtest(corePlan(d, day, tf), d, from, '0', '0', tf, dA, cA); }
       ['trend','meanrev','breakout','macd','multi'].forEach(function(k){
         var plan=d.prices.map(function(_,i){ if(i<from) return null; var t=signal(k,null,d.highs.slice(0,i+1),d.lows.slice(0,i+1),d.prices.slice(0,i+1)); return t?{tgt:t}:null; });
-        var b=backtest(plan, d, from, st.sl, st.tp); b.key=k; res.push(b);
+        var b=backtest(plan, d, from, sl, tp, tf, dA, cA); b.key=k; res.push(b);
       });
       res.sort(function(a,b){ return b.ret - a.ret; });
       var hb=holdBench(d, from); res.push(hb);
       renderLb(res);
       var days=Math.round((d.times[d.times.length-1]-d.times[from])/864e5);
       var span=days>=60 ? Math.round(days/30.4)+' months' : days+' days';
-      lastRank={ key:sym+'|'+tf+'|'+st.sl+'|'+st.tp, span:span, lbl:lbl, tf:tf, sig:res.filter(function(r){ return r.key==='signal'; })[0], hold:hb,
+      lastRank={ key:sym+'|'+tf+'|'+sl+'|'+tp, span:span, lbl:lbl, tf:tf, sig:res.filter(function(r){ return r.key==='signal'; })[0], bare:bx||null, hold:hb,
         from:new Date(d.times[from]).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) };
       rankKey=lastRank.key;
       renderSig();
@@ -5245,25 +5238,43 @@ function aryxBackToLanding(){
 
   // ---- trades ----
   function log(act,price,pnl,tag,why){ st.log.unshift({ t:Date.now(), act:act, price:price, pnl:pnl, sym:st.symLabel, tag:tag||null, why:why||null }); st.log = st.log.slice(0,30); }
-  function buy(price,why){ var notional=Math.min(equity()*st.size/100, st.cash); if(notional<1)return;
-    var qty=notional*(1-FEE)/price; st.cash-=notional; st.pos={ qty:qty, entry:price, cost:notional, t:Date.now() }; st.trades++; log('buy',price,null,null,why); }
-  function sell(price,tag,why){ if(!st.pos)return; var proceeds=st.pos.qty*price*(1-FEE), cost=st.pos.cost||st.pos.qty*st.pos.entry, pnl=proceeds-cost;
-    st.cash+=proceeds; st.realized+=pnl; if(pnl>0)st.wins++; log('sell',price,pnl,tag,why); st.pos=null; }
+  function buy(price,why,lv){ var notional=Math.min(equity()*st.size/100, st.cash); if(notional<1)return;
+    var qty=notional*(1-FEE)/price; st.cash-=notional;
+    st.pos={ qty:qty, entry:price, cost:notional, t:Date.now(), stop:lv?lv.stop:null, tp:lv?lv.tp:null, tpFrac:lv?lv.tpFrac:1, got:0, slMode:st.sl, tpMode:st.tp };
+    st.trades++; log('buy',price,null,null,why); }
+  function sell(price,tag,why,frac){ if(!st.pos)return; frac=frac==null?1:frac;
+    var q=st.pos.qty*frac, proceeds=q*price*(1-FEE), cost=(st.pos.cost||st.pos.qty*st.pos.entry)*frac, pnl=proceeds-cost;
+    st.cash+=proceeds; st.realized+=pnl; st.pos.got=(st.pos.got||0)+pnl;
+    log('sell',price,pnl,tag,(frac<1?'sold '+Math.round(frac*100)+'% · ':'')+(why||''));
+    if(frac>=1){ if(st.pos.got>0) st.wins++; st.pos=null; }
+    else { st.pos.qty-=q; st.pos.cost-=cost; }
+  }
 
   // ---- render ----
   function $(id){ return document.getElementById(id); }
   function setStatus(t){ var e=$('botStatus'); if(e)e.textContent=t; }
+  function exitsLine(){
+    var p=st.pos, parts=[];
+    if(p){
+      parts.push(p.stop!=null ? 'stop '+px(p.stop)+' ('+pct((p.stop/p.entry-1)*100)+')' : 'no stop');
+      parts.push(p.tp!=null ? 'target '+px(p.tp)+' ('+pct((p.tp/p.entry-1)*100)+(p.tpFrac<1?', sells half':'')+')' : 'no target — riding the trend');
+      return 'Open position: '+parts.join(' · ');
+    }
+    return 'Exits: '+SLLBL[st.sl]+' · '+TPLBL[st.tp];
+  }
   function renderSig(){
     var el=$('botSig'); if(!el) return;
     var s=st.sig, where=st.symLabel+' · '+TFLBL[st.tf];
     var rec='';
     if(lastRank && lastRank.key===st.sym+'|'+st.tf+'|'+st.sl+'|'+st.tp && lastRank.sig){
-      var g=lastRank.sig, h=lastRank.hold;
-      rec='<div class="bs-rec">📊 Backtest on '+esc(lastRank.lbl)+' '+TFLBL[lastRank.tf]+' since '+lastRank.from+' ('+lastRank.span+', 0.1% fees, your SL/TP): following this signal <b class="'+(g.ret>=0?'up':'down')+'">'+(g.ret>=0?'+':'')+g.ret.toFixed(1)+'%</b> (worst drop −'+g.maxDD.toFixed(0)+'%, '+g.trades+' trades) vs just holding <b class="'+(h.ret>=0?'up':'down')+'">'+(h.ret>=0?'+':'')+h.ret.toFixed(1)+'%</b> (worst drop −'+h.maxDD.toFixed(0)+'%).</div>';
+      var g=lastRank.sig, h=lastRank.hold, b=lastRank.bare;
+      rec='<div class="bs-rec">📊 Backtest on '+esc(lastRank.lbl)+' '+TFLBL[lastRank.tf]+' since '+lastRank.from+' ('+lastRank.span+', 0.1% fees, your exits): following this signal <b class="'+(g.ret>=0?'up':'down')+'">'+pct(g.ret)+'</b> (worst drop −'+g.maxDD.toFixed(0)+'%, '+g.trades+' trades) vs just holding <b class="'+(h.ret>=0?'up':'down')+'">'+pct(h.ret)+'</b> (worst drop −'+h.maxDD.toFixed(0)+'%).'+
+        (b && (st.sl!=='0' || st.tp!=='0') ? ' Signal exit alone, no stop/target: <b class="'+(b.ret>=0?'up':'down')+'">'+pct(b.ret)+'</b>.' : '')+'</div>';
     }
     if(st.strat!=='signal'){
       el.innerHTML='<div class="bs-h"><span class="bs-lbl">Strategy · '+esc(where)+'</span><span class="bs-v neutral">'+STRATLBL[st.strat]+'</span></div>'+
-        '<div class="bs-rule">This bot is running a classic indicator strategy. Pick <b>★ Terminal Signal</b> to make it trade the same BUY/SELL/HOLD call the Terminal shows.</div>';
+        '<div class="bs-rule">This bot is running a classic indicator strategy. Pick <b>★ Terminal Signal</b> to make it trade the same BUY/SELL/HOLD call the Terminal shows.</div>'+
+        '<div class="bs-exit">'+esc(exitsLine())+'</div>'+rec;
       return;
     }
     var act='';
@@ -5275,11 +5286,18 @@ function aryxBackToLanding(){
     else if(s.dir>0) act='⏳ Uptrend but extended — waiting for a pullback to buy';
     else if(s.dir<0) act='💵 In cash — downtrend (SELL). Long-only bot: no shorting';
     else act='💵 In cash — no clear trend (HOLD)';
+    var line='';
+    if(s && s.line!=null){
+      var dist=(s.line/(st.lastPrice||s.line)-1)*100;
+      line = s.dir>0 ? '<div class="bs-exit">🚪 Exit line: sells on a daily close below <b>'+px(s.line)+'</b> ('+pct(dist)+' from here) — the close where the trend drops under +4 of 7. It moves every candle.</div>'
+        : '<div class="bs-exit">🔔 Buy line: the trend turns up on a daily close above <b>'+px(s.line)+'</b> ('+pct(dist)+' from here)'+(st.tf==='day'?'.':', then the bot buys on the next '+TFLBL[st.tf]+' candle that isn\'t stretched.')+'</div>';
+    }
     var vt=s?(s.v==='buy'?'BUY':s.v==='sell'?'SELL':'HOLD'):'—', vc=s?s.v:'neutral';
     el.innerHTML='<div class="bs-h"><span class="bs-lbl">Terminal signal · '+esc(where)+'</span><span class="bs-v '+vc+'">'+vt+'</span></div>'+
       (s?'<div class="bs-meta">'+(s.mode==='daily'?'Daily':'Chart')+' trend consensus '+(s.net>0?'+':'')+s.net+' of 7 · timing: '+s.timing+' · '+s.conf+'% conviction · read on the last closed candle ('+new Date(s.bar).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+')</div>':'')+
-      '<div class="bs-act">'+act+'</div>'+
-      '<div class="bs-rule">Rule: buy when the Terminal says <b>BUY</b> · hold while the trend consensus stays up (+4 of 7 or better) · sell to cash when it turns HOLD/SELL. Your stop-loss/take-profit also apply.'+(st.tf==='day'?'':' <b>Daily</b> had the strongest record when this engine was tested; intraday calls were close to a coin flip.')+'</div>'+rec;
+      '<div class="bs-act">'+act+'</div>'+line+
+      '<div class="bs-exit">'+esc(exitsLine())+'</div>'+
+      '<div class="bs-rule">Rule: buy when the Terminal says <b>BUY</b> · hold while the trend consensus stays up (+4 of 7 or better) · sell to cash when it turns HOLD/SELL. In testing, that exit beat every fixed stop and take-profit: losers averaged about −5% while winners ran +20–35%. The safety stop only catches crashes between closes.'+(st.tf==='day'?'':' <b>Daily</b> had the strongest record; intraday calls were weaker.')+'</div>'+rec;
   }
   function render(){
     var eq=equity(), base=st.start||START, ret=(eq/base-1)*100;
@@ -5307,18 +5325,24 @@ function aryxBackToLanding(){
     if(!st.running || busy) return;
     busy=true;
     var sym=st.sym, tf=st.tf, strat=st.strat;
-    var need=strat==='signal' && tf!=='day';
-    Promise.all([klines(sym,tf,500), need ? daily(sym) : Promise.resolve(null)]).then(function(x){
+    Promise.all([klines(sym,tf,500), tf!=='day' ? daily(sym) : Promise.resolve(null)]).then(function(x){
       if(sym!==st.sym || tf!==st.tf || strat!==st.strat || !st.running) return;     // settings changed mid-fetch
-      var d=x[0], price=d.prices[d.prices.length-1], c=closedOnly(d,tf), n=c.prices.length;
+      var d=x[0], price=d.prices[d.prices.length-1], c=closedOnly(d,tf), n=c.prices.length, day=x[1];
       st.lastPrice=price;
       if(n<60){ save(); render(); setStatus('waiting for enough candle history…'); return; }
       var lastBar=c.times[n-1], tgt, why, s=null;
+      var cAtr=atrS(c)[n-1], dAtr=tf==='day' ? cAtr : (day ? atrS(closedOnly(day,'day')).slice(-1)[0] : null);
       if(strat==='signal'){
         if(!hasCore()){ setStatus('Terminal engine not loaded — reload the page.'); return; }
-        c.tfKey=tf; if(x[1]) c.anchor=buildAnchor(x[1]);
+        c.tfKey=tf; if(day) c.anchor=buildAnchor(day);
         var core=coreRead(c);
-        s=st.sig={ v:core.verdict, dir:core.dir, net:core.net, timing:core.timing, conf:core.conf, mode:core.mode, bar:lastBar };
+        s=st.sig={ v:core.verdict, dir:core.dir, net:core.net, timing:core.timing, conf:core.conf, mode:core.mode, bar:lastBar, line:null };
+        // where the trend call flips on the next daily close (exit line when up, buy line otherwise)
+        if(typeof coreCrossPrice==='function'){
+          try{ var src=tf==='day' ? d : day, ck=src ? sym+'|'+src.times[src.times.length-1]+'|'+Math.round(Math.log(price)/0.002) : '';
+            if(ck && lineCache.k===ck) s.line=lineCache.v;
+            else if(src){ var cr=coreCrossPrice(src, 864e5, 'up'); s.line=cr && cr.px!=null ? cr.px : null; lineCache={ k:ck, v:s.line }; } }catch(e){}
+        }
         tgt=coreTarget(core.dir, core.verdict==='buy');
         why='Terminal '+sigText(s)+' · '+TFLBL[tf];
         if(st.cool && core.timing==='pullback' && lastBar!==st.coolBar) st.cool=false;
@@ -5327,20 +5351,22 @@ function aryxBackToLanding(){
         tgt=signal(strat,null,c.highs,c.lows,c.prices);
         why=STRATLBL[strat]+' · '+TFLBL[tf];
       }
-      // ---- auto stop-loss / take-profit on the live price (checked first) ----
+      // positions opened before this version: set their exits from today's volatility
+      if(st.pos && st.pos.slMode===undefined){ var L0=exitLevels(st.pos.entry, dAtr, cAtr, tf, st.sl, st.tp); st.pos.stop=L0.stop; st.pos.tp=L0.tp; st.pos.tpFrac=L0.tpFrac; st.pos.slMode=st.sl; st.pos.tpMode=st.tp; }
+      // ---- safety stop / target on the live price (checked first) ----
       if(st.pos){
         var chg=(price/st.pos.entry-1)*100;
-        if(st.sl && chg <= -st.sl){ sell(price,'SL','stop-loss '+chg.toFixed(1)+'%'); st.cool=true; st.coolBar=lastBar; save(); render();
-          setStatus('🛑 Stop-loss hit on '+st.symLabel+' ('+chg.toFixed(1)+'%) · '+new Date().toLocaleTimeString()); return; }
-        if(st.tp && chg >= st.tp){ sell(price,'TP','take-profit +'+chg.toFixed(1)+'%'); st.cool=true; st.coolBar=lastBar; save(); render();
-          setStatus('🎯 Take-profit hit on '+st.symLabel+' (+'+chg.toFixed(1)+'%) · '+new Date().toLocaleTimeString()); return; }
+        if(st.pos.stop!=null && price<=st.pos.stop){ sell(price,'SL',(st.pos.slMode==='atr3'?'safety stop ':'stop-loss ')+pct(chg)); st.cool=true; st.coolBar=lastBar; save(); render();
+          setStatus('🛑 Stop hit on '+st.symLabel+' ('+pct(chg)+') · '+new Date().toLocaleTimeString()); return; }
+        if(st.pos.tp!=null && price>=st.pos.tp){ var f=st.pos.tpFrac||1; st.pos.tp=null; sell(price,'TP','target '+pct(chg),f); if(f>=1){ st.cool=true; st.coolBar=lastBar; } save(); render();
+          setStatus('🎯 Target hit on '+st.symLabel+' ('+pct(chg)+')'+(f<1?' — sold half, riding the rest':'')+' · '+new Date().toLocaleTimeString()); return; }
       }
       if(tgt==='flat') st.cool=false;
-      if(tgt==='long' && !st.pos && !st.cool) buy(price, why);
+      if(tgt==='long' && !st.pos && !st.cool) buy(price, why, exitLevels(price, dAtr, cAtr, tf, st.sl, st.tp));
       else if(tgt==='flat' && st.pos) sell(price, null, why);
       save(); render();
       setStatus('● auto-trading · '+st.symLabel+' '+TFLBL[tf]+' · '+STRATLBL[strat]+(s?' ('+sigText(s)+')':'')+
-        (st.sl?' · SL '+st.sl+'%':'')+(st.tp?' · TP '+st.tp+'%':'')+' · '+px(price)+' · '+new Date().toLocaleTimeString());
+        ' · '+SLLBL[st.sl]+' · '+TPLBL[st.tp]+' · '+px(price)+' · '+new Date().toLocaleTimeString());
     }).catch(function(){ setStatus('price feed unavailable — retrying…'); }).then(function(){ busy=false; });
   }
 
@@ -5395,8 +5421,9 @@ function aryxBackToLanding(){
     });
     $('botTf').addEventListener('change', function(e){ st.tf=e.target.value; settingsChanged(); });
     $('botSize').addEventListener('change', function(e){ st.size=+e.target.value; save(); });
-    if($('botSL')) $('botSL').addEventListener('change', function(e){ st.sl=+e.target.value; settingsChanged(); });
-    if($('botTP')) $('botTP').addEventListener('change', function(e){ st.tp=+e.target.value; settingsChanged(); });
+    // new exit settings apply to the open position too (re-anchored on its entry price at the next tick)
+    if($('botSL')) $('botSL').addEventListener('change', function(e){ st.sl=e.target.value; if(st.pos) st.pos.slMode=undefined; settingsChanged(); });
+    if($('botTP')) $('botTP').addEventListener('change', function(e){ st.tp=e.target.value; if(st.pos) st.pos.slMode=undefined; settingsChanged(); });
     if($('botRank')) $('botRank').addEventListener('click', rankStrategies);
     if($('botLbList')) $('botLbList').addEventListener('click', function(e){
       var row=e.target.closest('.lb-row'); if(!row) return;
@@ -7496,6 +7523,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
 .bs-v.neutral{color:var(--ax-muted);background:var(--ax-surface);border:1px solid var(--ax-line);}
 .bot-sig .bs-meta,.bot-sig .bs-rule{color:var(--ax-muted);}
 .bot-sig .bs-act{margin:6px 0 4px;font-weight:600;color:var(--ax-text);}
+.bot-sig .bs-exit{margin-top:5px;color:var(--ax-text);}
 .bot-sig .bs-rec{margin-top:7px;padding-top:7px;border-top:1px solid var(--ax-line);color:var(--ax-text);}
 .bot-sig .up{color:var(--ax-up);} .bot-sig .down{color:var(--ax-down);}
 .lb-row.bench{opacity:.72;cursor:default;}
