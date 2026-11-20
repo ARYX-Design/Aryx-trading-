@@ -122,6 +122,15 @@ and VWAP on live candles:
   stop-loss/take-profit, signals read on closed candles only. "🤖 Auto-trade this signal" in the Terminal
   points the bot at the coin and timeframe on screen. The leaderboard replays every strategy on up to 1,000
   candles and compares it with buy-and-hold. Runs in the browser while Aryx is open; state in localStorage.
+- **🎯 Take-profit & stop — measured, not guessed** — replayed on the signal's own trades (11 coins; daily
+  2018–2026, 4h from 2022, 1h from 2023; 0.1% fees). The best stop is the signal's own exit: no fixed-%,
+  ATR, trailing or chart-structure stop beat it (average loser ≈ −5%). Take-profits cut the winners that pay
+  for a ~30% win rate (selling all at a target: daily +65%/yr → +9%/yr; the old structure bracket +7%/yr).
+  So the Terminal shows the **exit line** (the exact close where the trend consensus flips, found by
+  re-running the engine on a hypothetical close), a **safety stop** at 3× daily ATR for crashes between
+  closes, and **targets with the share of past signals that reached them** (60/35/15%). With no trend it
+  shows the BUY/SELL trigger closes instead. The Auto-Bot uses the same exits (safety stop + no take-profit
+  by default; optional half/all at Target 2 or fixed %), and its backtest applies them.
 - **🎯 Signal Core v3** (Terminal) — rebuilt from a bar-by-bar replay of the engine on real Binance candles
   (12 major coins; daily 2018–2026, 4h from 2022, 1h from 2023, 15m from 2025). Findings it is built on:
   the previous composite was right 47–49% of the time on every timeframe (below a coin flip); on daily
